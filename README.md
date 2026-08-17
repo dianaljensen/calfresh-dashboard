@@ -66,7 +66,7 @@ Dated, append-only. Add an entry here any time a real design or data-handling de
 
 Phases 1-3 (research, schema design, Apps Script pipeline, automation) are complete and confirmed live: the consolidated Sheet is populated (all 3 sources, full historical backfill), the weekly trigger is running, and the Sheet is published to the web with a working public CSV export. `DATA_DICTIONARY.md` is now built out.
 
-Phase 4 has a first real view built and polished: `participation_trend_prototype_demographic-layers.html` (Total Participants, Annual % Change with county/region comparison, county-size bucket chart) went through a full round of UX and content polish with Diana on 2026-08-13/14 (see "Phase 4a" in `TODO.md` for the full punch list — tooltips, filters, cross-chart sync, a $ Issued dual-axis overlay, region comparison, etc., all done). This one view is now moving out of Cowork into Cursor/Vercel for continued development — see "Frontend Implementation Notes" and "Deployment" below before making changes.
+Phase 4 has a first real view built and polished: `index.html` (Total Participants, Annual % Change with county/region comparison, county-size bucket chart) went through a full round of UX and content polish with Diana on 2026-08-13/14 (see "Phase 4a" in `TODO.md` for the full punch list — tooltips, filters, cross-chart sync, a $ Issued dual-axis overlay, region comparison, etc., all done). This one view is now moving out of Cowork into Cursor/Vercel for continued development — see "Frontend Implementation Notes" and "Deployment" below before making changes.
 
 Still ahead: the other four topic areas from the original Tableau workbook (Applications & Outcomes, Discontinuances, Churn, Program Reach) haven't been started, the embedded data snapshot needs to become a live fetch before this is production-ready, and Phase 5 (verification/spot-checking) hasn't started. See `TODO.md` for the current checklist — it's long and detailed on purpose; skim the unchecked items before assuming something isn't done.
 
@@ -74,7 +74,7 @@ Still ahead: the other four topic areas from the original Tableau workbook (Appl
 
 ## Frontend Implementation Notes (Participation view)
 
-Everything below documents how `participation_trend_prototype_demographic-layers.html` actually works, so picking it up cold in Cursor doesn't mean reverse-engineering it first.
+Everything below documents how `index.html` actually works, so picking it up cold in Cursor doesn't mean reverse-engineering it first.
 
 **It's a single self-contained HTML file** — Chart.js loaded from a CDN `<script>` tag, all CSS in one `<style>` block, all JS in one `<script>` block at the bottom, no build step, no framework. This was a deliberate prototyping choice (fast to iterate on, easy to preview), not necessarily the right shape for the long run — now that it's moving into a real editor, consider whether it's worth splitting into separate CSS/JS files or introducing a lightweight bundler, especially once more topic-area views get added and there's shared code to factor out (the tooltip/axis/plugin patterns below are all currently copy-pasted per chart, not shared modules).
 
@@ -100,7 +100,7 @@ Everything below documents how `participation_trend_prototype_demographic-layers
 
 This repo is meant to be pointed at directly from Vercel with zero build configuration — it's plain static HTML/CSS/JS, no framework, no server.
 
-- `vercel.json` adds one rewrite so the root URL (`/`) serves `participation_trend_prototype_demographic-layers.html` — the file itself wasn't renamed to `index.html` to avoid touching a file Diana was actively reviewing mid-session; feel free to actually rename it to `index.html` and drop the rewrite once you're working in Cursor, that's the more conventional setup. As more topic-area views get built (Applications & Outcomes, Churn, etc.), either add more files + rewrite rules here, or restructure into real routes if this grows into something needing shared layout/nav.
+- The participation view lives in `index.html` at the repo root — Vercel serves it automatically at `/`. As more topic-area views get built (Applications & Outcomes, Churn, etc.), either add more HTML files + rewrite rules in `vercel.json`, or restructure into real routes if this grows into something needing shared layout/nav.
 - `package.json`/`package-lock.json`/`node_modules/` are local dev scaffolding (a `jsdom` install used for headless JS syntax/logic checks during this session, since the working environment couldn't run a real browser) — **not required for the deployed site itself.** Safe to delete if you want a leaner repo; `node_modules/` is already gitignored either way.
 - Once connected, standard Vercel flow: push to GitHub, import the repo in Vercel, no build command needed (it'll auto-detect this as a static deployment).
 
