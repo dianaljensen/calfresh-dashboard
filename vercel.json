@@ -1,5 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/", "destination": "/participation_trend_prototype_demographic-layers.html" }
-  ]
-}
