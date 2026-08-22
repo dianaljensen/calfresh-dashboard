@@ -22,6 +22,8 @@ files (File icon > New > Script file) and paste in the matching content from thi
 - `IngestCF.gs`
 - `Retention.gs`
 - `Main.gs`
+- `SSILinked.gs` (computed tab; added later — see below)
+- `CaseloadStudents.gs` (computed tab; added later — see below)
 
 File names inside the Apps Script editor don't need to match exactly, but keeping them
 the same makes this much easier to maintain later.
@@ -120,8 +122,14 @@ change the cadence (edit the `.everyWeeks(1)` line in `Main.gs`, then re-run
 ## 8. Publish the Sheet for the frontend to read
 
 **File > Share > Publish to web**, publish the entire spreadsheet, and leave it set to
-auto-republish when changes are made. This is a sharing-permissions change, so it has to
-be you — I'll use the resulting published URL once we build the Vercel site.
+auto-republish when changes are made. Copy the link Google shows (it contains `2PACX-…`
+and usually ends in `/pubhtml`). The dashboard fetches CSV from that published ID, not
+from spreadsheet-ID `gviz` URLs — those still 401 unless you're signed in. See
+`data.js` (`PUBLISHED_SHEET`) for the live URLs.
+
+The format dropdown can stay **Web page**. The frontend requests CSV itself:
+
+`https://docs.google.com/spreadsheets/d/e/2PACX-…/pub?gid=TAB_GID&single=true&output=csv`
 
 ---
 
@@ -164,3 +172,12 @@ Same deal as SSILinked.gs above — no new services or consent needed.
 3. `PIPELINE_MAIN()` now calls `computeCaseloadStudents_()` automatically too, right after
    the SSI-linked computation — no further action needed. Reachable the same way:
    `.../gviz/tq?tqx=out:csv&sheet=Student_Table_Computed`.
+
+## Dashboard feed (confirmed 2026-08-22)
+
+The participation view reads the **Publish to web** CSV, not spreadsheet-ID `gviz` and
+not an Apps Script web app. `data.js` fetches three tabs by gid from the `2PACX-…`
+URL (Master_Monthly, Master_Annual, Master_PointInTime). `pipeline/Participation.gs`
+and `pipeline/WebApi.gs` were a 401-workaround that is unused now that that published
+link is confirmed working; do not paste them into Apps Script unless we later want a
+slimmer extract than the ~6 MB monthly CSV.
