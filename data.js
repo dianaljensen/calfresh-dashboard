@@ -404,7 +404,7 @@ async function startLiveDashboard(initDashboard) {
 
   try {
     statusEl.className = 'prototype-note';
-    statusEl.innerHTML = 'Loading live data from the CalFresh spreadsheet…';
+    statusEl.innerHTML = 'Loading current data...';
 
     const [monthlyParsed, annualParsed, pitParsed] = await Promise.all([
       fetchCsv(PUBLISHED_SHEET.monthlyGid, 'Master_Monthly'),
