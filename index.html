@@ -43,7 +43,10 @@
      (Diana, 2026-08-13: filters felt disconnected from the chart they applied
      to, grouped together at the top instead). No extra background/border here
      -- the .card they sit inside already carries the link-a/link-b tint. */
-  .card-filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; }
+  .card-filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 14px; }
+  /* Forces the clear-filters control onto its own row above the selects, even
+     when the card is wide enough that they'd otherwise sit side-by-side. */
+  .card-filters-clear { flex-basis: 100%; }
   .filter-group { display: flex; flex-direction: column; gap: 6px; }
   .filter-group label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
   .filter-group select {
@@ -63,6 +66,14 @@
   .filter-group.multi { width: 200px; overflow: hidden; }
   .filter-group.multi select { min-height: 92px; width: 200px; }
   .filter-hint { font-size: 11px; color: var(--muted); max-width: 220px; }
+  .region-with-drill {
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start;
+  }
+  .drill-panel { max-width: 220px; min-width: 180px; }
+  .drill-panel-spacer {
+    visibility: hidden; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em; line-height: 1.2;
+  }
   .filters-kicker {
     flex-basis: 100%; font-size: 11px; font-weight: 700; text-transform: uppercase;
     letter-spacing: .04em; margin-bottom: -4px;
@@ -83,6 +94,39 @@
      only "catches up" in jumps as resize events force Chart.js to redraw smaller. */
   .charts-row > .card, .chart-holder { min-width: 0; }
   .time-range-control { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px 16px; margin-bottom: 18px; }
+  .shared-controls { background: var(--card); }
+  .shared-filters { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .shared-filters .card-filters { margin-bottom: 0; }
+  .shared-filters-toggle {
+    display: none; width: 100%; margin-top: 12px; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    cursor: pointer; text-align: left; color: var(--ink);
+  }
+  .shared-filters-toggle-label {
+    display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .03em; color: var(--muted);
+  }
+  .shared-filters-summary { display: block; font-size: 13px; margin-top: 2px; }
+  .layers-control.is-locked { opacity: 0.55; }
+  .layers-control.is-locked .layer-toggle { cursor: not-allowed; }
+  .layers-control.is-locked .layer-toggle input { cursor: not-allowed; }
+  .layers-lock-note {
+    display: none; font-size: 11px; color: var(--muted); line-height: 1.5;
+    margin: 0 0 10px;
+  }
+  .layers-lock-note.show { display: block; }
+  @media (max-width: 860px) {
+    .shared-controls {
+      position: sticky; top: 0; z-index: 20;
+      box-shadow: 0 2px 10px rgba(31,36,48,0.12);
+    }
+    .shared-filters-toggle { display: block; }
+    .shared-controls:not(.filters-open) .shared-filters { display: none; }
+    .shared-controls.filters-open .shared-filters {
+      max-height: min(50vh, 320px);
+      overflow-y: auto;
+    }
+  }
   .time-range-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
   .time-range-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
   .time-range-label strong { color: var(--ink); font-weight: 700; text-transform: none; letter-spacing: 0; margin-left: 4px; }
@@ -90,23 +134,63 @@
   .range-btn:hover { background: #f2f2f2; }
   .range-btn.active { background: var(--accent2); border-color: var(--accent2); color: #fff; }
   .range-btn.active:hover { background: var(--accent2); }
-  .range-slider { position: relative; height: 26px; margin: 0 4px; }
-  .range-track { position: absolute; top: 50%; left: 0; right: 0; height: 4px; margin-top: -2px; background: var(--grid); border-radius: 2px; pointer-events: none; }
+  .drill-toggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; margin-top: 0; padding: 5px 8px;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    cursor: pointer; color: var(--ink); font-size: 12px; text-align: left; font-family: inherit;
+  }
+  .drill-toggle:hover:not(:disabled) { background: #f2f2f2; }
+  .drill-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+  .drill-toggle[aria-pressed="true"] {
+    background: #fff7f0; border-color: var(--accent2);
+  }
+  .drill-toggle-switch {
+    flex: 0 0 32px; width: 32px; height: 18px; border-radius: 9px;
+    background: #d1d5db; position: relative;
+  }
+  .drill-toggle[aria-pressed="true"] .drill-toggle-switch { background: var(--accent2); }
+  .drill-toggle-knob {
+    position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(31,36,48,0.25);
+    transition: left 0.15s ease;
+  }
+  .drill-toggle[aria-pressed="true"] .drill-toggle-knob { left: 16px; }
+  .chart-statewide-toggle {
+    display: inline-flex; width: auto; max-width: 100%; margin: 0 0 10px;
+  }
+  .range-slider { position: relative; height: 28px; margin: 0 4px; }
+  .range-track { position: absolute; top: 50%; left: 0; right: 0; height: 6px; margin-top: -3px; background: var(--grid); border-radius: 3px; pointer-events: none; }
+  .range-track-fill {
+    position: absolute; top: 0; height: 100%; border-radius: 3px;
+    background: var(--accent2); opacity: 0.85; pointer-events: none;
+  }
+  .range-hint { margin: 6px 4px 0; font-size: 11px; color: var(--muted); }
   .range-input {
-    position: absolute; top: 0; left: 0; width: 100%; margin: 0; height: 26px;
+    position: absolute; top: 0; left: 0; width: 100%; margin: 0; height: 28px;
     background: transparent; pointer-events: none; -webkit-appearance: none; appearance: none;
   }
   .range-input::-webkit-slider-runnable-track { background: transparent; }
   .range-input::-moz-range-track { background: transparent; }
   .range-input::-webkit-slider-thumb {
     -webkit-appearance: none; appearance: none; pointer-events: auto;
-    width: 15px; height: 15px; border-radius: 50%; background: var(--accent2);
-    border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); cursor: pointer; margin-top: 6px;
+    width: 18px; height: 18px; border-radius: 50%; background: var(--accent2);
+    border: 2px solid #fff; box-shadow: 0 1px 3px rgba(31,36,48,0.28); cursor: grab; margin-top: 5px;
   }
   .range-input::-moz-range-thumb {
-    pointer-events: auto; width: 15px; height: 15px; border-radius: 50%; background: var(--accent2);
-    border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); cursor: pointer;
+    pointer-events: auto; width: 18px; height: 18px; border-radius: 50%; background: var(--accent2);
+    border: 2px solid #fff; box-shadow: 0 1px 3px rgba(31,36,48,0.28); cursor: grab;
   }
+  .range-input:hover::-webkit-slider-thumb,
+  .range-input:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(217,123,63,0.28), 0 1px 3px rgba(31,36,48,0.28);
+  }
+  .range-input:hover::-moz-range-thumb,
+  .range-input:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 3px rgba(217,123,63,0.28), 0 1px 3px rgba(31,36,48,0.28);
+  }
+  .range-slider:active .range-input::-webkit-slider-thumb { cursor: grabbing; }
+  .range-slider:active .range-input::-moz-range-thumb { cursor: grabbing; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 10px; }
   .card h2 { font-size: 15px; margin: 0 0 12px; }
   .card p.caption { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
@@ -178,11 +262,12 @@
        drop them for print but keep the colored left borders, which print reliably
        and cheaply and still carry the filter-to-chart grouping cue. */
     .link-a, .link-b, .card.link-a, .card.link-b { background: #fff !important; }
-    .card, .filters, .time-range-control { box-shadow: none; }
+    .card, .filters, .time-range-control, .shared-controls { box-shadow: none; }
     /* Range slider and multiselect boxes don't render usefully on paper --
        hide the interactive controls, the "Showing" text label already states
        the active date range as plain text. */
-    .range-slider, .range-btn { display: none; }
+    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle { display: none; }
+    .shared-filters { display: block !important; border-top: 0; padding-top: 0; }
     .filter-group.multi select { min-height: auto; }
   }
 </style>
@@ -195,38 +280,74 @@
     <p class="sub">Recreation of the original Tableau "ParticipationTrend" tab — working prototype, not final design</p>
   </header>
 
-  <div id="dataStatus" class="prototype-note" role="status">Loading live data from the CalFresh spreadsheet…</div>
+  <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
 
   <div id="dashboardMain" hidden>
-  <div class="time-range-control link-a">
+  <div class="shared-controls time-range-control link-a" id="sharedControls">
     <div class="time-range-header">
       <span class="time-range-label">Showing<strong id="rangeLabel"></strong></span>
       <button type="button" id="rangeSkipCovid" class="range-btn">Since 2021 (post COVID spike)</button>
       <button type="button" id="rangeReset" class="range-btn">Full range</button>
     </div>
     <div class="range-slider">
-      <div class="range-track"></div>
-      <input type="range" id="rangeStart" class="range-input" min="0" max="0" value="0" step="1">
-      <input type="range" id="rangeEnd" class="range-input" min="0" max="0" value="0" step="1">
+      <div class="range-track"><div class="range-track-fill" id="rangeTrackFill"></div></div>
+      <input type="range" id="rangeStart" class="range-input" min="0" max="0" value="0" step="1"
+        aria-label="Start of date range" title="Drag to set the start of the date range">
+      <input type="range" id="rangeEnd" class="range-input" min="0" max="0" value="0" step="1"
+        aria-label="End of date range" title="Drag to set the end of the date range">
+    </div>
+    <p class="range-hint">Drag either handle to change the date range</p>
+
+    <button type="button" id="sharedFiltersToggle" class="shared-filters-toggle"
+      aria-expanded="false" aria-controls="sharedFilters">
+      <span class="shared-filters-toggle-label">Counties &amp; regions</span>
+      <span class="shared-filters-summary" id="sharedFiltersSummary">Alameda</span>
+    </button>
+    <div class="shared-filters" id="sharedFilters">
+      <div class="card-filters">
+        <div class="card-filters-clear">
+          <button type="button" id="clearCompareBtn" class="range-btn">Clear filters</button>
+        </div>
+        <div class="filter-group multi">
+          <label for="compareSelect">Counties</label>
+          <select id="compareSelect" multiple></select>
+          <div class="filter-hint">Cmd/Ctrl-click to select multiple counties. California can be selected on its own to see statewide participant types. To compare a county or region with the state, use Add Statewide comparison on each chart.</div>
+        </div>
+        <div class="region-with-drill">
+          <div class="filter-group multi">
+            <label for="regionCompareSelect">Regions</label>
+            <select id="regionCompareSelect" multiple></select>
+            <div class="filter-hint">Adds one dashed line per region (population-weighted). Pick one region and no counties to see participant types as a regional total.</div>
+          </div>
+          <div class="filter-group drill-panel">
+            <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
+            <button type="button" id="drillRegionBtn" class="drill-toggle" aria-pressed="false" disabled
+              aria-label="Drill into region, off"
+              title="Select exactly one region to turn this on">
+              <span>Drill into region</span>
+              <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
+            </button>
+            <div class="filter-hint" id="drillRegionHint">Available when exactly one region is selected. When on, Counties follows that region.</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="charts-row">
     <div class="card link-a">
       <h2>Total CalFresh Participants</h2>
-      <div class="card-filters">
-        <div class="filter-group">
-          <label for="countySelect">County</label>
-          <select id="countySelect"></select>
-          <div class="filter-hint">Changing this also resets the Annual % Change chart's default county selection.</div>
-        </div>
-      </div>
-      <p class="caption" id="totalCaption">San Francisco, monthly persons, 2014–2026</p>
+      <button type="button" id="statewideCompareTotalBtn" class="drill-toggle chart-statewide-toggle"
+        aria-pressed="false" aria-label="Add Statewide comparison, off">
+        <span>Add Statewide comparison</span>
+        <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
+      </button>
+      <p class="caption" id="totalCaption">Alameda County, monthly persons, 2014–2026</p>
       <div class="chart-holder"><canvas id="totalChart" aria-hidden="true"></canvas></div>
       <div class="ref-line-legend ref-line-legend-inline" id="totalRefLineLegend"></div>
-      <div class="layers-control">
+      <div class="layers-control" id="layersControl">
         <span class="layers-label">Participant Types</span>
-        <label class="layer-toggle"><input type="checkbox" id="allParticipantsCheckbox" checked><span class="layer-swatch" style="background:#d97b3f"></span>All Participants</label>
+        <label class="layer-toggle"><input type="checkbox" id="allParticipantsCheckbox" checked><span class="layer-swatch" id="allParticipantsSwatch" style="background:#d97b3f"></span>All Participants</label>
         <label class="layer-toggle"><input type="checkbox" id="ageBandCheckbox">
           <span class="layer-swatch" style="background:#c9a227"></span><span class="layer-swatch" style="background:#5b3a8e;margin-left:-2px"></span><span class="layer-swatch" style="background:#1f2430;margin-left:-2px"></span>By Age Group (Children / 18–59 / 60+)</label>
         <label class="layer-toggle"><input type="checkbox" id="layerDualMedical"><span class="layer-swatch" style="background:#6c8a3b"></span>Also enrolled in Medi-Cal</label>
@@ -234,6 +355,7 @@
         <label class="layer-toggle"><input type="checkbox" id="layerStudents"><span class="layer-swatch" style="background:#b03a3a"></span>Students</label>
         <label class="layer-toggle"><input type="checkbox" id="layerDollarsIssued"><span class="layer-swatch" style="background:#2a6ebb"></span>$ Issued (right axis)</label>
       </div>
+      <p class="layers-lock-note" id="layersLockNote">Participant types are available when one county or one region is selected.</p>
       <p class="layers-caveat" id="layersCaveat"></p>
       <table class="sr-only" id="totalChartTable">
         <caption>Total CalFresh Participants, monthly persons</caption>
@@ -243,19 +365,11 @@
     </div>
     <div class="card link-a">
       <h2>Annual % Change in CalFresh Participants</h2>
-      <div class="card-filters">
-        <div class="filter-group multi">
-          <label for="compareSelect">Compare counties</label>
-          <select id="compareSelect" multiple></select>
-          <div class="filter-hint">Cmd/Ctrl-click to select multiple counties or California statewide.</div>
-        </div>
-        <div class="filter-group multi">
-          <label for="regionCompareSelect">Compare regions</label>
-          <select id="regionCompareSelect" multiple></select>
-          <div class="filter-hint">Adds one dashed line per region (population-weighted), on top of whatever's picked at left.</div>
-          <button type="button" id="drillRegionBtn" class="range-btn" disabled style="margin-top: 6px;">Drill into region &rarr;</button>
-        </div>
-      </div>
+      <button type="button" id="statewideCompareYoyBtn" class="drill-toggle chart-statewide-toggle"
+        aria-pressed="true" aria-label="Add Statewide comparison, on">
+        <span>Add Statewide comparison</span>
+        <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
+      </button>
       <p class="caption" id="yoyCaption">Year-over-year change, selected counties</p>
       <div class="chart-holder"><canvas id="yoyChart" aria-hidden="true"></canvas></div>
       <div class="ref-line-legend ref-line-legend-inline" id="yoyRefLineLegend"></div>
@@ -270,7 +384,9 @@
   <div class="card link-b">
     <h2 id="bucketTitle">Annual % Change by County</h2>
     <div class="card-filters">
-      <button type="button" id="clearFiltersBtn" class="range-btn" style="align-self: center;">Clear all filters</button>
+      <div class="card-filters-clear">
+        <button type="button" id="clearFiltersBtn" class="range-btn">Clear all filters</button>
+      </div>
       <div class="filter-group multi">
         <label for="regionFilter">Region</label>
         <select id="regionFilter" multiple></select>
@@ -366,6 +482,8 @@ function renderRefLineLegend(containerId, visibleMonths, chart) {
 }
 
 const COMPARE_COLORS = ['#1f2430', '#e69f00', '#009e73', '#cc79a7', '#56b4e9', '#d55e00'];
+const STATEWIDE_COMPARE_COLOR = '#4a6678';
+const STATEWIDE_COMPARE_DASH = [6, 4];
 
 function fmtMonth(m) {
   const [y, mo] = m.split('-');
@@ -471,6 +589,24 @@ function computeAggregateSeries(rows, months) {
   const series = {};
   months.forEach(m => { series[m] = computeAggregateRate(rows, m); });
   return series;
+}
+
+// Sum of a per-county numeric series (persons, overlay counts, dollars) across
+// a region's member counties. Null if every member is missing that month --
+// same honest-gap treatment as a single-county series, not interpolated.
+function computeCountSeries(memberCounties, months, getValue) {
+  return months.map(m => {
+    let sum = 0, any = false;
+    for (const c of memberCounties) {
+      const v = getValue(c, m);
+      if (v !== null && v !== undefined) { sum += v; any = true; }
+    }
+    return any ? sum : null;
+  });
+}
+
+function regionMemberCounties(region) {
+  return DATA.all_counties.filter(c => COUNTY_REGIONS[c] === region);
 }
 
 // Screen readers can't read canvas-rendered charts -- each chart pairs with a
@@ -819,22 +955,40 @@ Chart.register(statewideLinePlugin);
 
 function initDashboard() {
 // ---- Populate filter selects ----
-const countySelect = document.getElementById('countySelect');
 const compareSelect = document.getElementById('compareSelect');
+const regionCompareSelect = document.getElementById('regionCompareSelect');
+const sharedControls = document.getElementById('sharedControls');
+const sharedFiltersToggle = document.getElementById('sharedFiltersToggle');
+const sharedFiltersSummary = document.getElementById('sharedFiltersSummary');
+const layersControlEl = document.getElementById('layersControl');
+const layersLockNoteEl = document.getElementById('layersLockNote');
+const allParticipantsSwatch = document.getElementById('allParticipantsSwatch');
+const statewideCompareTotalBtn = document.getElementById('statewideCompareTotalBtn');
+const statewideCompareYoyBtn = document.getElementById('statewideCompareYoyBtn');
+let statewideCompareTotal = false;
+let statewideCompareYoy = true;
+
+function syncStatewideToggleUi(btn, on) {
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  btn.setAttribute('aria-label', on ? 'Add Statewide comparison, on' : 'Add Statewide comparison, off');
+}
+function updateStatewideToggleState(counties) {
+  const already = counties.includes('Statewide');
+  [statewideCompareTotalBtn, statewideCompareYoyBtn].forEach(btn => {
+    btn.disabled = already;
+    btn.title = already
+      ? 'California is already selected in Counties'
+      : 'Add a California reference line on this chart';
+  });
+}
 
 const allEntities = ['Statewide', ...DATA.all_counties];
-allEntities.forEach(c => {
-  const opt = document.createElement('option');
-  opt.value = c; opt.textContent = c === 'Statewide' ? 'California (Statewide)' : c;
-  countySelect.appendChild(opt);
-});
 allEntities.forEach(c => {
   const opt = document.createElement('option');
   opt.value = c; opt.textContent = c === 'Statewide' ? 'California (Statewide)' : c;
   compareSelect.appendChild(opt);
 });
 
-const regionCompareSelect = document.getElementById('regionCompareSelect');
 REGION_ORDER.forEach(r => {
   const opt = document.createElement('option');
   opt.value = r; opt.textContent = r;
@@ -843,19 +997,16 @@ REGION_ORDER.forEach(r => {
 const REGION_COLORS = ['#a05195', '#665191', '#2f4b7c', '#003f5c', '#d45087', '#f95d6a', '#ff7c43', '#ffa600', '#488f31'];
 const REGION_COLOR_BY_NAME = {};
 REGION_ORDER.forEach((r, i) => { REGION_COLOR_BY_NAME[r] = REGION_COLORS[i % REGION_COLORS.length]; });
-countySelect.value = 'San Francisco';
 
-function setDefaultCompare(county) {
-  Array.from(compareSelect.options).forEach(o => {
-    o.selected = (o.value === 'Statewide' || o.value === county);
-  });
-}
-setDefaultCompare('San Francisco');
+// Default: Alameda only. California on Annual % Change comes from that
+// chart's "Add Statewide comparison" toggle (on by default), not from this list.
+Array.from(compareSelect.options).forEach(o => { o.selected = o.value === 'Alameda'; });
 
 // ---- Time-range scrub (dual-handle slider over the months array) ----
 const rangeStartInput = document.getElementById('rangeStart');
 const rangeEndInput = document.getElementById('rangeEnd');
 const rangeLabelEl = document.getElementById('rangeLabel');
+const rangeTrackFill = document.getElementById('rangeTrackFill');
 const monthCount = DATA.months.length;
 rangeStartInput.max = monthCount - 1;
 rangeEndInput.max = monthCount - 1;
@@ -866,18 +1017,79 @@ let rangeEnd = monthCount - 1;
 
 function updateRangeLabel() {
   rangeLabelEl.textContent = ' ' + fmtMonth(DATA.months[rangeStart]) + ' – ' + fmtMonth(DATA.months[rangeEnd]);
+  const max = Math.max(monthCount - 1, 1);
+  rangeTrackFill.style.left = (rangeStart / max * 100) + '%';
+  rangeTrackFill.style.width = ((rangeEnd - rangeStart) / max * 100) + '%';
 }
 
-function currentCounty() { return countySelect.value; }
-function currentCompare() {
-  const sel = Array.from(compareSelect.selectedOptions).map(o => o.value);
-  return sel.length ? sel : ['Statewide'];
+function currentCounties() {
+  return Array.from(compareSelect.selectedOptions).map(o => o.value);
+}
+function currentRegions() {
+  return Array.from(regionCompareSelect.selectedOptions).map(o => o.value);
+}
+function currentSelection() {
+  const counties = currentCounties();
+  const regions = currentRegions();
+  if (!counties.length && !regions.length) return { counties: ['Statewide'], regions: [] };
+  return { counties, regions };
+}
+function isSingleFocusEntity(counties, regions) {
+  return (counties.length === 1 && regions.length === 0) ||
+         (regions.length === 1 && counties.length === 0);
+}
+function selectionCaption(counties, regions) {
+  return counties.map(c => c === 'Statewide' ? 'California' : c + ' County')
+    .concat(regions.map(r => r + ' region'))
+    .join(', ');
+}
+// Statewide caseload is an order of magnitude above almost every county/region,
+// so putting it on the counts chart next to them flattens the others to a line
+// (the original reason these two charts had separate filters). Annual % Change
+// is a rate, so California can stay there as a reference. Drop Statewide from
+// Total Participants whenever anything else is selected.
+function omitStatewideFromTotal(counties, regions) {
+  return counties.includes('Statewide') &&
+    (counties.some(c => c !== 'Statewide') || regions.length > 0);
+}
+function updateFiltersSummary(counties, regions) {
+  const names = counties.map(c => c === 'Statewide' ? 'California' : c).concat(regions);
+  sharedFiltersSummary.textContent = names.length ? names.join(' · ') : 'California';
+}
+
+function applyOverlayLock(counties, regions) {
+  const allow = isSingleFocusEntity(counties, regions) && !statewideCompareTotal;
+  const toggles = [...Object.values(layerCheckboxes), ageBandCheckbox, allParticipantsCheckbox];
+  if (allow) {
+    layersControlEl.classList.remove('is-locked');
+    toggles.forEach(el => { el.disabled = false; });
+    layersLockNoteEl.classList.remove('show');
+    return;
+  }
+  Object.keys(activeOverlays).forEach(k => {
+    activeOverlays[k] = false;
+    layerCheckboxes[k].checked = false;
+  });
+  ageBandMode = false;
+  ageBandCheckbox.checked = false;
+  showTotal = true;
+  allParticipantsCheckbox.checked = true;
+  layersControlEl.classList.add('is-locked');
+  toggles.forEach(el => { el.disabled = true; });
+  layersLockNoteEl.textContent = statewideCompareTotal && isSingleFocusEntity(counties, regions)
+    ? 'Turn off Statewide comparison on this chart to use participant types.'
+    : 'Participant types are available when one county or one region is selected.';
+  layersLockNoteEl.classList.add('show');
 }
 
 function rebuildTimeSeriesCharts() {
   updateRangeLabel();
-  buildTotalChart(currentCounty());
-  buildYoyChart(currentCompare());
+  const { counties, regions } = currentSelection();
+  applyOverlayLock(counties, regions);
+  updateFiltersSummary(counties, regions);
+  updateStatewideToggleState(counties);
+  buildTotalChart(counties, regions);
+  buildYoyChart(counties, regions);
 }
 
 function handleRangeInput() {
@@ -990,9 +1202,107 @@ function niceAxisMax(value, targetTicks) {
   return { max: Math.ceil(value / step) * step, step };
 }
 
-function buildTotalChart(county) {
+function overlayValues(layer, county, region, labels) {
+  const isQuarterly = layer.cadence === 'quarterly';
+  if (region) {
+    const members = regionMemberCounties(region);
+    if (isQuarterly) {
+      const stepped = members.map(c => stepFillSeries(layer.series[c] || {}, labels));
+      return labels.map((_, i) => {
+        let sum = 0, any = false;
+        stepped.forEach(arr => {
+          if (arr[i] !== null && arr[i] !== undefined) { sum += arr[i]; any = true; }
+        });
+        return any ? sum : null;
+      });
+    }
+    return computeCountSeries(members, labels, (c, m) => {
+      const s = layer.series[c] || {};
+      return s[m] === undefined ? null : s[m];
+    });
+  }
+  const seriesForEntity = layer.series[county] || {};
+  return isQuarterly
+    ? stepFillSeries(seriesForEntity, labels)
+    : labels.map(m => (seriesForEntity[m] === undefined ? null : seriesForEntity[m]));
+}
+
+function ageBandValues(county, region, field, labels) {
+  if (region) {
+    const members = regionMemberCounties(region);
+    const stepped = members.map(c => {
+      const bandSeries = DL.age_bands.series[c] || {};
+      return stepFillSeries(Object.fromEntries(Object.entries(bandSeries).map(([m, v]) => [m, v[field]])), labels);
+    });
+    return labels.map((_, i) => {
+      let sum = 0, any = false;
+      stepped.forEach(arr => {
+        if (arr[i] !== null && arr[i] !== undefined) { sum += arr[i]; any = true; }
+      });
+      return any ? sum : null;
+    });
+  }
+  const bandSeries = (county && DL.age_bands.series[county]) || {};
+  return stepFillSeries(Object.fromEntries(Object.entries(bandSeries).map(([m, v]) => [m, v[field]])), labels);
+}
+
+function personsValues(county, region, labels) {
+  if (region) {
+    return computeCountSeries(regionMemberCounties(region), labels, (c, m) =>
+      DATA.series[c] && DATA.series[c].persons[m]
+    );
+  }
+  if (!county || !DATA.series[county]) return labels.map(() => null);
+  return labels.map(m => DATA.series[county].persons[m]);
+}
+
+function statewideComparePersonsDataset(labels) {
+  return {
+    label: 'California',
+    data: personsValues('Statewide', null, labels),
+    borderColor: STATEWIDE_COMPARE_COLOR,
+    backgroundColor: STATEWIDE_COMPARE_COLOR,
+    fill: false,
+    borderDash: STATEWIDE_COMPARE_DASH,
+    stack: 'statewide_compare',
+    pointRadius: 0,
+    borderWidth: 2,
+    tension: 0.15,
+    spanGaps: false,
+    order: 4,
+    _firstLast: true,
+    _labelFormat: v => (v/1000).toFixed(1) + 'K'
+  };
+}
+function statewideCompareYoyDataset(labels) {
+  return {
+    label: 'California',
+    data: labels.map(m => DATA.series['Statewide'].yoy_pct[m]),
+    borderColor: STATEWIDE_COMPARE_COLOR,
+    backgroundColor: STATEWIDE_COMPARE_COLOR,
+    borderDash: STATEWIDE_COMPARE_DASH,
+    pointRadius: 0,
+    borderWidth: 2,
+    tension: 0.15,
+    spanGaps: false,
+    _firstLast: true,
+    _labelFormat: v => v.toFixed(1) + '%'
+  };
+}
+
+function buildTotalChart(counties, regions) {
+  counties = counties || [];
+  regions = regions || [];
+  const dropStatewide = omitStatewideFromTotal(counties, regions);
+  const rawCounties = counties;
+  counties = dropStatewide ? counties.filter(c => c !== 'Statewide') : counties;
   const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
-  const entityName = county === 'Statewide' ? 'California' : county;
+  const singleFocus = isSingleFocusEntity(counties, regions);
+  const singleCounty = (counties.length === 1 && regions.length === 0) ? counties[0] : null;
+  const singleRegion = (regions.length === 1 && counties.length === 0) ? regions[0] : null;
+  const entityName = singleRegion
+    ? singleRegion
+    : (singleCounty === 'Statewide' ? 'California' : (singleCounty || ''));
   const ctx = document.getElementById('totalChart');
   const caveats = [];
   // Clauses for the one consolidated cadence note below (Diana wanted the
@@ -1001,8 +1311,9 @@ function buildTotalChart(county) {
   const cadenceClauses = [];
   const quarterlyPhrases = { dual_medi_cal: 'dual enrollment in Medi-Cal on a quarterly basis' };
 
-  const values = labels.map(m => DATA.series[county].persons[m]);
+  const values = singleFocus ? personsValues(singleCounty, singleRegion, labels) : [];
   const datasets = [];
+  allParticipantsSwatch.style.background = singleRegion ? REGION_COLOR_BY_NAME[singleRegion] : '#d97b3f';
 
   // Age bands are drawn first (and given a lower "order") so they sit as a
   // stacked layer underneath the total line, per Diana's "layered under"
@@ -1013,8 +1324,7 @@ function buildTotalChart(county) {
   // and sums them, so the age bands (which share 'age') need to be isolated
   // from the total/overlay lines (each its own stack of one, which renders
   // identically to non-stacked) or they'd get summed in with everything else.
-  if (ageBandMode) {
-    const bandSeries = DL.age_bands.series[county] || {};
+  if (singleFocus && ageBandMode) {
     // Annual data (a July snapshot each year) -- stepFillSeries holds each
     // year's reading flat until the next one, same treatment as the quarterly
     // overlays below.
@@ -1026,9 +1336,7 @@ function buildTotalChart(county) {
     const bandFields = ['children', 'a1859', 'elderly'];
     const bandColors = ['#c9a227', '#5b3a8e', '#1f2430'];
     const bandNames = ['Children (under 18)', 'Age 18–59', '60+'];
-    const bandData = bandFields.map(field =>
-      stepFillSeries(Object.fromEntries(Object.entries(bandSeries).map(([m, v]) => [m, v[field]])), labels)
-    );
+    const bandData = bandFields.map(field => ageBandValues(singleCounty, singleRegion, field, labels));
     bandData.forEach((data, i) => {
       datasets.push({
         label: bandNames[i],
@@ -1046,58 +1354,104 @@ function buildTotalChart(county) {
     cadenceClauses.push('age groups once a year (July snapshot)');
   }
 
-  if (showTotal) {
-    datasets.push({
-      label: entityName,
-      data: values,
-      borderColor: '#d97b3f',
-      backgroundColor: 'rgba(217,123,63,0.18)',
-      fill: true,
-      stack: 'total',
-      pointRadius: 0,
-      borderWidth: 1.5,
-      tension: 0.15,
-      spanGaps: false,
-      order: 3,
-      _firstLast: true,
-      _labelFormat: v => (v/1000).toFixed(1) + 'K'
+  if (singleFocus) {
+    if (showTotal) {
+      const color = singleRegion ? REGION_COLOR_BY_NAME[singleRegion] : '#d97b3f';
+      datasets.push({
+        label: entityName,
+        data: values,
+        borderColor: color,
+        backgroundColor: singleRegion ? color + '2e' : 'rgba(217,123,63,0.18)',
+        fill: true,
+        borderDash: singleRegion ? [5, 3] : undefined,
+        stack: 'total',
+        pointRadius: 0,
+        borderWidth: 1.5,
+        tension: 0.15,
+        spanGaps: false,
+        order: 3,
+        _firstLast: true,
+        _labelFormat: v => (v/1000).toFixed(1) + 'K'
+      });
+    }
+
+    const overlayKeys = Object.keys(activeOverlays).filter(k => activeOverlays[k]);
+    overlayKeys.forEach(key => {
+      const layer = DL.overlays[key];
+      // Guards a layer key that's wired into the UI (checkbox + activeOverlays)
+      // before its DATA.demographic_layers.overlays entry has real numbers behind
+      // it yet -- lets the checkbox exist without crashing the chart in the
+      // meantime. Remove once every wired key has data.
+      if (!layer) return;
+      const data = overlayValues(layer, singleCounty, singleRegion, labels);
+      const isQuarterly = layer.cadence === 'quarterly';
+      // Dollar figures live on their own right-hand axis (layer.axis === 'y1') --
+      // wildly different scale than a persons count, and unlike the other overlays
+      // here the point isn't a direct same-axis size comparison, it's "does the
+      // shape of the two lines track together." See niceAxisMax1/y1 scale below.
+      const isDollarAxis = layer.axis === 'y1';
+      datasets.push({
+        label: layer.label,
+        data,
+        borderColor: layer.color,
+        backgroundColor: layer.color,
+        fill: false,
+        stack: 'overlay_' + key,
+        yAxisID: isDollarAxis ? 'y1' : 'y',
+        pointRadius: 0,
+        borderWidth: 1.5,
+        stepped: isQuarterly ? 'before' : false,
+        spanGaps: false,
+        order: 2,
+        _firstLast: true,
+        _labelFormat: isDollarAxis ? fmtDollarsAbbrev : (v => (v/1000).toFixed(1) + 'K')
+      });
+      if (isQuarterly) cadenceClauses.push(quarterlyPhrases[key] || (layer.label + ' on a quarterly basis'));
+    });
+  } else {
+    rawCounties.forEach((c, i) => {
+      if (c === 'Statewide' && dropStatewide) return;
+      const color = COMPARE_COLORS[i % COMPARE_COLORS.length];
+      const label = c === 'Statewide' ? 'California' : c;
+      datasets.push({
+        label,
+        data: personsValues(c, null, labels),
+        borderColor: color,
+        backgroundColor: color,
+        fill: false,
+        stack: 'entity_' + c,
+        pointRadius: 0,
+        borderWidth: 1.75,
+        tension: 0.15,
+        spanGaps: false,
+        order: 3,
+        _firstLast: true,
+        _labelFormat: v => (v/1000).toFixed(1) + 'K'
+      });
+    });
+    regions.forEach(r => {
+      const color = REGION_COLOR_BY_NAME[r];
+      datasets.push({
+        label: r,
+        data: personsValues(null, r, labels),
+        borderColor: color,
+        backgroundColor: color,
+        fill: false,
+        borderDash: [5, 3],
+        stack: 'region_' + r,
+        pointRadius: 0,
+        borderWidth: 2,
+        tension: 0.15,
+        spanGaps: false,
+        order: 3,
+        _firstLast: true,
+        _labelFormat: v => (v/1000).toFixed(1) + 'K'
+      });
     });
   }
 
-  const overlayKeys = Object.keys(activeOverlays).filter(k => activeOverlays[k]);
-  overlayKeys.forEach(key => {
-    const layer = DL.overlays[key];
-    // Guards a layer key that's wired into the UI (checkbox + activeOverlays)
-    // before its DATA.demographic_layers.overlays entry has real numbers behind
-    // it yet -- lets the checkbox exist without crashing the chart in the
-    // meantime. Remove once every wired key has data.
-    if (!layer) return;
-    const seriesForEntity = layer.series[county] || {};
-    const isQuarterly = layer.cadence === 'quarterly';
-    const data = isQuarterly ? stepFillSeries(seriesForEntity, labels) : labels.map(m => (seriesForEntity[m] === undefined ? null : seriesForEntity[m]));
-    // Dollar figures live on their own right-hand axis (layer.axis === 'y1') --
-    // wildly different scale than a persons count, and unlike the other overlays
-    // here the point isn't a direct same-axis size comparison, it's "does the
-    // shape of the two lines track together." See niceAxisMax1/y1 scale below.
-    const isDollarAxis = layer.axis === 'y1';
-    datasets.push({
-      label: layer.label,
-      data,
-      borderColor: layer.color,
-      backgroundColor: layer.color,
-      fill: false,
-      stack: 'overlay_' + key,
-      yAxisID: isDollarAxis ? 'y1' : 'y',
-      pointRadius: 0,
-      borderWidth: 1.5,
-      stepped: isQuarterly ? 'before' : false,
-      spanGaps: false,
-      order: 2,
-      _firstLast: true,
-      _labelFormat: isDollarAxis ? fmtDollarsAbbrev : (v => (v/1000).toFixed(1) + 'K')
-    });
-    if (isQuarterly) cadenceClauses.push(quarterlyPhrases[key] || (layer.label + ' on a quarterly basis'));
-  });
+  const addStatewideLine = statewideCompareTotal && !rawCounties.includes('Statewide');
+  if (addStatewideLine) datasets.push(statewideComparePersonsDataset(labels));
 
   if (cadenceClauses.length) {
     const subject = cadenceClauses.length > 1 ? 'Those categories are' : 'This category is';
@@ -1111,10 +1465,17 @@ function buildTotalChart(county) {
   // total that isn't even shown -- rescale to whatever's actually visible,
   // using the age bands' stacked SUM (not each band's own raw value) since
   // that's the height they actually render at.
-  const totalOnly = values.filter(v => v !== null && v !== undefined);
+  const personValues = datasets.filter(ds => ds.yAxisID !== 'y1').flatMap(ds => {
+    if (ds.stack === 'age') return [];
+    return ds.data;
+  });
+  const totalOnly = (singleFocus ? values : personValues).filter(v => v !== null && v !== undefined);
   let yMax, yStep;
-  if (showTotal) {
-    ({ max: yMax, step: yStep } = niceAxisMax(totalOnly.length ? Math.max(...totalOnly) : 100));
+  if (!singleFocus || showTotal) {
+    const scaleSrc = (singleFocus && !addStatewideLine)
+      ? totalOnly
+      : personValues.filter(v => v !== null && v !== undefined);
+    ({ max: yMax, step: yStep } = niceAxisMax(scaleSrc.length ? Math.max(...scaleSrc) : 100));
   } else {
     const ageStackSums = ageBandMode
       ? labels.map((_, i) => datasets.filter(ds => ds.stack === 'age').reduce((sum, ds) => sum + (ds.data[i] || 0), 0))
@@ -1154,10 +1515,13 @@ function buildTotalChart(county) {
       interaction: { mode: 'nearest', intersect: false, axis: 'x' },
       layout: { padding: { top: 12, bottom: 30 } },
       plugins: {
-        // The Participant Types checkboxes (with matching swatches) already
-        // label every series on this chart, so the Chart.js-internal legend
-        // would just be a duplicate -- suppress it entirely.
-        legend: { display: false },
+        // Participant Types checkboxes already label every series in single-entity
+        // mode. In multi-entity comparison mode those checkboxes are locked, so
+        // the Chart.js legend identifies the county/region lines instead -- same
+        // treatment as the Annual % Change chart.
+        legend: (singleFocus && !addStatewideLine)
+          ? { display: false }
+          : { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
         monthYearAxis: true,
         tooltip: {
           // Chart.js's default tooltip background is only 80% opaque
@@ -1181,14 +1545,19 @@ function buildTotalChart(county) {
             // instead of repeating a full sentence per layer.
             beforeBody: (items) => {
               if (!items.length) return [];
-              return wrapText(entityPhrase(entityName) + ':', 40);
+              if (!singleFocus) return [];
+              const line = singleRegion
+                ? ('the ' + singleRegion + ' region:')
+                : (entityPhrase(entityName) + ':');
+              return wrapText(line, 40);
             },
             label: (item) => {
               // The total line's dataset.label is just the entity name again
               // (it's colored/keyed to match the "All Participants" checkbox) --
               // showing that as the bullet text would just repeat the entity line
               // above it, so it gets the checkbox's own wording instead.
-              const bulletLabel = item.dataset.label === entityName ? 'All Participants' : item.dataset.label;
+              const bulletLabel = (singleFocus && item.dataset.label === entityName)
+                ? 'All Participants' : item.dataset.label;
               if (item.raw === null || item.raw === undefined) return bulletLabel + ': n/a';
               const isDollarAxis = item.dataset.yAxisID === 'y1';
               const formatted = isDollarAxis ? fmtDollarsFull(item.raw) : Math.round(item.raw).toLocaleString('en-US');
@@ -1199,7 +1568,7 @@ function buildTotalChart(county) {
       },
       scales: {
         x: { ticks: { display: false }, grid: { display: false } },
-        y: { stacked: true, min: 0, max: yMax, ticks: { stepSize: yStep, callback: v => (v/1000) + 'K' }, grid: { color: '#f0f0f0' } },
+        y: { stacked: !!(singleFocus && ageBandMode), min: 0, max: yMax, ticks: { stepSize: yStep, callback: v => (v/1000) + 'K' }, grid: { color: '#f0f0f0' } },
         // Only defined when the $ Issued overlay is actually on -- Chart.js is
         // happy with an axis nobody references, but there's no reason to carry
         // the extra tick-layout work every render when it's not in use.
@@ -1214,7 +1583,10 @@ function buildTotalChart(county) {
     }
   });
   document.getElementById('totalCaption').innerHTML =
-    '<strong>' + entityPhrase(entityName) + '</strong>, monthly persons, ' + fmtMonth(labels[0]) + ' to ' + fmtMonth(labels[labels.length-1]);
+    '<strong>' + selectionCaption(counties, regions) +
+    (addStatewideLine ? ', California' : '') +
+    '</strong>, monthly persons, ' +
+    fmtMonth(labels[0]) + ' to ' + fmtMonth(labels[labels.length-1]);
   renderRefLineLegend('totalRefLineLegend', labels, totalChart);
 
   if (caveats.length) {
@@ -1224,13 +1596,13 @@ function buildTotalChart(county) {
     layersCaveatEl.classList.remove('show');
   }
 
-  const otherDatasets = datasets.filter(ds => ds.label !== entityName);
-  const tableHeaders = ['Month', ...(showTotal ? ['All Participants'] : []), ...otherDatasets.map(ds => ds.label)];
+  const tableHeaders = ['Month', ...datasets.map(ds =>
+    (singleFocus && ds.label === entityName) ? 'All Participants' : ds.label
+  )];
   document.querySelector('#totalChartTable thead tr').innerHTML = tableHeaders.map(h => '<th scope="col">' + h + '</th>').join('');
   renderAccessibleTable(document.querySelector('#totalChartTable tbody'), labels.map((m, i) => [
     fmtMonth(m),
-    ...(showTotal ? [values[i] === null || values[i] === undefined ? 'n/a' : Math.round(values[i]).toLocaleString('en-US')] : []),
-    ...otherDatasets.map(ds => ds.data[i] === null || ds.data[i] === undefined ? 'n/a' :
+    ...datasets.map(ds => ds.data[i] === null || ds.data[i] === undefined ? 'n/a' :
       (ds.yAxisID === 'y1' ? fmtDollarsFull(ds.data[i]) : Math.round(ds.data[i]).toLocaleString('en-US')))
   ]));
 }
@@ -1238,16 +1610,19 @@ function buildTotalChart(county) {
 Object.keys(layerCheckboxes).forEach(key => {
   layerCheckboxes[key].addEventListener('change', () => {
     activeOverlays[key] = layerCheckboxes[key].checked;
-    buildTotalChart(countySelect.value);
+    const { counties, regions } = currentSelection();
+    buildTotalChart(counties, regions);
   });
 });
 allParticipantsCheckbox.addEventListener('change', () => {
   showTotal = allParticipantsCheckbox.checked;
-  buildTotalChart(countySelect.value);
+  const { counties, regions } = currentSelection();
+  buildTotalChart(counties, regions);
 });
 ageBandCheckbox.addEventListener('change', () => {
   ageBandMode = ageBandCheckbox.checked;
-  buildTotalChart(countySelect.value);
+  const { counties, regions } = currentSelection();
+  buildTotalChart(counties, regions);
 });
 
 function buildYoyChart(counties, regions) {
@@ -1293,6 +1668,8 @@ function buildYoyChart(counties, regions) {
   });
 
   const datasets = countyDatasets.concat(regionDatasets);
+  const addStatewideLine = statewideCompareYoy && !(counties || []).includes('Statewide');
+  if (addStatewideLine) datasets.push(statewideCompareYoyDataset(labels));
   if (yoyChart) yoyChart.destroy();
   yoyChart = new Chart(ctx, {
     type: 'line',
@@ -1354,6 +1731,7 @@ function buildYoyChart(counties, regions) {
   });
   const captionNames = counties.map(c => c === 'Statewide' ? 'California' : c)
     .concat(regions.map(r => r + ' (region avg.)'));
+  if (addStatewideLine) captionNames.push('California');
   document.getElementById('yoyCaption').textContent =
     'Year-over-year change — ' + captionNames.join(', ');
   renderRefLineLegend('yoyRefLineLegend', labels, yoyChart);
@@ -1370,67 +1748,112 @@ function buildYoyChart(counties, regions) {
   ]));
 }
 
-function currentRegionSelection() {
-  return Array.from(regionCompareSelect.selectedOptions).map(o => o.value);
-}
-
-// Shared by the compareSelect 'change' listener and the "Drill into region"
-// button below, which sets compareSelect's options programmatically (no
-// native 'change' event fires for that) and needs the exact same
-// render + cross-chart-sync behavior.
-function onCompareSelectionChanged() {
-  const selected = Array.from(compareSelect.selectedOptions).map(o => o.value);
-  buildYoyChart(selected.length ? selected : ['Statewide'], currentRegionSelection());
-
-  // Keep the two top charts' county selections in sync (Diana decided
-  // 2026-08-13: auto-sync rather than let them silently disagree). The
-  // countySelect -> compareSelect direction is already covered by
-  // setDefaultCompare below; this covers the other direction -- if the county
-  // Total Participants is currently showing gets deselected here, switch that
-  // chart to the first county still selected (or Statewide, matching
-  // currentCompare()'s own empty-selection fallback) rather than leaving it
-  // pointed at a county Annual % Change no longer includes.
-  if (!selected.includes(countySelect.value)) {
-    countySelect.value = selected[0] || 'Statewide';
-    buildTotalChart(countySelect.value);
-  }
-}
-
-countySelect.addEventListener('change', () => {
-  buildTotalChart(countySelect.value);
-  setDefaultCompare(countySelect.value);
-  buildYoyChart(Array.from(compareSelect.selectedOptions).map(o => o.value), currentRegionSelection());
+statewideCompareTotalBtn.addEventListener('click', () => {
+  if (statewideCompareTotalBtn.disabled) return;
+  statewideCompareTotal = !statewideCompareTotal;
+  syncStatewideToggleUi(statewideCompareTotalBtn, statewideCompareTotal);
+  rebuildTimeSeriesCharts();
 });
-compareSelect.addEventListener('change', onCompareSelectionChanged);
+statewideCompareYoyBtn.addEventListener('click', () => {
+  if (statewideCompareYoyBtn.disabled) return;
+  statewideCompareYoy = !statewideCompareYoy;
+  syncStatewideToggleUi(statewideCompareYoyBtn, statewideCompareYoy);
+  rebuildTimeSeriesCharts();
+});
 
 const drillRegionBtn = document.getElementById('drillRegionBtn');
-function updateDrillButtonState() {
-  drillRegionBtn.disabled = currentRegionSelection().length !== 1;
+let drillActive = false;
+
+function drillTargetFor(region) {
+  return new Set(regionMemberCounties(region));
 }
-regionCompareSelect.addEventListener('change', () => {
-  buildYoyChart(Array.from(compareSelect.selectedOptions).map(o => o.value), currentRegionSelection());
+function countiesMatchDrill(region) {
+  const target = drillTargetFor(region);
+  const selected = new Set(currentCounties());
+  if (selected.size !== target.size) return false;
+  for (const v of target) if (!selected.has(v)) return false;
+  return true;
+}
+function setDrillActive(on) {
+  drillActive = !!on;
+  drillRegionBtn.setAttribute('aria-pressed', drillActive ? 'true' : 'false');
+  drillRegionBtn.setAttribute('aria-label', drillActive ? 'Drill into region, on' : 'Drill into region, off');
   updateDrillButtonState();
-});
-
-// "Drill into region" (Diana, 2026-08-14): narrow Compare-counties down to
-// just the member counties of whichever single region is selected in
-// Compare-regions, plus Statewide as a fixed reference line, so a region's
-// aggregate line can be immediately followed back to the individual counties
-// driving it. Only enabled when exactly one region is selected -- with more
-// than one it's ambiguous which region's membership to filter to, and this
-// is meant to be a narrowing action, not a merge.
-drillRegionBtn.addEventListener('click', () => {
-  const region = currentRegionSelection()[0];
-  if (!region) return;
-  const memberCounties = DATA.all_counties.filter(c => COUNTY_REGIONS[c] === region);
-  const target = new Set(['Statewide', ...memberCounties]);
+}
+function updateDrillButtonState() {
+  const n = currentRegions().length;
+  // Can always turn the setting off; can only turn it on with exactly one region.
+  drillRegionBtn.disabled = !drillActive && n !== 1;
+  const hint = document.getElementById('drillRegionHint');
+  if (drillActive) {
+    hint.textContent = 'On: Counties follows the selected region. Switching regions keeps the drill-down on.';
+    drillRegionBtn.title = 'Drill into region is on';
+  } else if (n === 1) {
+    hint.textContent = 'Available — turn on to break this region into its counties.';
+    drillRegionBtn.title = 'Turn on to drill into this region';
+  } else if (n > 1) {
+    hint.textContent = 'Select only one region to turn this on — it can’t follow more than one at a time.';
+    drillRegionBtn.title = 'Select exactly one region to turn this on';
+  } else {
+    hint.textContent = 'Available when exactly one region is selected. When on, Counties follows that region.';
+    drillRegionBtn.title = 'Select exactly one region to turn this on';
+  }
+}
+function applyDrillIfActive() {
+  if (!drillActive) return;
+  const regions = currentRegions();
+  if (regions.length !== 1) return;
+  const target = drillTargetFor(regions[0]);
   Array.from(compareSelect.options).forEach(o => { o.selected = target.has(o.value); });
-  onCompareSelectionChanged();
+}
+
+compareSelect.addEventListener('change', () => {
+  // Manual county edits leave drill-down mode; the switch should match that.
+  if (drillActive) {
+    const regions = currentRegions();
+    if (regions.length !== 1 || !countiesMatchDrill(regions[0])) setDrillActive(false);
+  }
+  rebuildTimeSeriesCharts();
+});
+regionCompareSelect.addEventListener('change', () => {
+  updateDrillButtonState();
+  applyDrillIfActive();
+  rebuildTimeSeriesCharts();
 });
 
-updateRangeLabel();
-buildTotalChart('San Francisco');
-buildYoyChart(['Statewide', 'San Francisco'], []);
+sharedFiltersToggle.addEventListener('click', () => {
+  const open = !sharedControls.classList.contains('filters-open');
+  sharedControls.classList.toggle('filters-open', open);
+  sharedFiltersToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+
+// Persistent on/off setting, not a one-shot. While on, Counties is kept in
+// sync with whichever single region is selected (that region's member
+// counties). California as a % reference comes from Add Statewide comparison
+// on the Annual % Change chart, not from stuffing Statewide into Counties.
+drillRegionBtn.addEventListener('click', () => {
+  if (drillActive) {
+    setDrillActive(false);
+    Array.from(compareSelect.options).forEach(o => { o.selected = false; });
+  } else {
+    if (currentRegions().length !== 1) return;
+    setDrillActive(true);
+    applyDrillIfActive();
+  }
+  rebuildTimeSeriesCharts();
+});
+
+document.getElementById('clearCompareBtn').addEventListener('click', () => {
+  [compareSelect, regionCompareSelect].forEach(el => {
+    Array.from(el.options).forEach(o => { o.selected = false; });
+  });
+  setDrillActive(false);
+  updateDrillButtonState();
+  rebuildTimeSeriesCharts();
+});
+
+updateDrillButtonState();
+rebuildTimeSeriesCharts();
 
 // Chart.js's built-in responsive detection can lag or misfire when the layout
 // shift is driven by a CSS Grid column-count change (e.g. the charts-row going
