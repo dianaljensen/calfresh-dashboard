@@ -89,7 +89,9 @@ function findCol(map, aliases) {
 function parseNumber(v) {
   if (v === '' || v == null || v === '*') return null;
   if (typeof v === 'number') return isNaN(v) ? null : v;
-  const n = Number(String(v).replace(/,/g, '').replace(/%/g, '').trim());
+  // Published-sheet currency cells come through as "$32,426,318". Commas and
+  // percent signs are stripped for the same reason.
+  const n = Number(String(v).trim().replace(/[$,%]/g, ''));
   return isNaN(n) ? null : n;
 }
 
@@ -431,7 +433,7 @@ async function startLiveDashboard(initDashboard) {
     statusEl.className = 'live-note';
     statusEl.innerHTML = 'Live data from <strong>CalFresh Data – Consolidated</strong>' +
       (through ? ', through ' + through : '') +
-      '. Colors are still placeholders.';
+      '.';
     mainEl.hidden = false;
     initDashboard();
   } catch (err) {
