@@ -46,7 +46,10 @@
   .card-filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 14px; }
   /* Forces the clear-filters control onto its own row above the selects, even
      when the card is wide enough that they'd otherwise sit side-by-side. */
-  .card-filters-clear { flex-basis: 100%; }
+  .card-filters-clear {
+    flex-basis: 100%;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  }
   .filter-group { display: flex; flex-direction: column; gap: 6px; }
   .filter-group label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
   .filter-group select {
@@ -57,15 +60,39 @@
      its widest option text rather than staying compact like a single-select
      dropdown does -- on this page that blew the Region/County Size/County
      filters out to several hundred pixels wide (Diana flagged this
-     2026-08-14). Setting width on the select alone wasn't enough -- some
-     browsers still size the listbox's internal content to the widest option
-     regardless of an explicit width on the element itself. Also constraining
-     the wrapping .filter-group.multi div with a matching fixed width plus
-     overflow:hidden forces a hard visual clip at 200px no matter what the
-     select tries to do internally. */
-  .filter-group.multi { width: 200px; overflow: hidden; }
+     2026-08-14). Setting width on the select and on .filter-group.multi
+     keeps the box at 200px. Overflow stays visible so the Counties/Regions
+     info tooltips are not clipped. */
+  .filter-group.multi { width: 200px; overflow: visible; }
   .filter-group.multi select { min-height: 92px; width: 200px; }
   .filter-hint { font-size: 11px; color: var(--muted); max-width: 220px; }
+  .filter-label-row {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .filter-label-row label { margin: 0; }
+  .info-tip { position: relative; display: inline-flex; flex-shrink: 0; }
+  .info-tip-btn {
+    width: 16px; height: 16px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--muted); background: #fff; color: var(--muted);
+    font-size: 11px; font-weight: 700; font-style: italic; font-family: Georgia, "Times New Roman", serif;
+    line-height: 1; cursor: help;
+  }
+  .info-tip-btn:hover, .info-tip-btn:focus-visible {
+    border-color: var(--accent); color: var(--accent); outline: none;
+  }
+  .info-tip-btn:focus-visible { box-shadow: 0 0 0 3px rgba(43,111,122,0.28); }
+  .info-tip-bubble {
+    display: none; position: absolute; left: 0; top: calc(100% + 8px);
+    width: 260px; z-index: 40; padding: 8px 10px;
+    background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+    font-size: 12px; font-weight: 400; font-style: normal; text-transform: none;
+    letter-spacing: 0; line-height: 1.45;
+    box-shadow: 0 4px 14px rgba(31,36,48,0.16);
+  }
+  .info-tip:hover .info-tip-bubble,
+  .info-tip:focus-within .info-tip-bubble,
+  .info-tip-btn[aria-expanded="true"] + .info-tip-bubble { display: block; }
+  .card-filters-clear .filter-hint { max-width: none; }
   .region-with-drill {
     display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start;
   }
@@ -107,7 +134,7 @@
     letter-spacing: .03em; color: var(--muted);
   }
   .shared-filters-summary { display: block; font-size: 13px; margin-top: 2px; }
-  .layers-control.is-locked { opacity: 0.55; }
+  .layers-control.is-locked .layers-list { opacity: 0.55; }
   .layers-control.is-locked .layer-toggle { cursor: not-allowed; }
   .layers-control.is-locked .layer-toggle input { cursor: not-allowed; }
   .layers-lock-note {
@@ -217,12 +244,51 @@
   .section-head { display: flex; justify-content: space-between; align-items: baseline; margin: 6px 0 12px; }
   .section-head h2 { font-size: 16px; margin: 0; }
   .section-head p { margin: 0; font-size: 12px; color: var(--muted); }
-  .layers-control { display: flex; align-items: center; gap: 12px; margin: 12px 0 8px; flex-wrap: wrap; }
+  .layers-control {
+    display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+    margin: 12px 0 8px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff;
+  }
   .layers-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
-  .layer-toggle { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink); cursor: pointer; }
+  .layers-hint { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .layers-control.is-locked .layers-hint { display: none; }
+  .layers-control .layers-lock-note { margin: 0; }
+  .layers-list { display: flex; flex-direction: column; gap: 2px; }
+  .layer-toggle {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--ink); cursor: pointer;
+    padding: 6px 8px; border-radius: 6px; --layer-color: var(--accent2);
+  }
+  .layer-toggle:hover { background: #f4f4f6; }
+  .layer-toggle:has(input:checked) {
+    background: color-mix(in srgb, var(--layer-color) 16%, #fff);
+  }
+  .layer-toggle:has(input:checked):hover {
+    background: color-mix(in srgb, var(--layer-color) 22%, #fff);
+  }
   .layer-toggle-secondary { margin-left: auto; padding-left: 12px; border-left: 1px solid var(--line); color: var(--muted); }
-  .layer-toggle input { cursor: pointer; margin: 0; }
-  .layer-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+  .layer-toggle input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none;
+    width: 18px; height: 18px; margin: 0; flex-shrink: 0;
+    border: 2px solid #8b9099; border-radius: 4px; background: #fff; cursor: pointer;
+  }
+  .layer-toggle input[type="checkbox"]:checked {
+    background-color: var(--layer-color); border-color: var(--layer-color);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 6.5l2.5 2.5L10 3.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: center; background-size: 12px 12px;
+  }
+  .layer-toggle input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--layer-color); outline-offset: 2px;
+  }
+  .layer-toggle input[type="checkbox"]:disabled { cursor: not-allowed; }
+  .layers-control.is-locked .layer-toggle:hover { background: transparent; }
+  .layers-control.is-locked .layer-toggle:has(input:checked),
+  .layers-control.is-locked .layer-toggle:has(input:checked):hover {
+    background: color-mix(in srgb, var(--layer-color) 16%, #fff);
+  }
+  .layer-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .layer-swatch-stack { display: inline-flex; align-items: center; flex-shrink: 0; }
+  .layer-swatch-stack .layer-swatch + .layer-swatch { margin-left: -2px; }
   .layers-caveat {
     display: none; font-size: 11px; color: var(--muted); line-height: 1.5;
     background: #f7f5f0; border-left: 3px solid #b5895a; padding: 6px 10px; margin: 0 0 10px;
@@ -277,7 +343,7 @@
   <header class="page-head">
     <h1>CalFresh Participation Trends</h1>
     <p class="calfresh-intro">CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California.</p>
-    <p class="sub">Recreation of the original Tableau "ParticipationTrend" tab — working prototype, not final design</p>
+    <p class="sub">Working Prototype! Contact Diana Jensen at diana@djconsults.com for questions or suggestions.</p>
   </header>
 
   <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
@@ -309,15 +375,25 @@
           <button type="button" id="clearCompareBtn" class="range-btn">Clear filters</button>
         </div>
         <div class="filter-group multi">
-          <label for="compareSelect">Counties</label>
+          <div class="filter-label-row">
+            <label for="compareSelect">Counties</label>
+            <span class="info-tip">
+              <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="countiesTip" aria-label="About the Counties filter">i</button>
+              <span id="countiesTip" class="info-tip-bubble" role="tooltip">California can be selected on its own to see statewide participant types. To compare a county or region with the state, use Add Statewide comparison on each chart.</span>
+            </span>
+          </div>
           <select id="compareSelect" multiple></select>
-          <div class="filter-hint">Cmd/Ctrl-click to select multiple counties. California can be selected on its own to see statewide participant types. To compare a county or region with the state, use Add Statewide comparison on each chart.</div>
         </div>
         <div class="region-with-drill">
           <div class="filter-group multi">
-            <label for="regionCompareSelect">Regions</label>
+            <div class="filter-label-row">
+              <label for="regionCompareSelect">Regions</label>
+              <span class="info-tip">
+                <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="regionsTip" aria-label="About the Regions filter">i</button>
+                <span id="regionsTip" class="info-tip-bubble" role="tooltip">Adds one dashed line per region (population-weighted). Pick one region and no counties to see participant types as a regional total.</span>
+              </span>
+            </div>
             <select id="regionCompareSelect" multiple></select>
-            <div class="filter-hint">Adds one dashed line per region (population-weighted). Pick one region and no counties to see participant types as a regional total.</div>
           </div>
           <div class="filter-group drill-panel">
             <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
@@ -346,16 +422,19 @@
       <div class="chart-holder"><canvas id="totalChart" aria-hidden="true"></canvas></div>
       <div class="ref-line-legend ref-line-legend-inline" id="totalRefLineLegend"></div>
       <div class="layers-control" id="layersControl">
-        <span class="layers-label">Participant Types</span>
-        <label class="layer-toggle"><input type="checkbox" id="allParticipantsCheckbox" checked><span class="layer-swatch" id="allParticipantsSwatch" style="background:#d97b3f"></span>All Participants</label>
-        <label class="layer-toggle"><input type="checkbox" id="ageBandCheckbox">
-          <span class="layer-swatch" style="background:#c9a227"></span><span class="layer-swatch" style="background:#5b3a8e;margin-left:-2px"></span><span class="layer-swatch" style="background:#1f2430;margin-left:-2px"></span>By Age Group (Children / 18–59 / 60+)</label>
-        <label class="layer-toggle"><input type="checkbox" id="layerDualMedical"><span class="layer-swatch" style="background:#6c8a3b"></span>Also enrolled in Medi-Cal</label>
-        <label class="layer-toggle"><input type="checkbox" id="layerChildOnly"><span class="layer-swatch" style="background:#8a3b6c"></span>People in Child-Only Households</label>
-        <label class="layer-toggle"><input type="checkbox" id="layerStudents"><span class="layer-swatch" style="background:#b03a3a"></span>Students</label>
-        <label class="layer-toggle"><input type="checkbox" id="layerDollarsIssued"><span class="layer-swatch" style="background:#2a6ebb"></span>$ Issued (right axis)</label>
+        <span class="layers-label">Show on this chart</span>
+        <p class="layers-hint">Check a group to add its line.</p>
+        <p class="layers-lock-note" id="layersLockNote">Participant types are available when one county or one region is selected.</p>
+        <div class="layers-list">
+          <label class="layer-toggle" id="allParticipantsToggle" style="--layer-color:#d97b3f"><input type="checkbox" id="allParticipantsCheckbox" checked><span class="layer-swatch" id="allParticipantsSwatch" style="background:#d97b3f"></span>All Participants</label>
+          <label class="layer-toggle" style="--layer-color:#c9a227"><input type="checkbox" id="ageBandCheckbox">
+            <span class="layer-swatch-stack" aria-hidden="true"><span class="layer-swatch" style="background:#c9a227"></span><span class="layer-swatch" style="background:#5b3a8e"></span><span class="layer-swatch" style="background:#1f2430"></span></span>By Age Group (Children / 18–59 / 60+)</label>
+          <label class="layer-toggle" style="--layer-color:#6c8a3b"><input type="checkbox" id="layerDualMedical"><span class="layer-swatch" style="background:#6c8a3b"></span>Also enrolled in Medi-Cal</label>
+          <label class="layer-toggle" style="--layer-color:#8a3b6c"><input type="checkbox" id="layerChildOnly"><span class="layer-swatch" style="background:#8a3b6c"></span>People in Child-Only Households</label>
+          <label class="layer-toggle" style="--layer-color:#b03a3a"><input type="checkbox" id="layerStudents"><span class="layer-swatch" style="background:#b03a3a"></span>Students</label>
+          <label class="layer-toggle" style="--layer-color:#2a6ebb"><input type="checkbox" id="layerDollarsIssued"><span class="layer-swatch" style="background:#2a6ebb"></span>$ Issued (right axis)</label>
+        </div>
       </div>
-      <p class="layers-lock-note" id="layersLockNote">Participant types are available when one county or one region is selected.</p>
       <p class="layers-caveat" id="layersCaveat"></p>
       <table class="sr-only" id="totalChartTable">
         <caption>Total CalFresh Participants, monthly persons</caption>
@@ -386,21 +465,19 @@
     <div class="card-filters">
       <div class="card-filters-clear">
         <button type="button" id="clearFiltersBtn" class="range-btn">Clear all filters</button>
+        <div class="filter-hint">Cmd/Ctrl-click to select multiple. Leave empty to include all regions.</div>
       </div>
       <div class="filter-group multi">
         <label for="regionFilter">Region</label>
         <select id="regionFilter" multiple></select>
-        <div class="filter-hint">Cmd/Ctrl-click to select multiple. Leave empty to include all regions.</div>
       </div>
       <div class="filter-group multi">
         <label for="sizeFilter">County size</label>
         <select id="sizeFilter" multiple></select>
-        <div class="filter-hint">Cmd/Ctrl-click to select multiple. Leave empty to include all sizes.</div>
       </div>
       <div class="filter-group multi">
         <label for="countyFilterMulti">County</label>
         <select id="countyFilterMulti" multiple></select>
-        <div class="filter-hint">Cmd/Ctrl-click to select multiple. Leave empty to include all counties.</div>
       </div>
     </div>
     <p class="caption" id="bucketSub"></p>
@@ -852,13 +929,14 @@ const firstLastLabelPlugin = {
       if (firstIdx === -1) return;
       const color = ds.borderColor || '#333';
       const fmt = ds._labelFormat || (v => v);
+      const valueScale = chart.scales[ds.yAxisID || 'y'] || y;
       firstCandidates.push({
-        px: x.getPixelForValue(firstIdx), py: y.getPixelForValue(data[firstIdx]),
+        px: x.getPixelForValue(firstIdx), py: valueScale.getPixelForValue(data[firstIdx]),
         color, text: fmt(data[firstIdx])
       });
       if (lastIdx !== firstIdx) {
         lastCandidates.push({
-          px: x.getPixelForValue(lastIdx), py: y.getPixelForValue(data[lastIdx]),
+          px: x.getPixelForValue(lastIdx), py: valueScale.getPixelForValue(data[lastIdx]),
           color, text: fmt(data[lastIdx])
         });
       }
@@ -963,6 +1041,7 @@ const sharedFiltersSummary = document.getElementById('sharedFiltersSummary');
 const layersControlEl = document.getElementById('layersControl');
 const layersLockNoteEl = document.getElementById('layersLockNote');
 const allParticipantsSwatch = document.getElementById('allParticipantsSwatch');
+const allParticipantsToggle = document.getElementById('allParticipantsToggle');
 const statewideCompareTotalBtn = document.getElementById('statewideCompareTotalBtn');
 const statewideCompareYoyBtn = document.getElementById('statewideCompareYoyBtn');
 let statewideCompareTotal = false;
@@ -1313,7 +1392,9 @@ function buildTotalChart(counties, regions) {
 
   const values = singleFocus ? personsValues(singleCounty, singleRegion, labels) : [];
   const datasets = [];
-  allParticipantsSwatch.style.background = singleRegion ? REGION_COLOR_BY_NAME[singleRegion] : '#d97b3f';
+  const totalColor = singleRegion ? REGION_COLOR_BY_NAME[singleRegion] : '#d97b3f';
+  allParticipantsSwatch.style.background = totalColor;
+  allParticipantsToggle.style.setProperty('--layer-color', totalColor);
 
   // Age bands are drawn first (and given a lower "order") so they sit as a
   // stacked layer underneath the total line, per Diana's "layered under"
@@ -2156,6 +2237,30 @@ clearFiltersBtn.addEventListener('click', () => {
   buildBucketChart();
 });
 }
+
+document.querySelectorAll('.info-tip').forEach(tip => {
+  const btn = tip.querySelector('.info-tip-btn');
+  if (!btn) return;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    document.querySelectorAll('.info-tip-btn').forEach(other => {
+      if (other !== btn) other.setAttribute('aria-expanded', 'false');
+    });
+    btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+  });
+});
+document.addEventListener('click', () => {
+  document.querySelectorAll('.info-tip-btn').forEach(btn => {
+    btn.setAttribute('aria-expanded', 'false');
+  });
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.info-tip-btn').forEach(btn => {
+    btn.setAttribute('aria-expanded', 'false');
+  });
+});
 
 startLiveDashboard(initDashboard);
 </script>
