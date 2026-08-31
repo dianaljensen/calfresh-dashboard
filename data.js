@@ -29,8 +29,8 @@ const OVERLAY_META = {
     color: '#6c8a3b'
   },
   students: {
-    label: 'Students',
-    description: "Persons in CalFresh cases counted in Master_Monthly's 'Caseload Total Student Count' column (a caseload characteristic, not a separate program). Reported monthly from Jan 2023 onward, with no data before that.",
+    label: 'College students',
+    description: "College students on CalFresh, from Master_Monthly's 'Caseload Total Student Count' column (a caseload characteristic, not a separate program). Reported monthly from Jan 2023 onward, with no data before that.",
     cadence: 'monthly',
     color: '#b03a3a'
   },
@@ -47,16 +47,28 @@ const AGE_BANDS_META = {
   label: 'By age group',
   description: "60+ / Age 18–59 / Children (under 18), from CDSS's Annual tab — the real caseload age breakdown (a different, correctly-labeled source than the “Caseload Age” columns, which are students-only).",
   cadence: 'annual',
-  caveat: "CDSS reports this once a year, as a July snapshot — shown here as a step (each year's reading holds flat through the following months until the next July reading). Age bands: 60+ = 60 and older, Children = under 18."
+  caveat: "Age groups are a July snapshot each year, so a jump in July is CDSS publishing the new annual numbers — not a sudden enrollment change. Each July reading holds flat until the next July. Age bands: 60+ = 60 and older, Children = under 18."
 };
 
 // CDSS reporting holes treated as missing rather than real cliffs. Applied here
 // on every live refresh so they don't disappear the way they would if they
 // lived only in a static snapshot (see TODO.md, Feb 2019 data gap).
+// Manual extras are a floor; findIsolatedPersonGaps() adds the same pattern
+// whenever a new one-month drop-and-rebound (or spike-and-rebound) shows up.
 const PERSONS_GAPS = {
   ALL: ['2019-02'],
   Sonoma: ['2019-04']
 };
+
+// Isolated one-month errors: far from both neighbors, while the neighbors
+// agree with each other. Real policy shifts fail this test because the new
+// level persists. 40% / 10% catches Feb 2019, Sonoma Apr 2019, Marin May 2021,
+// and later single-county zeros without flagging COVID, SSI eligibility, or
+// the emergency-allotment sunset. The newest month cannot be judged until
+// the following month is published.
+const GAP_MIN_DEVIATION = 0.40;
+const GAP_MAX_NEIGHBOR_CHANGE = 0.10;
+const GAP_WIDESPREAD_SHARE = 0.5;
 
 let DATA;
 
@@ -263,13 +275,97 @@ function priorYearPeriod(period) {
   return (parseInt(parts[0], 10) - 1) + '-' + parts[1];
 }
 
-function applyPersonsGaps(series) {
+function findIsolatedPersonGaps(series, months, allCounties) {
+  const hitsByMonth = {};
+  function isolatedAt(persons, i) {
+    if (i < 1 || i >= months.length - 1) return false;
+    const prev = persons[months[i - 1]];
+    const cur = persons[months[i]];
+    const next = persons[months[i + 1]];
+    if (prev == null || cur == null || next == null || prev === 0) return false;
+    const mid = (prev + next) / 2;
+    if (!mid) return false;
+    const deviation = Math.abs(cur - mid) / mid;
+    const neighbor = Math.abs(next - prev) / prev;
+    return deviation >= GAP_MIN_DEVIATION && neighbor <= GAP_MAX_NEIGHBOR_CHANGE;
+  }
   Object.keys(series).forEach(county => {
-    const extra = PERSONS_GAPS[county] || [];
-    PERSONS_GAPS.ALL.concat(extra).forEach(month => {
-      if (series[county].persons) series[county].persons[month] = null;
+    const persons = series[county] && series[county].persons;
+    if (!persons) return;
+    months.forEach((m, i) => {
+      if (!isolatedAt(persons, i)) return;
+      if (!hitsByMonth[m]) hitsByMonth[m] = [];
+      hitsByMonth[m].push(county);
     });
   });
+
+  const allMonths = [];
+  const byCounty = {};
+  Object.keys(hitsByMonth).sort().forEach(m => {
+    const flaggedCounties = hitsByMonth[m].filter(c => c !== 'Statewide');
+    const withData = allCounties.filter(c => {
+      const v = series[c] && series[c].persons && series[c].persons[m];
+      return v != null;
+    }).length;
+    if (withData && flaggedCounties.length / withData >= GAP_WIDESPREAD_SHARE) {
+      allMonths.push(m);
+    } else {
+      hitsByMonth[m].forEach(c => {
+        if (!byCounty[c]) byCounty[c] = [];
+        byCounty[c].push(m);
+      });
+    }
+  });
+  return { allMonths: allMonths, byCounty: byCounty };
+}
+
+function mergeManualGaps(found) {
+  const allMonths = found.allMonths.slice();
+  (PERSONS_GAPS.ALL || []).forEach(m => {
+    if (allMonths.indexOf(m) === -1) allMonths.push(m);
+  });
+  allMonths.sort();
+  const byCounty = {};
+  Object.keys(found.byCounty).forEach(c => { byCounty[c] = found.byCounty[c].slice(); });
+  Object.keys(PERSONS_GAPS).forEach(c => {
+    if (c === 'ALL') return;
+    (PERSONS_GAPS[c] || []).forEach(m => {
+      if (allMonths.indexOf(m) !== -1) return;
+      if (!byCounty[c]) byCounty[c] = [];
+      if (byCounty[c].indexOf(m) === -1) byCounty[c].push(m);
+    });
+  });
+  return { allMonths: allMonths, byCounty: byCounty };
+}
+
+function applyReportingGaps(series, months, allCounties) {
+  const gaps = mergeManualGaps(findIsolatedPersonGaps(series, months, allCounties));
+  Object.keys(series).forEach(county => {
+    if (!series[county].persons) return;
+    const extra = gaps.byCounty[county] || [];
+    gaps.allMonths.concat(extra).forEach(month => {
+      series[county].persons[month] = null;
+    });
+  });
+  return gaps;
+}
+
+function describeReportingGapsThisRefresh(gaps) {
+  const parts = [];
+  (gaps.allMonths || []).forEach(m => {
+    parts.push(fmtMonthShort(m) + ' (all counties)');
+  });
+  const byMonth = {};
+  Object.keys(gaps.byCounty || {}).forEach(c => {
+    (gaps.byCounty[c] || []).forEach(m => {
+      if (!byMonth[m]) byMonth[m] = [];
+      byMonth[m].push(c === 'Statewide' ? 'California' : c);
+    });
+  });
+  Object.keys(byMonth).sort().forEach(m => {
+    parts.push(fmtMonthShort(m) + ' (' + byMonth[m].slice().sort().join(', ') + ')');
+  });
+  return parts.length ? 'This refresh: ' + parts.join('; ') + '.' : '';
 }
 
 function yoyPct(current, prior) {
@@ -319,10 +415,9 @@ function buildDashboardData(payload) {
     if (r.dollars_issued != null) ensureOverlay('dollars_issued', r.county)[r.period] = r.dollars_issued;
   });
 
-  applyPersonsGaps(series);
-
   const months = Array.from(monthsSet).sort();
   const all_counties = Array.from(countiesSet).sort();
+  const reportingGaps = applyReportingGaps(series, months, all_counties);
   const entities = ['Statewide'].concat(all_counties);
 
   entities.forEach(county => {
@@ -386,6 +481,7 @@ function buildDashboardData(payload) {
     series: series,
     county_meta: county_meta,
     all_counties: all_counties,
+    reporting_gaps: reportingGaps,
     demographic_layers: {
       overlays: overlays,
       age_bands: Object.assign({}, AGE_BANDS_META, { series: ageSeries })
@@ -434,6 +530,12 @@ async function startLiveDashboard(initDashboard) {
     statusEl.innerHTML = 'Live data from <strong>CalFresh Data – Consolidated</strong>' +
       (through ? ', through ' + through : '') +
       '.';
+    const gapsNote = document.getElementById('reportingGapsNote');
+    if (gapsNote) {
+      const refresh = describeReportingGapsThisRefresh(DATA.reporting_gaps || {});
+      gapsNote.hidden = !refresh;
+      gapsNote.textContent = refresh;
+    }
     mainEl.hidden = false;
     initDashboard();
   } catch (err) {
