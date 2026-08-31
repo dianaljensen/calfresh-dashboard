@@ -125,15 +125,48 @@
   .shared-filters { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
   .shared-filters .card-filters { margin-bottom: 0; }
   .shared-filters-toggle {
-    display: none; width: 100%; margin-top: 12px; padding: 8px 10px;
+    display: block;
+    width: 100%; margin-top: 12px; padding: 8px 10px;
     border: 1px solid var(--line); border-radius: 6px; background: #fff;
-    cursor: pointer; text-align: left; color: var(--ink);
+    cursor: pointer; text-align: left; color: var(--ink); font-family: inherit;
+  }
+  .shared-filters-toggle:hover { background: #f2f2f2; }
+  .shared-filters-toggle[aria-expanded="true"] {
+    border-color: var(--accent2); background: #fff7f0;
   }
   .shared-filters-toggle-label {
-    display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
     letter-spacing: .03em; color: var(--muted);
   }
-  .shared-filters-summary { display: block; font-size: 13px; margin-top: 2px; }
+  .shared-filters-summary {
+    display: block; font-size: 13px; margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .filters-toggle-keep { white-space: nowrap; }
+  .filters-toggle-mark {
+    display: inline-block; width: 14px; height: 14px;
+    margin-left: 5px; vertical-align: -2px; position: relative;
+    color: var(--muted);
+  }
+  .filters-toggle-mark::before,
+  .filters-toggle-mark::after {
+    content: ""; position: absolute; background: currentColor; border-radius: 1px;
+  }
+  .filters-toggle-mark::before {
+    left: 2px; right: 2px; top: 6px; height: 2px;
+  }
+  .filters-toggle-mark::after {
+    top: 2px; bottom: 2px; left: 6px; width: 2px;
+  }
+  .shared-filters-toggle[aria-expanded="true"] .filters-toggle-mark::after {
+    display: none;
+  }
+  .shared-controls:not(.filters-open) .shared-filters { display: none; }
+  .bucket-filters:not(.filters-open) .bucket-filter-lists { display: none; }
+  .bucket-filters .shared-filters-toggle { margin-top: 0; }
+  .bucket-filters.filters-open .bucket-filter-lists {
+    margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line);
+  }
   .layers-control.is-locked .layers-list { opacity: 0.55; }
   .layers-control.is-locked .layer-toggle { cursor: not-allowed; }
   .layers-control.is-locked .layer-toggle input { cursor: not-allowed; }
@@ -147,9 +180,11 @@
       position: sticky; top: 0; z-index: 20;
       box-shadow: 0 2px 10px rgba(31,36,48,0.12);
     }
-    .shared-filters-toggle { display: block; }
-    .shared-controls:not(.filters-open) .shared-filters { display: none; }
     .shared-controls.filters-open .shared-filters {
+      max-height: min(50vh, 320px);
+      overflow-y: auto;
+    }
+    .bucket-filters.filters-open .bucket-filter-lists {
       max-height: min(50vh, 320px);
       overflow-y: auto;
     }
@@ -375,7 +410,7 @@
        hide the interactive controls, the "Showing" text label already states
        the active date range as plain text. */
     .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover { display: none; }
-    .shared-filters { display: block !important; border-top: 0; padding-top: 0; }
+    .shared-filters, .bucket-filter-lists { display: flex !important; border-top: 0; padding-top: 0; }
     .filter-group.multi select { min-height: auto; }
   }
 </style>
@@ -408,8 +443,10 @@
 
     <button type="button" id="sharedFiltersToggle" class="shared-filters-toggle"
       aria-expanded="false" aria-controls="sharedFilters">
-      <span class="shared-filters-toggle-label">Counties, regions &amp; size</span>
-      <span class="shared-filters-summary" id="sharedFiltersSummary">Alameda</span>
+      <span class="shared-filters-toggle-text">
+        <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
+        <span class="shared-filters-summary" id="sharedFiltersSummary">Alameda</span>
+      </span>
     </button>
     <div class="shared-filters" id="sharedFilters">
       <div class="card-filters">
@@ -544,29 +581,37 @@
         <span class="legend-item"><span class="legend-swatch dashed"></span><span id="groupLineLegendLabel">Aggregate rate by group</span></span>
       </div>
     </div>
-    <div class="card-filters">
-      <div class="bucket-filter-head">
-        <span class="groupby-label">Filter by</span>
-        <div class="filter-hint">Click a name to add or remove it. Leave empty to include all.</div>
-        <button type="button" id="clearFiltersBtn" class="range-btn">Clear all filters</button>
-      </div>
-      <div class="filter-group multi">
-        <label for="regionFilter">Region</label>
-        <select id="regionFilter" multiple></select>
-      </div>
-      <div class="filter-group multi">
-        <div class="filter-label-row">
-          <label for="sizeFilter">County size</label>
-          <span class="info-tip">
-            <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeTip" aria-label="About county size groups">i</button>
-            <span id="sizeTip" class="info-tip-bubble" role="tooltip">X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000.</span>
-          </span>
+    <div class="bucket-filters" id="bucketFilters">
+      <button type="button" id="bucketFiltersToggle" class="shared-filters-toggle"
+        aria-expanded="false" aria-controls="bucketFilterLists">
+        <span class="shared-filters-toggle-text">
+          <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
+          <span class="shared-filters-summary" id="bucketFiltersSummary">All counties</span>
+        </span>
+      </button>
+      <div class="card-filters bucket-filter-lists" id="bucketFilterLists">
+        <div class="bucket-filter-head">
+          <div class="filter-hint">Click a name to add or remove it. Leave empty to include all.</div>
+          <button type="button" id="clearFiltersBtn" class="range-btn">Clear all filters</button>
         </div>
-        <select id="sizeFilter" multiple></select>
-      </div>
-      <div class="filter-group multi">
-        <label for="countyFilterMulti">County</label>
-        <select id="countyFilterMulti" multiple></select>
+        <div class="filter-group multi">
+          <label for="regionFilter">Region</label>
+          <select id="regionFilter" multiple></select>
+        </div>
+        <div class="filter-group multi">
+          <div class="filter-label-row">
+            <label for="sizeFilter">County size</label>
+            <span class="info-tip">
+              <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeTip" aria-label="About county size groups">i</button>
+              <span id="sizeTip" class="info-tip-bubble" role="tooltip">X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000.</span>
+            </span>
+          </div>
+          <select id="sizeFilter" multiple></select>
+        </div>
+        <div class="filter-group multi">
+          <label for="countyFilterMulti">County</label>
+          <select id="countyFilterMulti" multiple></select>
+        </div>
       </div>
     </div>
     <div class="chart-plot">
@@ -2450,7 +2495,19 @@ function computeGroups(filteredRows, mode) {
   return groups;
 }
 
+function updateBucketFiltersSummary() {
+  const el = document.getElementById('bucketFiltersSummary');
+  if (!el) return;
+  const names = [
+    ...Array.from(regionFilterEl.selectedOptions).map(o => o.textContent),
+    ...Array.from(sizeFilterEl.selectedOptions).map(o => o.textContent),
+    ...Array.from(countyFilterEl.selectedOptions).map(o => o.textContent)
+  ];
+  el.textContent = names.length ? names.join(', ') : 'All counties';
+}
+
 function buildBucketChart() {
+  updateBucketFiltersSummary();
   document.getElementById('bucketSub').textContent = fmtMonth(selectedBucketMonth);
   const selectedRegions = Array.from(regionFilterEl.selectedOptions).map(o => o.value);
   const selectedSizes = Array.from(sizeFilterEl.selectedOptions).map(o => o.value);
@@ -2615,6 +2672,14 @@ buildBucketChart();
 // visible "back to all" option on the control itself -- clicking an option
 // now toggles it off, but nothing clears the whole set. A dedicated button
 // is a more discoverable way out than "select nothing" being a hidden gesture.
+const bucketFilters = document.getElementById('bucketFilters');
+const bucketFiltersToggle = document.getElementById('bucketFiltersToggle');
+bucketFiltersToggle.addEventListener('click', () => {
+  const open = !bucketFilters.classList.contains('filters-open');
+  bucketFilters.classList.toggle('filters-open', open);
+  bucketFiltersToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+
 const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 clearFiltersBtn.addEventListener('click', () => {
   [regionFilterEl, sizeFilterEl, countyFilterEl].forEach(el => {
