@@ -184,7 +184,7 @@
   }
   .drill-toggle[aria-pressed="true"] .drill-toggle-knob { left: 16px; }
   .chart-statewide-toggle {
-    display: inline-flex; width: auto; max-width: 100%; margin: 0 0 10px;
+    display: inline-flex; width: auto; max-width: 100%; margin: 10px 0 0;
   }
   .range-slider { position: relative; height: 28px; margin: 0 4px; }
   .range-track { position: absolute; top: 50%; left: 0; right: 0; height: 6px; margin-top: -3px; background: var(--grid); border-radius: 3px; pointer-events: none; }
@@ -220,7 +220,38 @@
   .range-slider:active .range-input::-moz-range-thumb { cursor: grabbing; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 10px; }
   .card h2 { font-size: 15px; margin: 0 0 12px; }
+  .bucket-title-row {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .card .bucket-title-row h2 { margin: 0; }
+  .bucket-period-toggle { display: flex; gap: 6px; }
+  .bucket-filter-head {
+    flex-basis: 100%;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .bucket-filter-head .groupby-label { margin: 0; }
+  .bucket-filter-head .filter-hint { max-width: none; }
+  .bucket-filter-head .range-btn { margin-left: auto; }
   .card p.caption { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+  /* Plot title sits on the chart for screenshots. Hover values are a floating
+     readout next to the point — not a reserved strip (that clipped and sat
+     on the title, Steph/Jared follow-up 2026-08-30). */
+  .chart-plot { position: relative; margin-top: 2px; }
+  .chart-plot-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .chart-hover {
+    display: none; position: absolute; z-index: 8; left: 0; top: 0;
+    pointer-events: none; width: max-content;
+    max-width: min(260px, calc(100% - 16px));
+    font-size: 12px; line-height: 1.35; padding: 8px 10px;
+    border-radius: 6px; background: rgba(24, 27, 36, 0.97); color: #fff;
+  }
+  .chart-hover.is-active { display: block; }
+  .chart-hover-title { font-weight: 700; margin-bottom: 2px; }
+  .chart-hover-note { opacity: 0.92; margin-bottom: 4px; }
+  .chart-hover-row { display: flex; align-items: flex-start; gap: 6px; }
+  .chart-hover-swatch {
+    width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; margin-top: 3px;
+  }
   .chart-holder { position: relative; height: 320px; }
   .ref-line-legend {
     position: absolute; top: 6px; right: 8px; z-index: 2;
@@ -289,6 +320,11 @@
   .layer-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
   .layer-swatch-stack { display: inline-flex; align-items: center; flex-shrink: 0; }
   .layer-swatch-stack .layer-swatch + .layer-swatch { margin-left: -2px; }
+  .layer-toggle-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .layer-toggle-sub { font-size: 11px; color: var(--muted); font-weight: 400; line-height: 1.35; }
+  .layer-toggle:has(.layer-toggle-sub) { align-items: flex-start; }
+  .layer-toggle:has(.layer-toggle-sub) input[type="checkbox"] { margin-top: 2px; }
+  .layer-toggle:has(.layer-toggle-sub) .layer-swatch-stack { margin-top: 4px; }
   .layers-caveat {
     display: none; font-size: 11px; color: var(--muted); line-height: 1.5;
     background: #f7f5f0; border-left: 3px solid #b5895a; padding: 6px 10px; margin: 0 0 10px;
@@ -309,6 +345,12 @@
     color: var(--ink); font-size: 10.5px; margin: 14px 0 4px;
   }
   footer.source-note .footer-section-label:first-child { margin-top: 0; }
+  footer.source-note .footer-notes {
+    margin: 0;
+    padding-left: 1.2em;
+  }
+  footer.source-note .footer-notes li { margin: 0 0 0.55em; }
+  footer.source-note .footer-notes li:last-child { margin-bottom: 0; }
   .live-note {
     background: #eef6f4; border: 1px solid #c5ddd6; color: #1f4d43;
     font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
@@ -332,7 +374,7 @@
     /* Range slider and multiselect boxes don't render usefully on paper --
        hide the interactive controls, the "Showing" text label already states
        the active date range as plain text. */
-    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle { display: none; }
+    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover { display: none; }
     .shared-filters { display: block !important; border-top: 0; padding-top: 0; }
     .filter-group.multi select { min-height: auto; }
   }
@@ -366,13 +408,14 @@
 
     <button type="button" id="sharedFiltersToggle" class="shared-filters-toggle"
       aria-expanded="false" aria-controls="sharedFilters">
-      <span class="shared-filters-toggle-label">Counties &amp; regions</span>
+      <span class="shared-filters-toggle-label">Counties, regions &amp; size</span>
       <span class="shared-filters-summary" id="sharedFiltersSummary">Alameda</span>
     </button>
     <div class="shared-filters" id="sharedFilters">
       <div class="card-filters">
         <div class="card-filters-clear">
           <button type="button" id="clearCompareBtn" class="range-btn">Clear filters</button>
+          <div class="filter-hint">Click a name to add or remove it.</div>
         </div>
         <div class="filter-group multi">
           <div class="filter-label-row">
@@ -383,6 +426,16 @@
             </span>
           </div>
           <select id="compareSelect" multiple></select>
+        </div>
+        <div class="filter-group multi">
+          <div class="filter-label-row">
+            <label for="sizeCompareSelect">County size</label>
+            <span class="info-tip">
+              <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeCompareTip" aria-label="About the County size filter">i</button>
+              <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Leave empty to include all sizes. Selecting a size keeps only matching counties on these two charts (independent of the bar chart below). X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Region lines use only members of the selected sizes. Clicking a county of another size adds that size to the filter.</span>
+            </span>
+          </div>
+          <select id="sizeCompareSelect" multiple></select>
         </div>
         <div class="region-with-drill">
           <div class="filter-group multi">
@@ -412,15 +465,18 @@
 
   <div class="charts-row">
     <div class="card link-a">
-      <h2>Total CalFresh Participants</h2>
+      <div class="chart-plot">
+        <h2>Total CalFresh Participants</h2>
+        <p class="caption" id="totalCaption">Alameda County, monthly persons, 2014–2026</p>
+        <div class="chart-hover" id="totalChartHover" aria-live="polite"></div>
+        <div class="chart-holder"><canvas id="totalChart" aria-hidden="true"></canvas></div>
+        <div class="ref-line-legend ref-line-legend-inline" id="totalRefLineLegend"></div>
+      </div>
       <button type="button" id="statewideCompareTotalBtn" class="drill-toggle chart-statewide-toggle"
         aria-pressed="false" aria-label="Add Statewide comparison, off">
         <span>Add Statewide comparison</span>
         <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
       </button>
-      <p class="caption" id="totalCaption">Alameda County, monthly persons, 2014–2026</p>
-      <div class="chart-holder"><canvas id="totalChart" aria-hidden="true"></canvas></div>
-      <div class="ref-line-legend ref-line-legend-inline" id="totalRefLineLegend"></div>
       <div class="layers-control" id="layersControl">
         <span class="layers-label">Show on this chart</span>
         <p class="layers-hint">Check a group to add its line.</p>
@@ -428,10 +484,13 @@
         <div class="layers-list">
           <label class="layer-toggle" id="allParticipantsToggle" style="--layer-color:#d97b3f"><input type="checkbox" id="allParticipantsCheckbox" checked><span class="layer-swatch" id="allParticipantsSwatch" style="background:#d97b3f"></span>All Participants</label>
           <label class="layer-toggle" style="--layer-color:#c9a227"><input type="checkbox" id="ageBandCheckbox">
-            <span class="layer-swatch-stack" aria-hidden="true"><span class="layer-swatch" style="background:#c9a227"></span><span class="layer-swatch" style="background:#5b3a8e"></span><span class="layer-swatch" style="background:#1f2430"></span></span>By Age Group (Children / 18–59 / 60+)</label>
+            <span class="layer-swatch-stack" aria-hidden="true"><span class="layer-swatch" style="background:#c9a227"></span><span class="layer-swatch" style="background:#5b3a8e"></span><span class="layer-swatch" style="background:#1f2430"></span></span>
+            <span class="layer-toggle-copy">By Age Group (Children / 18–59 / 60+)
+              <span class="layer-toggle-sub">Updates annually in July.</span>
+            </span></label>
           <label class="layer-toggle" style="--layer-color:#6c8a3b"><input type="checkbox" id="layerDualMedical"><span class="layer-swatch" style="background:#6c8a3b"></span>Also enrolled in Medi-Cal</label>
           <label class="layer-toggle" style="--layer-color:#8a3b6c"><input type="checkbox" id="layerChildOnly"><span class="layer-swatch" style="background:#8a3b6c"></span>People in Child-Only Households</label>
-          <label class="layer-toggle" style="--layer-color:#b03a3a"><input type="checkbox" id="layerStudents"><span class="layer-swatch" style="background:#b03a3a"></span>Students</label>
+          <label class="layer-toggle" style="--layer-color:#b03a3a"><input type="checkbox" id="layerStudents"><span class="layer-swatch" style="background:#b03a3a"></span>College students</label>
           <label class="layer-toggle" style="--layer-color:#2a6ebb"><input type="checkbox" id="layerDollarsIssued"><span class="layer-swatch" style="background:#2a6ebb"></span>$ Issued (right axis)</label>
         </div>
       </div>
@@ -443,15 +502,18 @@
       </table>
     </div>
     <div class="card link-a">
-      <h2>Annual % Change in CalFresh Participants</h2>
+      <div class="chart-plot">
+        <h2>Annual % Change in CalFresh Participants</h2>
+        <p class="caption" id="yoyCaption">Year-over-year change, selected counties</p>
+        <div class="chart-hover" id="yoyChartHover" aria-live="polite"></div>
+        <div class="chart-holder"><canvas id="yoyChart" aria-hidden="true"></canvas></div>
+        <div class="ref-line-legend ref-line-legend-inline" id="yoyRefLineLegend"></div>
+      </div>
       <button type="button" id="statewideCompareYoyBtn" class="drill-toggle chart-statewide-toggle"
         aria-pressed="true" aria-label="Add Statewide comparison, on">
         <span>Add Statewide comparison</span>
         <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
       </button>
-      <p class="caption" id="yoyCaption">Year-over-year change, selected counties</p>
-      <div class="chart-holder"><canvas id="yoyChart" aria-hidden="true"></canvas></div>
-      <div class="ref-line-legend ref-line-legend-inline" id="yoyRefLineLegend"></div>
       <table class="sr-only" id="yoyChartTable">
         <caption>Annual percentage change in CalFresh participants, year-over-year, by county</caption>
         <thead><tr><th scope="col">Month</th></tr></thead>
@@ -461,26 +523,13 @@
   </div>
 
   <div class="card link-b">
-    <h2 id="bucketTitle">Annual % Change by County</h2>
-    <div class="card-filters">
-      <div class="card-filters-clear">
-        <button type="button" id="clearFiltersBtn" class="range-btn">Clear all filters</button>
-        <div class="filter-hint">Cmd/Ctrl-click to select multiple. Leave empty to include all regions.</div>
-      </div>
-      <div class="filter-group multi">
-        <label for="regionFilter">Region</label>
-        <select id="regionFilter" multiple></select>
-      </div>
-      <div class="filter-group multi">
-        <label for="sizeFilter">County size</label>
-        <select id="sizeFilter" multiple></select>
-      </div>
-      <div class="filter-group multi">
-        <label for="countyFilterMulti">County</label>
-        <select id="countyFilterMulti" multiple></select>
+    <div class="bucket-title-row">
+      <h2 id="bucketTitle">Annual % Change by County</h2>
+      <div class="bucket-period-toggle" role="group" aria-label="Change window">
+        <button type="button" class="range-btn groupby-btn active" data-period="annual">Annual</button>
+        <button type="button" class="range-btn groupby-btn" data-period="quarterly">Quarterly</button>
       </div>
     </div>
-    <p class="caption" id="bucketSub"></p>
     <div class="groupby-control">
       <span class="groupby-label">Month</span>
       <select id="bucketMonthSelect"></select>
@@ -495,10 +544,40 @@
         <span class="legend-item"><span class="legend-swatch dashed"></span><span id="groupLineLegendLabel">Aggregate rate by group</span></span>
       </div>
     </div>
-    <div class="chart-holder" id="bucketChartHolder"><canvas id="bucketChart" aria-hidden="true"></canvas></div>
+    <div class="card-filters">
+      <div class="bucket-filter-head">
+        <span class="groupby-label">Filter by</span>
+        <div class="filter-hint">Click a name to add or remove it. Leave empty to include all.</div>
+        <button type="button" id="clearFiltersBtn" class="range-btn">Clear all filters</button>
+      </div>
+      <div class="filter-group multi">
+        <label for="regionFilter">Region</label>
+        <select id="regionFilter" multiple></select>
+      </div>
+      <div class="filter-group multi">
+        <div class="filter-label-row">
+          <label for="sizeFilter">County size</label>
+          <span class="info-tip">
+            <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeTip" aria-label="About county size groups">i</button>
+            <span id="sizeTip" class="info-tip-bubble" role="tooltip">X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000.</span>
+          </span>
+        </div>
+        <select id="sizeFilter" multiple></select>
+      </div>
+      <div class="filter-group multi">
+        <label for="countyFilterMulti">County</label>
+        <select id="countyFilterMulti" multiple></select>
+      </div>
+    </div>
+    <div class="chart-plot">
+      <h3 class="chart-plot-title" id="bucketPlotTitle">Annual % Change by County</h3>
+      <p class="caption" id="bucketSub"></p>
+      <div class="chart-hover" id="bucketChartHover" aria-live="polite"></div>
+      <div class="chart-holder" id="bucketChartHolder"><canvas id="bucketChart" aria-hidden="true"></canvas></div>
+    </div>
     <table class="sr-only" id="bucketChartTable">
       <caption>Annual percentage change by county, grouped by county size</caption>
-      <thead><tr><th scope="col">County</th><th scope="col" id="bucketGroupColHeader">Size group</th><th scope="col">Annual % change</th></tr></thead>
+      <thead><tr><th scope="col">County</th><th scope="col" id="bucketGroupColHeader">Size group</th><th scope="col" id="bucketRateColHeader">Annual % change</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -511,7 +590,12 @@
     County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000 — computed from the latest available month, provisional pending final confirmation. EAs = Emergency Allotments.
 
     <span class="footer-section-label">Data notes</span>
-    Data reports less frequently than monthly are shown as step functions. $ Issued (CalFresh benefits issued) only has county breakdowns in the CalFresh Data Dashboard from Sep 2023 onward — shown as a gap before that date for any county other than California. Historical data will be included from the DFA/CF256 report in a future build. February 2019 (every county) and April 2019 (Sonoma only) are treated as missing because of a one-month CDSS reporting drop-and-rebound, not interpolated.
+    <ul class="footer-notes">
+      <li>Data reports less frequently than monthly are shown as step functions.</li>
+      <li>$ Issued (CalFresh benefits issued) only has county breakdowns in the CalFresh Data Dashboard from Sep 2023 onward — shown as a gap before that date for any county other than California. Historical data will be included from the DFA/CF256 report in a future build.</li>
+      <li>If a county's participant count jumps or drops by 40% or more for exactly one month and then returns to the surrounding trend, we treat that month as a CDSS reporting error and leave a gap in the line rather than interpolating. The newest month cannot be checked this way until the following month is published.</li>
+      <li id="reportingGapsNote" hidden></li>
+    </ul>
   </footer>
   </div>
 </div>
@@ -558,9 +642,30 @@ function renderRefLineLegend(containerId, visibleMonths, chart) {
   ).join('');
 }
 
-const COMPARE_COLORS = ['#1f2430', '#e69f00', '#009e73', '#cc79a7', '#56b4e9', '#d55e00'];
+const COMPARE_COLORS = [
+  '#1f2430', '#e69f00', '#009e73', '#cc79a7', '#56b4e9', '#d55e00',
+  '#0072b2', '#6a3d9a', '#b15928', '#66a61e', '#e7298a', '#a6761d'
+];
 const STATEWIDE_COMPARE_COLOR = '#4a6678';
 const STATEWIDE_COMPARE_DASH = [6, 4];
+
+// Highest value first so a multi-county tooltip reads top-to-bottom like the
+// lines at that month (Bay Area drill was alphabetical, which hid which line
+// was which once colors started repeating). $ Issued stays last so dollar
+// figures don't rank against person counts.
+function tooltipItemsByValueDesc(a, b) {
+  const aDollar = a.dataset && a.dataset.yAxisID === 'y1';
+  const bDollar = b.dataset && b.dataset.yAxisID === 'y1';
+  if (aDollar !== bDollar) return aDollar ? 1 : -1;
+  const ya = a.parsed ? a.parsed.y : null;
+  const yb = b.parsed ? b.parsed.y : null;
+  const aNull = ya === null || ya === undefined;
+  const bNull = yb === null || yb === undefined;
+  if (aNull && bNull) return 0;
+  if (aNull) return 1;
+  if (bNull) return -1;
+  return yb - ya;
+}
 
 function fmtMonth(m) {
   const [y, mo] = m.split('-');
@@ -587,6 +692,137 @@ function wrapText(text, maxChars) {
   return lines;
 }
 
+// Hover values follow the point as a compact HTML tooltip (the reserved
+// strip above the chart clipped and covered the title — 2026-08-30).
+function clearHoverTooltip(el) {
+  if (!el) return;
+  el.replaceChildren();
+  el.classList.remove('is-active');
+}
+function renderHoverTooltip(el, tooltip) {
+  if (!el) return;
+  if (!tooltip || tooltip.opacity === 0 || !tooltip.body || !tooltip.body.length) {
+    clearHoverTooltip(el);
+    return;
+  }
+  el.classList.add('is-active');
+  el.replaceChildren();
+  (tooltip.title || []).forEach(line => {
+    if (!line) return;
+    const p = document.createElement('div');
+    p.className = 'chart-hover-title';
+    p.textContent = line;
+    el.appendChild(p);
+  });
+  (tooltip.beforeBody || []).forEach(line => {
+    const p = document.createElement('div');
+    p.className = 'chart-hover-note';
+    p.textContent = line;
+    el.appendChild(p);
+  });
+  tooltip.body.forEach((bodyItem, i) => {
+    const row = document.createElement('div');
+    row.className = 'chart-hover-row';
+    const color = (tooltip.labelColors && tooltip.labelColors[i]) || {};
+    const swatch = document.createElement('span');
+    swatch.className = 'chart-hover-swatch';
+    swatch.style.background = color.borderColor || color.backgroundColor || '#888';
+    row.appendChild(swatch);
+    const text = document.createElement('span');
+    text.textContent = (bodyItem.lines || []).join(' ');
+    row.appendChild(text);
+    el.appendChild(row);
+  });
+  (tooltip.afterBody || []).forEach(line => {
+    const p = document.createElement('div');
+    p.className = 'chart-hover-note';
+    p.textContent = line;
+    el.appendChild(p);
+  });
+  (tooltip.footer || []).forEach(line => {
+    const p = document.createElement('div');
+    p.className = 'chart-hover-note';
+    p.textContent = line;
+    el.appendChild(p);
+  });
+}
+function hoverTooltipExternal(elId, placement) {
+  return function(context) {
+    const el = document.getElementById(elId);
+    const tooltip = context.tooltip;
+    if (!el) return;
+    if (!tooltip || tooltip.opacity === 0 || !tooltip.body || !tooltip.body.length) {
+      clearHoverTooltip(el);
+      return;
+    }
+    renderHoverTooltip(el, tooltip);
+    const canvas = context.chart.canvas;
+    const plot = canvas.closest('.chart-plot');
+    if (!plot) return;
+    const plotRect = plot.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    const caretX = canvasRect.left - plotRect.left + tooltip.caretX;
+    const caretY = canvasRect.top - plotRect.top + tooltip.caretY;
+    const tipW = el.offsetWidth;
+    const tipH = el.offsetHeight;
+    let left = Math.max(8, Math.min(caretX - tipW / 2, plot.clientWidth - tipW - 8));
+    let top;
+    if (placement === 'above') {
+      // Sit well above the hovered month so the lines stay visible. If there
+      // isn't room inside the canvas, lift into the title/caption band rather
+      // than covering the plot (Diana, 2026-08-30).
+      const canvasTop = canvasRect.top - plotRect.top;
+      const abovePoint = caretY - tipH - 40;
+      const aboveCanvas = canvasTop - tipH - 8;
+      top = Math.min(abovePoint, aboveCanvas);
+      if (top < 8) top = 8;
+    } else {
+      const gap = 14;
+      left = caretX + gap;
+      top = caretY - tipH / 2;
+      if (left + tipW > plot.clientWidth - 8) left = caretX - tipW - gap;
+      if (left < 8) {
+        left = Math.max(8, Math.min(caretX - tipW / 2, plot.clientWidth - tipW - 8));
+        top = caretY - tipH - gap;
+        if (top < 8) top = caretY + gap;
+      }
+      top = Math.max(8, Math.min(top, plot.clientHeight - tipH - 8));
+      left = Math.max(8, Math.min(left, plot.clientWidth - tipW - 8));
+    }
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+  };
+}
+
+// Native <select multiple> replaces the whole selection unless you Ctrl/Cmd-click.
+// Testers could not drop one county without that modifier (Steph/Jared, 2026-08-27).
+function optionFromPointer(select, e) {
+  const t = e.target;
+  if (t && t.tagName === 'OPTION' && select.contains(t)) return t;
+  const hit = document.elementFromPoint(e.clientX, e.clientY);
+  if (hit && hit.tagName === 'OPTION' && select.contains(hit)) return hit;
+  return null;
+}
+function enablePlainClickToggle(select) {
+  select.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const option = optionFromPointer(select, e);
+    if (!option) return;
+    e.preventDefault();
+    const next = !option.selected;
+    const scroll = select.scrollTop;
+    option.selected = next;
+    select.focus();
+    select.scrollTop = scroll;
+    requestAnimationFrame(() => {
+      option.selected = next;
+      select.scrollTop = scroll;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+}
+
 // "California"/"Statewide" reads fine as-is; real counties need " County" appended
 // in prose sentences (tooltips), though not in axis labels/table cells.
 function entityPhrase(name) {
@@ -596,6 +832,12 @@ function entityPhrase(name) {
 function priorYearMonth(m) {
   const [y, mo] = m.split('-');
   return (parseInt(y, 10) - 1) + '-' + mo;
+}
+function priorQuarterMonth(m) {
+  const [y, mo] = m.split('-').map(n => parseInt(n, 10));
+  let py = y, pm = mo - 3;
+  if (pm < 1) { pm += 12; py -= 1; }
+  return py + '-' + String(pm).padStart(2, '0');
 }
 
 // Dollar formatting for the $ Issued overlay -- abbreviated for axis ticks and
@@ -618,8 +860,8 @@ function fmtDollarsFull(v) {
 // Population-weighted rate for a set of counties (sum of current persons over sum of
 // prior-year persons), as opposed to an unweighted average of each county's own rate --
 // these can diverge a lot when a group mixes very large and very small counties.
-function computeAggregateRate(rows, month) {
-  const prior = priorYearMonth(month);
+function computeAggregateRate(rows, month, priorMonth) {
+  const prior = priorMonth || priorYearMonth(month);
   let curSum = 0, priorSum = 0;
   for (const r of rows) {
     const cur = DATA.series[r.county] && DATA.series[r.county].persons[month];
@@ -656,6 +898,13 @@ const COUNTY_REGIONS = {
   'Merced': 'San Joaquin Valley', 'San Joaquin': 'San Joaquin Valley', 'Stanislaus': 'San Joaquin Valley', 'Tulare': 'San Joaquin Valley'
 };
 const REGION_ORDER = ['Bay Area', 'Central Coast', 'Central Sierra', 'Inland Empire', 'Los Angeles', 'Northern', 'Other Southern CA', 'Sacramento Area', 'San Joaquin Valley'];
+const BUCKET_ORDER = ['X-Large', 'Large', 'Medium', 'Small'];
+const SIZE_DISPLAY = {
+  'X-Large': 'X-Large (6 largest)',
+  'Large': 'Large',
+  'Medium': 'Medium',
+  'Small': 'Small'
+};
 
 // Same population-weighted logic as computeAggregateRate above, but for every month
 // in a range at once -- the bucket chart only ever needed one month's aggregate
@@ -682,8 +931,12 @@ function computeCountSeries(memberCounties, months, getValue) {
   });
 }
 
-function regionMemberCounties(region) {
-  return DATA.all_counties.filter(c => COUNTY_REGIONS[c] === region);
+function regionMemberCounties(region, sizes) {
+  let members = DATA.all_counties.filter(c => COUNTY_REGIONS[c] === region);
+  if (sizes && sizes.length) {
+    members = members.filter(c => sizes.includes(DATA.county_meta[c] && DATA.county_meta[c].size));
+  }
+  return members;
 }
 
 // Screen readers can't read canvas-rendered charts -- each chart pairs with a
@@ -852,6 +1105,31 @@ const monthYearAxisPlugin = {
   }
 };
 Chart.register(monthYearAxisPlugin);
+
+// Subtle fill below y=0 on the Annual % Change trend chart, so negative
+// territory reads as a different band rather than only "the line crossed
+// the axis." Opt-in via plugins.negativeBand; skipped when the scale never
+// goes below zero. Color is a wash of the same reddish used for negative
+// bars on the county chart, light enough that gridlines and the lines
+// themselves stay readable.
+const negativeBandPlugin = {
+  id: 'negativeBand',
+  beforeDraw(chart) {
+    if (!chart.options.plugins || !chart.options.plugins.negativeBand) return;
+    const y = chart.scales.y;
+    const { ctx, chartArea } = chart;
+    if (!y || !chartArea || y.min >= 0) return;
+    const zeroY = y.getPixelForValue(0);
+    const top = Math.max(chartArea.top, Math.min(zeroY, chartArea.bottom));
+    const height = chartArea.bottom - top;
+    if (height < 1) return;
+    ctx.save();
+    ctx.fillStyle = 'rgba(181, 83, 63, 0.10)';
+    ctx.fillRect(chartArea.left, top, chartArea.right - chartArea.left, height);
+    ctx.restore();
+  }
+};
+Chart.register(negativeBandPlugin);
 
 // ---- Point-extremes plugin: labels max, min, and (opt-in) latest point on line datasets ----
 // Labels the first and last visible point of each opted-in dataset, instead of
@@ -1035,6 +1313,7 @@ function initDashboard() {
 // ---- Populate filter selects ----
 const compareSelect = document.getElementById('compareSelect');
 const regionCompareSelect = document.getElementById('regionCompareSelect');
+const sizeCompareSelect = document.getElementById('sizeCompareSelect');
 const sharedControls = document.getElementById('sharedControls');
 const sharedFiltersToggle = document.getElementById('sharedFiltersToggle');
 const sharedFiltersSummary = document.getElementById('sharedFiltersSummary');
@@ -1073,6 +1352,11 @@ REGION_ORDER.forEach(r => {
   opt.value = r; opt.textContent = r;
   regionCompareSelect.appendChild(opt);
 });
+BUCKET_ORDER.forEach(s => {
+  const opt = document.createElement('option');
+  opt.value = s; opt.textContent = SIZE_DISPLAY[s] || s;
+  sizeCompareSelect.appendChild(opt);
+});
 const REGION_COLORS = ['#a05195', '#665191', '#2f4b7c', '#003f5c', '#d45087', '#f95d6a', '#ff7c43', '#ffa600', '#488f31'];
 const REGION_COLOR_BY_NAME = {};
 REGION_ORDER.forEach((r, i) => { REGION_COLOR_BY_NAME[r] = REGION_COLORS[i % REGION_COLORS.length]; });
@@ -1107,20 +1391,37 @@ function currentCounties() {
 function currentRegions() {
   return Array.from(regionCompareSelect.selectedOptions).map(o => o.value);
 }
+function currentSizes() {
+  return Array.from(sizeCompareSelect.selectedOptions).map(o => o.value);
+}
+function countyMatchesSizes(c, sizes) {
+  if (!sizes.length) return true;
+  if (c === 'Statewide') return true;
+  const size = DATA.county_meta[c] && DATA.county_meta[c].size;
+  return sizes.includes(size);
+}
+function sizeCaptionSuffix(sizes) {
+  if (!sizes.length) return '';
+  return ' (' + sizes.map(s => SIZE_DISPLAY[s] || s).join(', ') + ')';
+}
 function currentSelection() {
-  const counties = currentCounties();
-  const regions = currentRegions();
-  if (!counties.length && !regions.length) return { counties: ['Statewide'], regions: [] };
-  return { counties, regions };
+  const sizes = currentSizes();
+  const counties = currentCounties().filter(c => countyMatchesSizes(c, sizes));
+  const regions = currentRegions().filter(r => regionMemberCounties(r, sizes).length > 0);
+  if (!counties.length && !regions.length) return { counties: ['Statewide'], regions: [], sizes };
+  return { counties, regions, sizes };
 }
 function isSingleFocusEntity(counties, regions) {
   return (counties.length === 1 && regions.length === 0) ||
          (regions.length === 1 && counties.length === 0);
 }
 function selectionCaption(counties, regions) {
-  return counties.map(c => c === 'Statewide' ? 'California' : c + ' County')
+  const base = counties.map(c => c === 'Statewide' ? 'California' : c + ' County')
     .concat(regions.map(r => r + ' region'))
     .join(', ');
+  const sizes = currentSizes();
+  const hasSizedEntity = counties.some(c => c !== 'Statewide') || regions.length > 0;
+  return hasSizedEntity ? base + sizeCaptionSuffix(sizes) : base;
 }
 // Statewide caseload is an order of magnitude above almost every county/region,
 // so putting it on the counts chart next to them flattens the others to a line
@@ -1131,8 +1432,10 @@ function omitStatewideFromTotal(counties, regions) {
   return counties.includes('Statewide') &&
     (counties.some(c => c !== 'Statewide') || regions.length > 0);
 }
-function updateFiltersSummary(counties, regions) {
-  const names = counties.map(c => c === 'Statewide' ? 'California' : c).concat(regions);
+function updateFiltersSummary(counties, regions, sizes) {
+  const names = counties.map(c => c === 'Statewide' ? 'California' : c)
+    .concat(regions)
+    .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
   sharedFiltersSummary.textContent = names.length ? names.join(' · ') : 'California';
 }
 
@@ -1163,9 +1466,9 @@ function applyOverlayLock(counties, regions) {
 
 function rebuildTimeSeriesCharts() {
   updateRangeLabel();
-  const { counties, regions } = currentSelection();
+  const { counties, regions, sizes } = currentSelection();
   applyOverlayLock(counties, regions);
-  updateFiltersSummary(counties, regions);
+  updateFiltersSummary(counties, regions, sizes);
   updateStatewideToggleState(counties);
   buildTotalChart(counties, regions);
   buildYoyChart(counties, regions);
@@ -1284,7 +1587,7 @@ function niceAxisMax(value, targetTicks) {
 function overlayValues(layer, county, region, labels) {
   const isQuarterly = layer.cadence === 'quarterly';
   if (region) {
-    const members = regionMemberCounties(region);
+    const members = regionMemberCounties(region, currentSizes());
     if (isQuarterly) {
       const stepped = members.map(c => stepFillSeries(layer.series[c] || {}, labels));
       return labels.map((_, i) => {
@@ -1308,7 +1611,7 @@ function overlayValues(layer, county, region, labels) {
 
 function ageBandValues(county, region, field, labels) {
   if (region) {
-    const members = regionMemberCounties(region);
+    const members = regionMemberCounties(region, currentSizes());
     const stepped = members.map(c => {
       const bandSeries = DL.age_bands.series[c] || {};
       return stepFillSeries(Object.fromEntries(Object.entries(bandSeries).map(([m, v]) => [m, v[field]])), labels);
@@ -1327,7 +1630,7 @@ function ageBandValues(county, region, field, labels) {
 
 function personsValues(county, region, labels) {
   if (region) {
-    return computeCountSeries(regionMemberCounties(region), labels, (c, m) =>
+    return computeCountSeries(regionMemberCounties(region, currentSizes()), labels, (c, m) =>
       DATA.series[c] && DATA.series[c].persons[m]
     );
   }
@@ -1432,7 +1735,7 @@ function buildTotalChart(counties, regions) {
         order: 1
       });
     });
-    cadenceClauses.push('age groups once a year (July snapshot)');
+    caveats.push('Age groups are a July snapshot each year, so a jump in July is CDSS publishing the new annual numbers — not a sudden enrollment change. Each July reading holds flat until the next July.');
   }
 
   if (singleFocus) {
@@ -1581,6 +1884,7 @@ function buildTotalChart(counties, regions) {
   }
 
   if (totalChart) totalChart.destroy();
+  clearHoverTooltip(document.getElementById('totalChartHover'));
   totalChart = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets },
@@ -1605,17 +1909,19 @@ function buildTotalChart(counties, regions) {
           : { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
         monthYearAxis: true,
         tooltip: {
-          // Chart.js's default tooltip background is only 80% opaque
-          // (rgba(0,0,0,0.8)) -- gridlines and reference lines drawn under it
-          // show through faintly and read as garbled text (Diana flagged this
-          // 2026-08-13). Pinning an explicit near-opaque background fixes it
-          // regardless of what's drawn underneath.
+          // Canvas overlay covered the lines (Steph, 2026-08-27). Render the
+          // same tooltip model into the HTML strip above the chart instead.
+          enabled: false,
+          external: hoverTooltipExternal('totalChartHover', 'above'),
           backgroundColor: 'rgba(24, 27, 36, 0.97)',
           titleColor: '#ffffff',
           bodyColor: '#ffffff',
           padding: 10,
           cornerRadius: 6,
           boxPadding: 4,
+          // Multi-county hover: highest line first, matching the chart at this
+          // month. Single-entity mode keeps overlay/age-band order as stacked.
+          itemSort: singleFocus ? undefined : tooltipItemsByValueDesc,
           callbacks: {
             title: (items) => fmtMonth(items[0].label),
             // Same restructure as the Annual % Change tooltip (Diana, 2026-08-14):
@@ -1625,12 +1931,8 @@ function buildTotalChart(counties, regions) {
             // students + child-only + Medi-Cal + $ Issued can all be on at once),
             // instead of repeating a full sentence per layer.
             beforeBody: (items) => {
-              if (!items.length) return [];
-              if (!singleFocus) return [];
-              const line = singleRegion
-                ? ('the ' + singleRegion + ' region:')
-                : (entityPhrase(entityName) + ':');
-              return wrapText(line, 40);
+              if (!items.length || !singleFocus) return [];
+              return singleRegion ? (singleRegion + ' region') : entityPhrase(entityName);
             },
             label: (item) => {
               // The total line's dataset.label is just the entity name again
@@ -1731,7 +2033,9 @@ function buildYoyChart(counties, regions) {
   // fixed per-region lookup (not the county cycling palette) so a given
   // region reads the same color every time it's picked, across rebuilds.
   const regionDatasets = regions.map(r => {
-    const memberRows = DATA.all_counties.filter(c => COUNTY_REGIONS[c] === r).map(c => ({ county: c }));
+    const members = regionMemberCounties(r, currentSizes());
+    if (!members.length) return null;
+    const memberRows = members.map(c => ({ county: c }));
     const series = computeAggregateSeries(memberRows, labels);
     return {
       label: r,
@@ -1746,12 +2050,13 @@ function buildYoyChart(counties, regions) {
       _firstLast: true,
       _labelFormat: v => v.toFixed(1) + '%'
     };
-  });
+  }).filter(Boolean);
 
   const datasets = countyDatasets.concat(regionDatasets);
   const addStatewideLine = statewideCompareYoy && !(counties || []).includes('Statewide');
   if (addStatewideLine) datasets.push(statewideCompareYoyDataset(labels));
   if (yoyChart) yoyChart.destroy();
+  clearHoverTooltip(document.getElementById('yoyChartHover'));
   yoyChart = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets },
@@ -1769,33 +2074,21 @@ function buildYoyChart(counties, regions) {
       plugins: {
         legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
         monthYearAxis: true,
+        negativeBand: true,
         tooltip: {
-          // Chart.js's default tooltip background is only 80% opaque
-          // (rgba(0,0,0,0.8)) -- gridlines and reference lines drawn under it
-          // show through faintly and read as garbled text (Diana flagged this
-          // 2026-08-13). Pinning an explicit near-opaque background fixes it
-          // regardless of what's drawn underneath.
+          enabled: false,
+          external: hoverTooltipExternal('yoyChartHover', 'above'),
           backgroundColor: 'rgba(24, 27, 36, 0.97)',
           titleColor: '#ffffff',
           bodyColor: '#ffffff',
           padding: 10,
           cornerRadius: 6,
           boxPadding: 4,
+          itemSort: tooltipItemsByValueDesc,
           callbacks: {
-            title: (items) => fmtMonth(items[0].label),
-            // With several counties compared at once, repeating the full "The
-            // percentage change ... between DATE and DATE in COUNTY was X%"
-            // sentence once per item made the tooltip unreadably long (Diana
-            // flagged this as too busy, 2026-08-14). beforeBody runs once per
-            // tooltip (not once per item), so the shared "between DATE and DATE"
-            // framing goes here, and each item's own label collapses to a plain
-            // "County: X%" line underneath.
-            beforeBody: (items) => {
-              if (!items.length) return [];
+            title: (items) => {
               const [y, mo] = items[0].label.split('-');
-              const priorLabel = (parseInt(y, 10) - 1) + '-' + mo;
-              return wrapText('The % change in total participants between ' + fmtMonth(priorLabel) +
-                ' and ' + fmtMonth(items[0].label) + ' was:', 40);
+              return fmtMonth(items[0].label) + ' vs ' + fmtMonth((parseInt(y, 10) - 1) + '-' + mo);
             },
             label: (item) => {
               if (item.raw === null || item.raw === undefined) return item.dataset.label + ': n/a';
@@ -1810,11 +2103,14 @@ function buildYoyChart(counties, regions) {
       }
     }
   });
-  const captionNames = counties.map(c => c === 'Statewide' ? 'California' : c)
+  const sizedNames = counties.map(c => c === 'Statewide' ? 'California' : c)
     .concat(regions.map(r => r + ' (region avg.)'));
-  if (addStatewideLine) captionNames.push('California');
+  const sizeBit = (counties.some(c => c !== 'Statewide') || regions.length > 0)
+    ? sizeCaptionSuffix(currentSizes()) : '';
+  const captionParts = [sizedNames.join(', ') + sizeBit];
+  if (addStatewideLine) captionParts.push('California');
   document.getElementById('yoyCaption').textContent =
-    'Year-over-year change — ' + captionNames.join(', ');
+    'Year-over-year change — ' + captionParts.filter(Boolean).join(', ');
   renderRefLineLegend('yoyRefLineLegend', labels, yoyChart);
 
   const yoyEntityNames = datasets.map(d => d.label === 'California' ? 'California' : d.label);
@@ -1846,7 +2142,7 @@ const drillRegionBtn = document.getElementById('drillRegionBtn');
 let drillActive = false;
 
 function drillTargetFor(region) {
-  return new Set(regionMemberCounties(region));
+  return new Set(regionMemberCounties(region, currentSizes()));
 }
 function countiesMatchDrill(region) {
   const target = drillTargetFor(region);
@@ -1888,8 +2184,29 @@ function applyDrillIfActive() {
   Array.from(compareSelect.options).forEach(o => { o.selected = target.has(o.value); });
 }
 
+function dropCountiesOutsideSizes() {
+  const sizes = currentSizes();
+  if (!sizes.length) return;
+  Array.from(compareSelect.options).forEach(o => {
+    if (o.selected && !countyMatchesSizes(o.value, sizes)) o.selected = false;
+  });
+}
+function includeSizesOfSelectedCounties() {
+  const sizes = currentSizes();
+  if (!sizes.length) return;
+  Array.from(compareSelect.selectedOptions).forEach(o => {
+    if (o.value === 'Statewide') return;
+    const s = DATA.county_meta[o.value] && DATA.county_meta[o.value].size;
+    if (!s) return;
+    Array.from(sizeCompareSelect.options).forEach(opt => {
+      if (opt.value === s) opt.selected = true;
+    });
+  });
+}
+
 compareSelect.addEventListener('change', () => {
   // Manual county edits leave drill-down mode; the switch should match that.
+  includeSizesOfSelectedCounties();
   if (drillActive) {
     const regions = currentRegions();
     if (regions.length !== 1 || !countiesMatchDrill(regions[0])) setDrillActive(false);
@@ -1898,6 +2215,11 @@ compareSelect.addEventListener('change', () => {
 });
 regionCompareSelect.addEventListener('change', () => {
   updateDrillButtonState();
+  applyDrillIfActive();
+  rebuildTimeSeriesCharts();
+});
+sizeCompareSelect.addEventListener('change', () => {
+  dropCountiesOutsideSizes();
   applyDrillIfActive();
   rebuildTimeSeriesCharts();
 });
@@ -1925,7 +2247,7 @@ drillRegionBtn.addEventListener('click', () => {
 });
 
 document.getElementById('clearCompareBtn').addEventListener('click', () => {
-  [compareSelect, regionCompareSelect].forEach(el => {
+  [compareSelect, regionCompareSelect, sizeCompareSelect].forEach(el => {
     Array.from(el.options).forEach(o => { o.selected = false; });
   });
   setDrillActive(false);
@@ -1950,24 +2272,54 @@ window.addEventListener('resize', () => {
 });
 
 // ---- County comparison bar chart (single chart, all counties, grouped by size) ----
-// COUNTY_REGIONS/REGION_ORDER now defined up near computeAggregateRate -- see the
-// comment there.
-const BUCKET_ORDER = ['X-Large', 'Large', 'Medium', 'Small'];
+// COUNTY_REGIONS / REGION_ORDER / BUCKET_ORDER / SIZE_DISPLAY are defined up near
+// computeAggregateRate so the shared top-chart filters can use the same labels.
 
 // This chart used to always show DATA.latest_complete_month, using a pre-bucketed
 // snapshot (DATA.bucket_bar_data) computed for that one month only. Diana wanted a
 // month picker (2026-08-13) -- rather than pre-bucketing every month server-side,
-// this rebuilds the same {county, yoy, size} rows for any month on the fly from
-// data already embedded on the page: DATA.series[county].yoy_pct[month] for the
-// rate, DATA.county_meta[county].size for the bucket (size groupings themselves
+// this rebuilds the same {county, rate, size} rows for any month on the fly from
+// data already embedded on the page: DATA.series[county].yoy_pct[month] for annual
+// change, or persons vs three months earlier for quarterly (Steph/Jared, 2026-08-27).
+// DATA.county_meta[county].size for the bucket (size groupings themselves
 // don't get recomputed per month -- same "as of the latest available month"
 // simplification the footer already documents). DATA.bucket_bar_data is no longer
 // read directly, but is left in the DATA blob rather than stripped out, since
 // removing it doesn't shrink the page meaningfully and it's a harmless snapshot.
+let bucketPeriod = 'annual';
+function bucketPriorMonth(month) {
+  return bucketPeriod === 'quarterly' ? priorQuarterMonth(month) : priorYearMonth(month);
+}
+function personsChangePct(county, month, priorMonth) {
+  const s = DATA.series[county];
+  if (!s) return null;
+  const current = s.persons[month];
+  const prior = s.persons[priorMonth];
+  if (current == null || prior == null || prior === 0) return null;
+  return (current / prior - 1) * 100;
+}
+function bucketRate(county, month) {
+  if (bucketPeriod === 'annual') {
+    const yoy = DATA.series[county] && DATA.series[county].yoy_pct[month];
+    return yoy === undefined ? null : yoy;
+  }
+  return personsChangePct(county, month, bucketPriorMonth(month));
+}
+function bucketChartTitle() {
+  return bucketPeriod === 'quarterly' ? 'Quarterly % Change by County' : 'Annual % Change by County';
+}
+function bucketRateLabel() {
+  return bucketPeriod === 'quarterly' ? 'Quarterly % change' : 'Annual % change';
+}
+function updateBucketPeriodCopy() {
+  document.getElementById('bucketTitle').textContent = bucketChartTitle();
+  document.getElementById('bucketPlotTitle').textContent = bucketChartTitle();
+  document.getElementById('bucketRateColHeader').textContent = bucketRateLabel();
+}
 function countyRowsForMonth(month) {
   const rows = [];
   DATA.all_counties.forEach(c => {
-    const yoy = DATA.series[c] && DATA.series[c].yoy_pct[month];
+    const yoy = bucketRate(c, month);
     const size = DATA.county_meta[c] && DATA.county_meta[c].size;
     if (yoy === null || yoy === undefined || !size) return;
     rows.push({ county: c, yoy, size });
@@ -1986,7 +2338,7 @@ REGION_ORDER.forEach(r => {
 });
 BUCKET_ORDER.forEach(s => {
   const opt = document.createElement('option');
-  opt.value = s; opt.textContent = s;
+  opt.value = s; opt.textContent = SIZE_DISPLAY[s] || s;
   sizeFilterEl.appendChild(opt);
 });
 DATA.all_counties.forEach(c => {
@@ -1995,19 +2347,28 @@ DATA.all_counties.forEach(c => {
   countyFilterEl.appendChild(opt);
 });
 
-// Month picker: only months with a real statewide YoY figure make sense to
-// offer (the first ~12 months of the whole dataset have no year-ago value to
-// compare against, so yoy_pct is null there) -- newest first, since that's
+// Month picker: only months with a real statewide rate for the current window
+// (year-over-year, or vs three months earlier). The first months of the dataset
+// have no prior value, so they're omitted -- newest first, since that's
 // what people want most often and matches "latest month" being the old default.
 const bucketMonthSelect = document.getElementById('bucketMonthSelect');
-const monthsWithYoy = DATA.months.filter(m => DATA.series['Statewide'].yoy_pct[m] !== null && DATA.series['Statewide'].yoy_pct[m] !== undefined);
-monthsWithYoy.slice().reverse().forEach(m => {
-  const opt = document.createElement('option');
-  opt.value = m; opt.textContent = fmtMonth(m);
-  bucketMonthSelect.appendChild(opt);
-});
 let selectedBucketMonth = DATA.latest_complete_month;
-bucketMonthSelect.value = selectedBucketMonth;
+function populateBucketMonthSelect() {
+  const months = DATA.months.filter(m => {
+    const v = bucketRate('Statewide', m);
+    return v !== null && v !== undefined;
+  }).slice().reverse();
+  const keep = months.includes(selectedBucketMonth) ? selectedBucketMonth : (months[0] || DATA.latest_complete_month);
+  bucketMonthSelect.innerHTML = '';
+  months.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = fmtMonth(m);
+    bucketMonthSelect.appendChild(opt);
+  });
+  selectedBucketMonth = keep;
+  bucketMonthSelect.value = selectedBucketMonth;
+}
+populateBucketMonthSelect();
 bucketMonthSelect.addEventListener('change', () => {
   selectedBucketMonth = bucketMonthSelect.value;
   buildBucketChart();
@@ -2015,7 +2376,7 @@ bucketMonthSelect.addEventListener('change', () => {
 
 let bucketChart;
 let groupByMode = 'size';
-const groupByBtns = Array.from(document.querySelectorAll('.groupby-btn'));
+const groupByBtns = Array.from(document.querySelectorAll('[data-groupby]'));
 const groupColHeaderEl = document.getElementById('bucketGroupColHeader');
 const GROUP_COL_LABELS = { size: 'Size group', region: 'Region', none: 'Group' };
 // Mirrors GROUP_COL_LABELS but phrased for the legend caption rather than a table
@@ -2047,6 +2408,18 @@ groupByBtns.forEach(btn => {
 });
 updateGroupLineLegendLabel();
 
+const periodBtns = Array.from(document.querySelectorAll('[data-period]'));
+periodBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    bucketPeriod = btn.getAttribute('data-period');
+    periodBtns.forEach(b => b.classList.toggle('active', b === btn));
+    updateBucketPeriodCopy();
+    populateBucketMonthSelect();
+    buildBucketChart();
+  });
+});
+updateBucketPeriodCopy();
+
 // Groups the (already-filtered) rows for display, per the current "Group by" mode.
 // Each mode reuses the same {name, rows} shape so the rest of the chart-building
 // code (dividers, per-group lines, max/min labels) doesn't need to know which mode
@@ -2072,7 +2445,7 @@ function computeGroups(filteredRows, mode) {
   const groups = [];
   BUCKET_ORDER.forEach(bucket => {
     const rows = byValueDesc(filteredRows.filter(r => r.size === bucket));
-    if (rows.length) groups.push({ name: bucket, rows });
+    if (rows.length) groups.push({ name: SIZE_DISPLAY[bucket] || bucket, rows });
   });
   return groups;
 }
@@ -2106,7 +2479,7 @@ function buildBucketChart() {
     g.rows.forEach(r => { mergedLabels.push(r.county); mergedValues.push(r.yoy); });
     const end = mergedLabels.length - 1;
     const avg = g.rows.reduce((a, r) => a + r.yoy, 0) / g.rows.length;
-    const aggregate = groupByMode === 'none' ? null : computeAggregateRate(g.rows, selectedBucketMonth);
+    const aggregate = groupByMode === 'none' ? null : computeAggregateRate(g.rows, selectedBucketMonth, bucketPriorMonth(selectedBucketMonth));
     groupRanges.push({
       name: g.name, start, end,
       displayValue: aggregate !== null ? aggregate : avg,
@@ -2130,7 +2503,7 @@ function buildBucketChart() {
 
   // A single always-on statewide benchmark line, independent of filters -- the
   // population-weighted state rate, distinct from the unweighted per-group averages.
-  const statewideYoy = DATA.series['Statewide'].yoy_pct[selectedBucketMonth];
+  const statewideYoy = bucketRate('Statewide', selectedBucketMonth);
   const statewideLineDatasets = (statewideYoy !== null && statewideYoy !== undefined && mergedLabels.length)
     ? [{
         type: 'line',
@@ -2146,18 +2519,20 @@ function buildBucketChart() {
     : [];
 
   if (bucketChart) bucketChart.destroy();
+  clearHoverTooltip(document.getElementById('bucketChartHover'));
   bucketChart = new Chart(document.getElementById('bucketChart'), {
     type: 'bar',
     data: {
       labels: mergedLabels,
       datasets: [
         {
-          label: 'Annual % change',
+          label: bucketRateLabel(),
           data: mergedValues,
           backgroundColor: mergedValues.map(v => v >= 0 ? '#2b6f7a' : '#b5533f'),
           borderRadius: 2,
           order: 2,
-          _groupRanges: groupRanges
+          _groupRanges: groupRanges,
+          _bucketBars: true
         },
         ...groupAvgDatasets,
         ...statewideLineDatasets
@@ -2177,11 +2552,8 @@ function buildBucketChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          // Chart.js's default tooltip background is only 80% opaque
-          // (rgba(0,0,0,0.8)) -- gridlines and reference lines drawn under it
-          // show through faintly and read as garbled text (Diana flagged this
-          // 2026-08-13). Pinning an explicit near-opaque background fixes it
-          // regardless of what's drawn underneath.
+          enabled: false,
+          external: hoverTooltipExternal('bucketChartHover'),
           backgroundColor: 'rgba(24, 27, 36, 0.97)',
           titleColor: '#ffffff',
           bodyColor: '#ffffff',
@@ -2189,22 +2561,31 @@ function buildBucketChart() {
           cornerRadius: 6,
           boxPadding: 4,
           callbacks: {
+            title: () => [],
+            beforeBody: () =>
+              'As of ' + fmtMonth(selectedBucketMonth) +
+              ', the % change in total participants ' +
+              (bucketPeriod === 'quarterly' ? 'from three months earlier' : 'from the prior year') +
+              ' was:',
             label: (item) => {
-              const asOf = fmtMonth(selectedBucketMonth);
-              if (item.dataset.label === 'California rate') {
-                return wrapText('As of ' + asOf + ', the statewide percentage change in total participants was ' +
-                  item.raw.toFixed(1) + '%.', 40);
-              }
+              const pct = item.raw.toFixed(1) + '%';
+              if (item.dataset.label === 'California rate') return 'Statewide: ' + pct;
               if (item.dataset.label && (item.dataset.label.indexOf('Average') === 0 || item.dataset.label.indexOf('Aggregate rate') === 0)) {
-                const isAggregate = item.dataset.label.indexOf('Aggregate rate') === 0;
                 const groupName = item.dataset.label.replace(/^(Average|Aggregate rate) \(/, '').replace(')', '');
-                const groupPhrase = groupName === 'All counties' ? 'all counties' : groupName + ' counties';
-                const verb = isAggregate ? 'the aggregate percentage change in total participants across' : 'the average percentage change in total participants among';
-                return wrapText('As of ' + asOf + ', ' + verb + ' ' + groupPhrase + ' was ' + item.raw.toFixed(1) + '%.', 40);
+                const kind = item.dataset.label.indexOf('Aggregate rate') === 0 ? 'aggregate' : 'average';
+                return groupName + ' counties (' + kind + '): ' + pct;
               }
-              return wrapText('As of ' + asOf + ', the percentage change in total participants in ' +
-                entityPhrase(item.label) + ' was ' + item.raw.toFixed(1) + '%.', 40);
+              return entityPhrase(item.label) + ': ' + pct;
             }
+          },
+          filter: (item) => item.raw !== null && item.raw !== undefined,
+          itemSort: (a, b) => {
+            const rank = (item) => {
+              if (item.dataset._bucketBars) return 0;
+              if (item.dataset.label === 'California rate') return 1;
+              return 2;
+            };
+            return rank(a) - rank(b);
           }
         }
       },
@@ -2215,6 +2596,10 @@ function buildBucketChart() {
     }
   });
 
+  const groupNoun = groupByMode === 'region' ? 'region' : groupByMode === 'none' ? 'all counties' : 'county size';
+  document.querySelector('#bucketChartTable caption').textContent =
+    (bucketPeriod === 'quarterly' ? 'Quarterly' : 'Annual') +
+    ' percentage change by county, grouped by ' + groupNoun;
   renderAccessibleTable(document.querySelector('#bucketChartTable tbody'), mergedLabels.map((c, i) => {
     const group = groupRanges.find(g => i >= g.start && i <= g.end);
     return [c, group ? group.name : '', mergedValues[i].toFixed(1) + '%'];
@@ -2222,13 +2607,14 @@ function buildBucketChart() {
 }
 
 [regionFilterEl, sizeFilterEl, countyFilterEl].forEach(el => el.addEventListener('change', buildBucketChart));
+[compareSelect, regionCompareSelect, sizeCompareSelect, regionFilterEl, sizeFilterEl, countyFilterEl]
+  .forEach(enablePlainClickToggle);
 buildBucketChart();
 
 // Once a region/size/county multi-select has anything picked, there's no
-// visible "back to all" option on the control itself -- Cmd/Ctrl-click can
-// deselect one option at a time, but nothing clears the whole set (Diana
-// flagged this as a real dead end, 2026-08-13). A dedicated button is a much
-// more discoverable way out than "select nothing" being a hidden gesture.
+// visible "back to all" option on the control itself -- clicking an option
+// now toggles it off, but nothing clears the whole set. A dedicated button
+// is a more discoverable way out than "select nothing" being a hidden gesture.
 const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 clearFiltersBtn.addEventListener('click', () => {
   [regionFilterEl, sizeFilterEl, countyFilterEl].forEach(el => {
