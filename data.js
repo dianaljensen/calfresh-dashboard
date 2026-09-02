@@ -22,8 +22,8 @@ const OUTCOME_STACK = [
 
 const STUDENT_OUTCOME_STACK = [
   { key: 'approved', label: 'Approved', color: '#4BA5BA' },
-  { key: 'denied', label: 'Denied', color: '#6A6A6A' },
-  { key: 'pended', label: 'Pended', color: '#C4D6E4' }
+  { key: 'pended', label: 'Pended', color: '#C4D6E4' },
+  { key: 'denied', label: 'Denied', color: '#FB7906' }
 ];
 
 const OUTCOME_COUNT_KEYS = ['disposed', 'approved', 'ineligible', 'procedural', 'withdrawn'];
