@@ -4,18 +4,17 @@
 // Runs as part of the weekly PIPELINE_MAIN() job (see the computeCaseloadStudents_() call
 // in Main.gs) so it self-refreshes with no manual step, same pattern as SSILinked.gs.
 //
-// Working theory, not yet independently confirmed (2026-08-13): this whole column range,
-// from "Applications Approved Containing at Least One Student" through the very last
-// column in Master_Monthly ("Caseload Total Student Count"), may be entirely scoped to
-// students -- including columns with no "student" in their own name, like "New
-// Applications Gender Female" or "Caseload Race/Ethnicity Asian". That would match an
-// earlier finding (TODO.md, "Master file column-naming correction," 2026-07-31): the
-// "Caseload Age 17 and Under / 18 to 49 / 50 and Over" columns were confirmed to be
-// students-only despite their generic-sounding name, because they summed to this same
-// "Caseload Total Student Count" total. If that holds for the rest of this range too,
-// "New Applications Age 17 and Under" etc. would mean "new applications with at least one
-// student, broken down by age" rather than all new applications. Worth confirming before
-// treating any of these as general (non-student) application/caseload figures elsewhere.
+// Confirmed with Diana 2026-09-01: this whole column range, from "Applications Approved
+// Containing at Least One Student" through the very last column in Master_Monthly
+// ("Caseload Total Student Count"), is entirely scoped to college students -- including
+// columns with no "student" in their own name, like "New Applications Gender Female" or
+// "Caseload Race/Ethnicity Asian". That matches an earlier finding (TODO.md, "Master file
+// column-naming correction," 2026-07-31): the "Caseload Age 17 and Under / 18 to 49 /
+// 50 and Over" columns were already confirmed to be students-only despite their generic-
+// sounding name, because they summed to this same "Caseload Total Student Count" total.
+// "New Applications Age 17 and Under" etc. mean new applications with at least one
+// student, broken down by age -- not all new applications. Do not treat any of these as
+// general (non-student) application/caseload figures. See DATA_DICTIONARY.md.
 //
 // Column-name quirks handled generically rather than hardcoded per-instance (same
 // philosophy as SSILinked.gs): scattered whitespace inconsistencies and inconsistent

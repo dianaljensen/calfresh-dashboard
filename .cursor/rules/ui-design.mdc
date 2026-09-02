@@ -1,0 +1,29 @@
+---
+description: Standing UI preferences for every dashboard view
+alwaysApply: true
+---
+
+# Standing UI (CalFresh dashboard)
+
+Add new visual preferences here **and** as a standing rule in `TODO.md` plus a bullet under README “Frontend Implementation Notes,” so later views don’t re-litigate them.
+
+## Hover values
+
+- Disable Chart.js canvas tooltips (`tooltip.enabled: false`).
+- Render values in the HTML `.chart-hover` box via `hoverTooltipExternal(..., 'above')`.
+- Follow the hovered month on x. Sit **entirely above the canvas** (title/caption band), never on the lines, stacks, or bars. County bar charts use `'above'` too — not beside-the-caret.
+- Nested volume strips (applications received) stay inside their own `.received-plot` so they don’t cover the mix chart above.
+
+## Axes and color
+
+- Every vertical axis starts at zero (`min: 0`, or `beginAtZero: true` if the series can go negative).
+- Application outcomes (all applications, CF296): approved `#4BA5BA`, denied procedural `#FB7906`, denied ineligible `#6A6A6A`, withdrawn `#C0C0C0`. Stack bottom→top: approved, withdrawn, ineligible, procedural.
+- Application outcomes (college students, Master_Monthly): approved `#4BA5BA`, denied `#6A6A6A` (aggregate denials — not procedural orange), pended `#C4D6E4`. Stack bottom→top: approved, denied, pended. Denominator is those three columns, not CF296 disposed. Hide applications-received and procedural-denial sort in this mode.
+- County-bar group-aggregate lines are dashed. Participation uses dark grey `#555` (bars are not grey). Application Outcomes uses black `#111` so the line stays visible across withdrawn (`#C0C0C0`) and ineligible (`#6A6A6A`) stack segments. On Application Outcomes, show the line that matches **Sort by** (approval vs procedural denial) — not both at once. Left-align the on-canvas label at the start of the group; put the approval label **below** the line (on the blue) and the procedural label **above** the line (on the orange).
+
+## Defaults
+
+- Default county Alameda; **Add Statewide comparison** on.
+- Default date range: last 24 months.
+- Consortia is obsolete; size buckets are XL / L / M / S.
+- Do not impute 5 on Part C or applications-received. Small-cell `*` treatment lives in `data.js`.

@@ -106,6 +106,22 @@ Source: `Definitions_Sources.pdf` (CDSS date 04/10/17, added to project 2026-07-
 
 **The remaining ~280 of Master_Monthly's 303 columns are not individually defined in CDSS's PDF.** For those, the column name itself (verbatim from CDSS) is the working definition — most are self-explanatory (e.g. `New Applications Age 17 and Under`, `Caseload Race/Ethnicity Hispanic`), but anything ambiguous should get called out here as it comes up during dashboard-building, the same way SNB/TNB is flagged above.
 
+### Student-scoped block (confirmed Diana, 2026-09-01)
+
+The whole Master_Monthly range from `Applications Approved Containing at Least One Student` through the last column (`Caseload Total Student Count`) is **college-student applications and caseload**, including columns with no “student” in the name. Do not use `New Applications …`, `Denial Reason …`, `Applications Submitted via …`, `Caseload Age/Gender/Language/Race…`, or exemption columns as general-population figures. The Participation view’s “Caseload Age” overlay caveat is the same fact: those age columns sum to `Caseload Total Student Count`, not total CalFresh persons.
+
+Headline application columns (households/applications, not persons):
+
+- `Applications Approved Containing at Least One Student`
+- `Applications Denied Containing at Least One Student`
+- `Applications Pended Containing at Least One Student`
+
+These are reported monthly from January 2023 onward (Statewide and counties). `New Applications Age Total` does **not** match approved + denied (or + pended); treat age totals as a different unit (likely persons), not a checksum for application counts.
+
+**Denial-reason identity (Statewide live check, through May 2026):** `Denial Reason - Ineligible` + `Denial Reason - Procedural` is only a subset of `Applications Denied Containing at Least One Student` (e.g. May 2026: 1,747 + 1,280 = 3,027 vs 9,026 denied). Missed interview, failed to complete determination, over income, and the other listed reasons sit alongside those two. The nine `Denial Reason - …` columns together nearly equal total denials (Statewide median residual ~13; May 2026 residual 82). There is no withdrawn column. Residual is not labeled. Application Outcomes uses the three headline columns only; denial-reason drill-down is deferred.
+
+The full column list (verbatim CDSS names, including source quirks like `Langugage` / `New Application Asian`) lives in `pipeline/CaseloadStudents.gs` (`STUDENT_TABLE_COLUMNS`) and is copied to `Student_Table_Computed`.
+
 ## CF296 and CF18 (per-cell dictionaries)
 
 Source: the report files' own header rows / DataDictionary tabs (real sample xlsx files Diana provided 2026-07-16), cross-checked against ACL 22-85 (CDSS date October 21, 2022, added 2026-07-28) for the current-era CF296 layout. These live in `pipeline/Labels.gs` rather than duplicated here, since they're large (135 + 123 + 68 items) and need to stay in lockstep with the ingest code that uses them (see README's Key Decisions Log for the full reconstruction trail, including two rounds of correction once tested against real historical files). Cross-reference the acronym glossary above (PACF, NACF, ES, ADP, SAR7, RRR, ICT) when reading those labels.

@@ -6,13 +6,41 @@ const PUBLISHED_SHEET = {
   base: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTFzUHnRs-aXlIQhySWVRbTPZtSkM3--uskf8F3dCxnsEXRoIWePnuL8KoigtOP6W-hh22xLDNfivRK',
   monthlyGid: '447670588',      // Master_Monthly
   annualGid: '1345412068',       // Master_Annual
-  pointInTimeGid: '1435977340'   // Master_PointInTime (dual Medi-Cal enrollment)
+  pointInTimeGid: '1435977340',  // Master_PointInTime (dual Medi-Cal enrollment)
+  cf296Gid: '1704035547',        // CF296 (FY2025-26+, 135 cells)
+  cf296LegacyGid: '1152285266'  // CF296_Legacy (FY2016-17 through FY2024-25)
 };
+
+// 100% stacked composition of applications disposed. Order is bottom-to-top
+// (approved at the base), matching the original Tableau Application Outcomes tab.
+const OUTCOME_STACK = [
+  { key: 'approved', label: 'Approved', color: '#4BA5BA' },
+  { key: 'withdrawn', label: 'Withdrawn', color: '#C0C0C0' },
+  { key: 'ineligible', label: 'Denied — ineligible', color: '#6A6A6A' },
+  { key: 'procedural', label: 'Denied — procedural', color: '#FB7906' }
+];
+
+const STUDENT_OUTCOME_STACK = [
+  { key: 'approved', label: 'Approved', color: '#4BA5BA' },
+  { key: 'denied', label: 'Denied', color: '#6A6A6A' },
+  { key: 'pended', label: 'Pended', color: '#C4D6E4' }
+];
+
+const OUTCOME_COUNT_KEYS = ['disposed', 'approved', 'ineligible', 'procedural', 'withdrawn'];
+const OUTCOME_PART_KEYS = ['approved', 'ineligible', 'procedural', 'withdrawn'];
+const STUDENT_OUTCOME_PART_KEYS = ['approved', 'denied', 'pended'];
+const MOVEMENT_KEYS = ['caseApproved', 'reinstated', 'discontinued'];
+// CDSS stars both true 1–10 cells and complementary totals ≥11. Identity
+// reconstruction fills the latter; leftover 1–10 cells are plotted as 5.
+const SMALL_CELL_PLACEHOLDER = 5;
+const SMALL_CELL_MAX = 10;
 
 const MONTH_NUMBERS = {
   january: '01', february: '02', march: '03', april: '04',
   may: '05', june: '06', july: '07', august: '08',
-  september: '09', october: '10', november: '11', december: '12'
+  september: '09', october: '10', november: '11', december: '12',
+  jan: '01', feb: '02', mar: '03', apr: '04', jun: '06',
+  jul: '07', aug: '08', sep: '09', sept: '09', oct: '10', nov: '11', dec: '12'
 };
 
 const OVERLAY_META = {
@@ -137,14 +165,189 @@ function parseCsv(text, label) {
   return parsed;
 }
 
-async function fetchCsv(gid, label) {
+async function fetchCsvText(gid, label) {
   const res = await fetch(publishedCsvUrl(gid), { redirect: 'follow' });
   if (!res.ok) throw new Error(label + ' returned HTTP ' + res.status);
   const text = await res.text();
   if (/^\s*<!DOCTYPE html/i.test(text) || text.indexOf('show-login') !== -1) {
     throw new Error(label + ' came back as a login page, not CSV. Check Publish to web is still on.');
   }
-  return parseCsv(text, label);
+  return text;
+}
+
+async function fetchCsv(gid, label) {
+  return parseCsv(await fetchCsvText(gid, label), label);
+}
+
+// Publish-to-web CSVs (especially Master_Monthly) are large and slow. Keep a
+// copy in IndexedDB so reloads can paint from disk, then refresh in the background.
+const CSV_CACHE_DB = 'calfresh-csv-v1';
+const CSV_CACHE_STORE = 'csv';
+const MONTHLY_ROWS_KEY = 'monthly-rows-v1';
+const COUNTY_META_KEY = 'county-meta-v1';
+const csvRefreshInflight = {};
+let csvCacheDbPromise = null;
+
+function openCsvCacheDb() {
+  if (csvCacheDbPromise) return csvCacheDbPromise;
+  csvCacheDbPromise = new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      reject(new Error('IndexedDB is not available'));
+      return;
+    }
+    const req = indexedDB.open(CSV_CACHE_DB, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(CSV_CACHE_STORE)) {
+        db.createObjectStore(CSV_CACHE_STORE);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+    setTimeout(() => reject(new Error('IndexedDB open timed out')), 1500);
+  }).catch(err => {
+    csvCacheDbPromise = null;
+    throw err;
+  });
+  return csvCacheDbPromise;
+}
+
+async function csvCacheGet(key) {
+  try {
+    const db = await openCsvCacheDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(CSV_CACHE_STORE, 'readonly');
+      const req = tx.objectStore(CSV_CACHE_STORE).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (err) {
+    return null;
+  }
+}
+
+async function csvCacheSet(key, record) {
+  try {
+    const db = await openCsvCacheDb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(CSV_CACHE_STORE, 'readwrite');
+      tx.objectStore(CSV_CACHE_STORE).put(record, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn('Could not save spreadsheet cache:', err);
+  }
+}
+
+function fmtSavedAt(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+  });
+}
+
+function setFeedStatus(statusEl, opts) {
+  const through = opts.through;
+  const source = opts.sourceLabel || 'CalFresh Data – Consolidated';
+  let html = 'Live data from <strong>' + source + '</strong>' +
+    (through ? ', through ' + through : '') + '.';
+  if (opts.fromCache) {
+    html += ' Loaded from this browser’s saved copy' +
+      (opts.fetchedAt ? ' (' + fmtSavedAt(opts.fetchedAt) + ')' : '') +
+      '.';
+  }
+  statusEl.className = 'live-note';
+  statusEl.innerHTML = html;
+}
+
+function refreshCsvInBackground(gid, label) {
+  if (csvRefreshInflight[gid]) return csvRefreshInflight[gid];
+  csvRefreshInflight[gid] = fetchCsvText(gid, label).then(async text => {
+    const prev = await csvCacheGet(gid);
+    if (!prev || prev.text !== text) {
+      await csvCacheSet(gid, { text: text, fetchedAt: Date.now() });
+    }
+    if (gid === PUBLISHED_SHEET.monthlyGid) {
+      const rows = csvToMonthlyRows(parseCsv(text, label));
+      await csvCacheSet(MONTHLY_ROWS_KEY, { text: JSON.stringify(rows), fetchedAt: Date.now() });
+      await csvCacheSet(COUNTY_META_KEY, {
+        text: JSON.stringify(countyMetaFromMonthlyRows(rows)),
+        fetchedAt: Date.now()
+      });
+    }
+  }).catch(err => {
+    console.warn('Background spreadsheet refresh failed for ' + label + ':', err);
+  }).finally(() => {
+    csvRefreshInflight[gid] = null;
+  });
+  return csvRefreshInflight[gid];
+}
+
+async function loadCsv(gid, label) {
+  const cached = await csvCacheGet(gid);
+  if (cached && cached.text) {
+    refreshCsvInBackground(gid, label);
+    return {
+      parsed: parseCsv(cached.text, label),
+      fromCache: true,
+      fetchedAt: cached.fetchedAt
+    };
+  }
+  const text = await fetchCsvText(gid, label);
+  const fetchedAt = Date.now();
+  csvCacheSet(gid, { text: text, fetchedAt: fetchedAt });
+  return {
+    parsed: parseCsv(text, label),
+    fromCache: false,
+    fetchedAt: fetchedAt
+  };
+}
+
+async function loadMonthlyRows() {
+  const cached = await csvCacheGet(MONTHLY_ROWS_KEY);
+  if (cached && cached.text) {
+    refreshCsvInBackground(PUBLISHED_SHEET.monthlyGid, 'Master_Monthly');
+    try {
+      return {
+        rows: JSON.parse(cached.text),
+        fromCache: true,
+        fetchedAt: cached.fetchedAt
+      };
+    } catch (err) {
+      console.warn('Saved monthly rows could not be read:', err);
+    }
+  }
+  const loaded = await loadCsv(PUBLISHED_SHEET.monthlyGid, 'Master_Monthly');
+  const rows = csvToMonthlyRows(loaded.parsed);
+  csvCacheSet(MONTHLY_ROWS_KEY, { text: JSON.stringify(rows), fetchedAt: loaded.fetchedAt });
+  csvCacheSet(COUNTY_META_KEY, {
+    text: JSON.stringify(countyMetaFromMonthlyRows(rows)),
+    fetchedAt: loaded.fetchedAt
+  });
+  return { rows: rows, fromCache: loaded.fromCache, fetchedAt: loaded.fetchedAt };
+}
+
+async function loadCountyMeta() {
+  const cached = await csvCacheGet(COUNTY_META_KEY);
+  if (cached && cached.text) {
+    loadMonthlyRows().catch(err => {
+      console.warn('Background county-size refresh failed:', err);
+    });
+    try {
+      return {
+        meta: JSON.parse(cached.text),
+        fromCache: true,
+        fetchedAt: cached.fetchedAt
+      };
+    } catch (err) {
+      console.warn('Saved county-size metadata could not be read:', err);
+    }
+  }
+  const monthly = await loadMonthlyRows();
+  const meta = countyMetaFromMonthlyRows(monthly.rows);
+  csvCacheSet(COUNTY_META_KEY, { text: JSON.stringify(meta), fetchedAt: monthly.fetchedAt });
+  return { meta: meta, fromCache: monthly.fromCache, fetchedAt: monthly.fetchedAt };
 }
 
 function csvToMonthlyRows(parsed) {
@@ -494,6 +697,500 @@ function fmtMonthShort(period) {
   const [y, m] = period.split('-');
   const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return names[parseInt(m, 10) - 1] + ' ' + y;
+}
+
+function isCf296TotalHeader(header) {
+  const last = normalizeHeader(header).split('|').pop().trim();
+  return last === 'total' || last === 'total (c)' || last === 'c. total';
+}
+
+function findCf296Field(fields, includeAll, excludeAny) {
+  const matches = (fields || []).filter(f => {
+    const n = normalizeHeader(f);
+    if (!includeAll.every(s => n.indexOf(normalizeHeader(s)) !== -1)) return false;
+    if ((excludeAny || []).some(s => n.indexOf(normalizeHeader(s)) !== -1)) return false;
+    return isCf296TotalHeader(f);
+  });
+  if (!matches.length) return null;
+  if (matches.length === 1) return matches[0];
+  const partA = matches.filter(f => /(?:^|:\s*)(?:part a\.|a\. applications for calfresh)/i.test(f));
+  return (partA.length ? partA[0] : matches[0]);
+}
+
+function parseCf296Period(reportMonth, dateVal) {
+  const rm = String(reportMonth == null ? '' : reportMonth).trim();
+  if (rm) {
+    const mdy = rm.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (mdy) {
+      let y = mdy[3];
+      if (y.length === 2) y = (parseInt(y, 10) >= 90 ? '19' : '20') + y;
+      return y + '-' + String(mdy[1]).padStart(2, '0');
+    }
+    const named = rm.match(/^([A-Za-z]+)\s+(\d{4})$/);
+    if (named) return buildPeriod(named[1], named[2]);
+    const iso = rm.match(/^(\d{4})-(\d{2})/);
+    if (iso) return iso[1] + '-' + iso[2];
+  }
+  const d = String(dateVal == null ? '' : dateVal).trim();
+  const compact = d.match(/^([A-Za-z]{3,9})[-\s]?(\d{2}|\d{4})$/);
+  if (compact) {
+    let y = compact[2];
+    if (y.length === 2) y = (parseInt(y, 10) >= 90 ? '19' : '20') + y;
+    return buildPeriod(compact[1], y);
+  }
+  return null;
+}
+
+function resolveOutcomeCounts(raw) {
+  const counts = {};
+  OUTCOME_COUNT_KEYS.forEach(k => { counts[k] = raw[k]; });
+  const estimated = {};
+  const missing = OUTCOME_COUNT_KEYS.filter(k => counts[k] == null);
+
+  function sumParts() {
+    return OUTCOME_PART_KEYS.reduce((s, p) => s + counts[p], 0);
+  }
+
+  if (missing.length === 1) {
+    const k = missing[0];
+    const recovered = k === 'disposed'
+      ? sumParts()
+      : counts.disposed - OUTCOME_PART_KEYS.filter(p => p !== k).reduce((s, p) => s + counts[p], 0);
+    if (recovered > SMALL_CELL_MAX) {
+      counts[k] = recovered;
+    } else if (recovered === 0) {
+      counts[k] = 0;
+    } else if (recovered > 0 && recovered <= SMALL_CELL_MAX) {
+      counts[k] = SMALL_CELL_PLACEHOLDER;
+      estimated[k] = true;
+    }
+  } else if (missing.length > 1) {
+    const known = OUTCOME_COUNT_KEYS.map(k => counts[k]).filter(v => v != null);
+    const allSmall = known.length > 0 && known.every(v => v <= SMALL_CELL_MAX);
+    if (allSmall) {
+      OUTCOME_PART_KEYS.forEach(p => {
+        if (counts[p] == null) {
+          counts[p] = SMALL_CELL_PLACEHOLDER;
+          estimated[p] = true;
+        }
+      });
+      if (counts.disposed == null && OUTCOME_PART_KEYS.every(p => counts[p] != null)) {
+        counts.disposed = sumParts();
+      }
+    }
+  }
+  return { counts, estimated };
+}
+
+function smallCellHoverNote(counts, stack) {
+  if (!counts || !counts.estimated) return null;
+  const names = (stack || OUTCOME_STACK).filter(s => counts.estimated[s.key]).map(s => s.label);
+  if (!names.length) return null;
+  if (names.length === 1) return names[0] + ': fewer than 11; plotted as 5.';
+  const last = names[names.length - 1];
+  return names.slice(0, -1).join(', ') + ' and ' + last + ': fewer than 11; plotted as 5.';
+}
+
+function parseStarredNumber(v) {
+  if (v == null) return { value: null, estimated: false };
+  const s = String(v).trim();
+  if (s === '*') return { value: SMALL_CELL_PLACEHOLDER, estimated: true };
+  const n = parseNumber(s);
+  return { value: n, estimated: false };
+}
+
+function csvToStudentOutcomeRows(parsed) {
+  const fields = parsed.meta.fields || [];
+  const map = headerMap(fields);
+  const countyCol = findCol(map, ['County']);
+  const monthCol = findCol(map, ['Month']);
+  const yearCol = findCol(map, ['Calendar Year']);
+  const cols = {
+    approved: findCol(map, ['Applications Approved Containing at Least One Student']),
+    denied: findCol(map, ['Applications Denied Containing at Least One Student']),
+    pended: findCol(map, ['Applications Pended Containing at Least One Student'])
+  };
+  if (!countyCol || !monthCol || !yearCol || !cols.approved || !cols.denied || !cols.pended) {
+    throw new Error('Master_Monthly is missing student application outcome columns.');
+  }
+
+  return parsed.data.map(row => {
+    const county = normalizeCountyName(row[countyCol]);
+    const period = buildPeriod(row[monthCol], row[yearCol]);
+    if (!county || !period) return null;
+    const approved = parseStarredNumber(row[cols.approved]);
+    const denied = parseStarredNumber(row[cols.denied]);
+    const pended = parseStarredNumber(row[cols.pended]);
+    if (approved.value == null && denied.value == null && pended.value == null) return null;
+    if (approved.value == null || denied.value == null || pended.value == null) return null;
+    const estimated = {};
+    if (approved.estimated) estimated.approved = true;
+    if (denied.estimated) estimated.denied = true;
+    if (pended.estimated) estimated.pended = true;
+    return {
+      county: county,
+      period: period,
+      approved: approved.value,
+      denied: denied.value,
+      pended: pended.value,
+      disposed: approved.value + denied.value + pended.value,
+      estimated: estimated
+    };
+  }).filter(Boolean);
+}
+
+function buildStudentSeries(studentRows, months, all_counties) {
+  const series = {};
+  function ensure(county) {
+    if (!series[county]) {
+      series[county] = {
+        approved: {}, denied: {}, pended: {}, disposed: {},
+        estimated: { approved: {}, denied: {}, pended: {} }
+      };
+    }
+    return series[county];
+  }
+  (studentRows || []).forEach(r => {
+    const s = ensure(r.county);
+    STUDENT_OUTCOME_PART_KEYS.forEach(k => { s[k][r.period] = r[k]; });
+    s.disposed[r.period] = r.disposed;
+    STUDENT_OUTCOME_PART_KEYS.forEach(k => {
+      if (r.estimated && r.estimated[k]) s.estimated[k][r.period] = true;
+    });
+  });
+  const entities = ['Statewide'].concat(all_counties || []);
+  entities.forEach(county => {
+    const s = ensure(county);
+    (months || []).forEach(m => {
+      STUDENT_OUTCOME_PART_KEYS.forEach(k => {
+        if (s[k][m] === undefined) s[k][m] = null;
+      });
+      if (s.disposed[m] === undefined) s.disposed[m] = null;
+    });
+  });
+  return series;
+}
+
+function csvToOutcomeRows(parsed, label) {
+  const fields = parsed.meta.fields || [];
+  const map = headerMap(fields);
+  const countyCol = findCol(map, ['County Name', 'County']);
+  const reportMonthCol = findCol(map, ['Report Month']);
+  const dateCol = findCol(map, ['Date']);
+  const cols = {
+    disposed: findCf296Field(fields, ['applications disposed of during the month'], ['recertification']),
+    approved: findCf296Field(fields, ['applications approved'], [
+      'over 30', 'overdue', 'certified caseload', '5.a', '5a.', 'item 5'
+    ]),
+    ineligible: findCf296Field(fields, ['denied because determined ineligible'], ['recertification']),
+    procedural: findCf296Field(fields, ['denied for procedural reasons'], []),
+    withdrawn: findCf296Field(fields, ['applications withdrawn'], ['recertification']),
+    received: findCf296Field(fields, ['applications received during the month'], ['online']),
+    caseApproved: findCf296Field(fields, ['certified caseload', 'applications approved'], [
+      '5.a.1', '5a.1', 'overdue', 'over 30'
+    ]),
+    reinstated: findCf296Field(fields, ['eligibility reinstated'], []),
+    discontinued: findCf296Field(fields, ['cases discontinued during the month'], [
+      'failure to complete', 'expedited'
+    ])
+  };
+  const missing = Object.keys(cols).filter(k => k !== 'received' && !cols[k]);
+  if (!countyCol || missing.length) {
+    throw new Error(label + ' is missing expected CF296 columns' +
+      (missing.length ? ' (' + missing.join(', ') + ')' : '') + '.');
+  }
+
+  return parsed.data.map(row => {
+    const county = normalizeCountyName(row[countyCol]);
+    const period = parseCf296Period(
+      reportMonthCol ? row[reportMonthCol] : '',
+      dateCol ? row[dateCol] : ''
+    );
+    if (!county || !period) return null;
+    const rec = {
+      county: county,
+      period: period,
+      disposed: parseNumber(row[cols.disposed]),
+      approved: parseNumber(row[cols.approved]),
+      ineligible: parseNumber(row[cols.ineligible]),
+      procedural: parseNumber(row[cols.procedural]),
+      withdrawn: parseNumber(row[cols.withdrawn]),
+      received: cols.received ? parseNumber(row[cols.received]) : null,
+      caseApproved: parseNumber(row[cols.caseApproved]),
+      reinstated: parseNumber(row[cols.reinstated]),
+      discontinued: parseNumber(row[cols.discontinued])
+    };
+    const hasOut = rec.disposed != null || rec.approved != null || rec.ineligible != null ||
+      rec.procedural != null || rec.withdrawn != null;
+    const hasMove = rec.caseApproved != null || rec.reinstated != null || rec.discontinued != null;
+    if (!hasOut && !hasMove && rec.received == null) return null;
+    if (hasOut) {
+      const resolved = resolveOutcomeCounts(rec);
+      OUTCOME_COUNT_KEYS.forEach(k => { rec[k] = resolved.counts[k]; });
+      rec.estimated = resolved.estimated;
+    } else {
+      rec.estimated = {};
+    }
+    return rec;
+  }).filter(Boolean);
+}
+
+function countyMetaFromMonthlyRows(monthlyRows) {
+  const households = {};
+  const monthsSet = new Set();
+  monthlyRows.forEach(r => {
+    if (!r.county || r.county === 'Statewide' || r.households == null) return;
+    if (!households[r.county]) households[r.county] = {};
+    households[r.county][r.period] = r.households;
+    monthsSet.add(r.period);
+  });
+  const months = Array.from(monthsSet).sort();
+  let latest = months[months.length - 1] || null;
+  // Prefer a month where most counties have a reading.
+  for (let i = months.length - 1; i >= 0; i--) {
+    const m = months[i];
+    const n = Object.keys(households).filter(c => households[c][m] != null).length;
+    if (n >= 50) { latest = m; break; }
+  }
+  const all_counties = Object.keys(households).sort();
+  const ranked = all_counties
+    .map(c => ({ c: c, h: (households[c] && households[c][latest]) || 0 }))
+    .sort((a, b) => b.h - a.h);
+  const xlarge = {};
+  ranked.slice(0, 6).forEach(row => { xlarge[row.c] = true; });
+  const county_meta = {};
+  all_counties.forEach(c => {
+    const h = (households[c] && households[c][latest]) || 0;
+    let size = 'Small';
+    if (xlarge[c]) size = 'X-Large';
+    else if (h > 25000) size = 'Large';
+    else if (h >= 5000) size = 'Medium';
+    county_meta[c] = { households_latest: h, size: size };
+  });
+  return county_meta;
+}
+
+function buildOutcomesData(outcomeRows, county_meta) {
+  const series = {};
+  const countiesSet = new Set();
+  const monthsSet = new Set();
+
+  function ensure(county) {
+    if (!series[county]) {
+      series[county] = {
+        disposed: {}, approved: {}, ineligible: {}, procedural: {}, withdrawn: {},
+        received: {},
+        caseApproved: {}, reinstated: {}, discontinued: {},
+        estimated: { approved: {}, ineligible: {}, procedural: {}, withdrawn: {} }
+      };
+    }
+    return series[county];
+  }
+
+  outcomeRows.forEach(r => {
+    monthsSet.add(r.period);
+    if (r.county !== 'Statewide') countiesSet.add(r.county);
+    const s = ensure(r.county);
+    OUTCOME_COUNT_KEYS.forEach(k => {
+      if (r[k] != null) s[k][r.period] = r[k];
+    });
+    if (r.received != null) s.received[r.period] = r.received;
+    MOVEMENT_KEYS.forEach(k => {
+      if (r[k] != null) s[k][r.period] = r[k];
+    });
+    OUTCOME_PART_KEYS.forEach(k => {
+      if (r.estimated && r.estimated[k]) s.estimated[k][r.period] = true;
+    });
+  });
+
+  const months = Array.from(monthsSet).sort();
+  const all_counties = Array.from(countiesSet).sort();
+  const entities = ['Statewide'].concat(all_counties);
+  entities.forEach(county => {
+    const s = ensure(county);
+    months.forEach(m => {
+      OUTCOME_COUNT_KEYS.forEach(k => {
+        if (s[k][m] === undefined) s[k][m] = null;
+      });
+      MOVEMENT_KEYS.forEach(k => {
+        if (s[k][m] === undefined) s[k][m] = null;
+      });
+      if (s.received[m] === undefined) s.received[m] = null;
+    });
+  });
+
+  let latest_complete_month = months[months.length - 1] || null;
+  for (let i = months.length - 1; i >= 0; i--) {
+    const s = series.Statewide;
+    if (s && s.disposed[months[i]] != null) {
+      latest_complete_month = months[i];
+      break;
+    }
+  }
+
+  const meta = county_meta || {};
+  all_counties.forEach(c => {
+    if (!meta[c]) meta[c] = { households_latest: 0, size: 'Small' };
+  });
+
+  return {
+    months: months,
+    latest_complete_month: latest_complete_month,
+    series: series,
+    student_series: {},
+    county_meta: meta,
+    all_counties: all_counties,
+    stack: OUTCOME_STACK,
+    student_stack: STUDENT_OUTCOME_STACK
+  };
+}
+
+function stackPartKeys(stack) {
+  return (stack || OUTCOME_STACK).map(s => s.key);
+}
+
+function estimatedFlagsFor(seriesRow, period, partKeys) {
+  const estimated = {};
+  const keys = partKeys || OUTCOME_PART_KEYS;
+  if (!seriesRow || !seriesRow.estimated) return estimated;
+  keys.forEach(k => {
+    if (seriesRow.estimated[k] && seriesRow.estimated[k][period]) estimated[k] = true;
+  });
+  return estimated;
+}
+
+function outcomeShares(counts, stack) {
+  if (!counts) return null;
+  const keys = stackPartKeys(stack);
+  const parts = [];
+  for (let i = 0; i < keys.length; i++) {
+    const v = counts[keys[i]];
+    if (v == null) return null;
+    parts.push(v);
+  }
+  const anyEstimated = counts.estimated && keys.some(k => counts.estimated[k]);
+  const d = anyEstimated
+    ? parts.reduce((s, v) => s + v, 0)
+    : (counts.disposed != null ? counts.disposed : parts.reduce((s, v) => s + v, 0));
+  if (d == null || d === 0) return null;
+  const out = {};
+  keys.forEach((k, i) => { out[k] = (parts[i] / d) * 100; });
+  return out;
+}
+
+function sumOutcomeCounts(memberCounties, period, series, stack) {
+  const parts = stackPartKeys(stack);
+  const keys = parts.indexOf('disposed') === -1 ? ['disposed'].concat(parts) : parts.slice();
+  const sums = {};
+  keys.forEach(k => { sums[k] = 0; });
+  const estimated = {};
+  let any = false;
+  for (let i = 0; i < memberCounties.length; i++) {
+    const s = series[memberCounties[i]];
+    if (!s) continue;
+    let rowOk = true;
+    const row = {};
+    for (let k = 0; k < parts.length; k++) {
+      const v = s[parts[k]][period];
+      if (v == null) { rowOk = false; break; }
+      row[parts[k]] = v;
+    }
+    if (!rowOk) continue;
+    if (s.disposed && s.disposed[period] != null) row.disposed = s.disposed[period];
+    else row.disposed = parts.reduce((t, k) => t + row[k], 0);
+    any = true;
+    keys.forEach(k => { sums[k] += row[k]; });
+    const flags = estimatedFlagsFor(s, period, parts);
+    parts.forEach(k => { if (flags[k]) estimated[k] = true; });
+  }
+  if (!any) return null;
+  sums.estimated = estimated;
+  return sums;
+}
+
+function deriveMovement(caseApproved, reinstated, discontinued) {
+  const additions = (caseApproved == null || reinstated == null) ? null : caseApproved + reinstated;
+  const exits = discontinued == null ? null : discontinued;
+  const net = (additions == null || exits == null) ? null : additions - exits;
+  return {
+    caseApproved: caseApproved,
+    reinstated: reinstated,
+    discontinued: discontinued,
+    additions: additions,
+    exits: exits,
+    net: net
+  };
+}
+
+function movementForCounty(county, period, series) {
+  const s = series && series[county];
+  if (!s) return null;
+  return deriveMovement(s.caseApproved[period], s.reinstated[period], s.discontinued[period]);
+}
+
+function sumMovementCounts(memberCounties, period, series) {
+  let caseApproved = 0, reinstated = 0, discontinued = 0;
+  let any = false;
+  for (let i = 0; i < memberCounties.length; i++) {
+    const s = series[memberCounties[i]];
+    if (!s) continue;
+    const a = s.caseApproved[period];
+    const r = s.reinstated[period];
+    const d = s.discontinued[period];
+    if (a == null || r == null || d == null) continue;
+    any = true;
+    caseApproved += a;
+    reinstated += r;
+    discontinued += d;
+  }
+  return any ? deriveMovement(caseApproved, reinstated, discontinued) : null;
+}
+
+async function startLiveOutcomesDashboard(initDashboard) {
+  const statusEl = document.getElementById('dataStatus');
+  const mainEl = document.getElementById('dashboardMain');
+
+  try {
+    statusEl.className = 'prototype-note';
+    statusEl.innerHTML = 'Loading current data...';
+
+    const [cf296Loaded, legacyLoaded, metaLoaded, monthlyLoaded] = await Promise.all([
+      loadCsv(PUBLISHED_SHEET.cf296Gid, 'CF296'),
+      loadCsv(PUBLISHED_SHEET.cf296LegacyGid, 'CF296_Legacy'),
+      loadCountyMeta(),
+      loadCsv(PUBLISHED_SHEET.monthlyGid, 'Master_Monthly')
+    ]);
+
+    const byKey = {};
+    csvToOutcomeRows(legacyLoaded.parsed, 'CF296_Legacy').forEach(r => {
+      byKey[r.county + '|' + r.period] = r;
+    });
+    // Current-era rows overwrite any overlapping legacy month.
+    csvToOutcomeRows(cf296Loaded.parsed, 'CF296').forEach(r => {
+      byKey[r.county + '|' + r.period] = r;
+    });
+
+    DATA = buildOutcomesData(Object.keys(byKey).map(k => byKey[k]), metaLoaded.meta || {});
+    DATA.student_series = buildStudentSeries(
+      csvToStudentOutcomeRows(monthlyLoaded.parsed),
+      DATA.months,
+      DATA.all_counties
+    );
+    const through = DATA.latest_complete_month ? fmtMonthShort(DATA.latest_complete_month) : null;
+    setFeedStatus(statusEl, {
+      through: through,
+      sourceLabel: 'CalFresh Data – Consolidated',
+      fromCache: cf296Loaded.fromCache && legacyLoaded.fromCache && metaLoaded.fromCache && monthlyLoaded.fromCache,
+      fetchedAt: [cf296Loaded.fetchedAt, legacyLoaded.fetchedAt, metaLoaded.fetchedAt, monthlyLoaded.fetchedAt]
+        .filter(Boolean).reduce((a, b) => Math.min(a, b), Infinity)
+    });
+    mainEl.hidden = false;
+    initDashboard();
+  } catch (err) {
+    statusEl.className = 'prototype-note error-note';
+    statusEl.innerHTML = '<strong>Could not load live spreadsheet data.</strong> ' +
+      String(err.message || err);
+  }
 }
 
 async function startLiveDashboard(initDashboard) {

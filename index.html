@@ -9,13 +9,31 @@
 <style>
   :root {
     --ink: #1f2430;
-    --muted: #6b7280;
+    --muted: #6A6A6A;
     --line: #e2e4e9;
     --bg: #fafafa;
     --card: #ffffff;
-    --accent: #2b6f7a;      /* placeholder accent — color palette pending dedicated design pass */
-    --accent2: #d97b3f;     /* placeholder second accent */
+    --accent: #4BA5BA;      /* Light Blue */
+    --accent2: #FB7906;     /* Orange */
+    --dark-blue: #2C5985;
+    --gray-blue: #C4D6E4;
+    --purple: #BA5D81;
+    --light-purple: #E8C9D5;
+    --light-gray: #C0C0C0;
     --grid: #ececec;
+  }
+  nav.site-nav {
+    display: flex; gap: 2px; flex-wrap: wrap; margin: 0 0 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  nav.site-nav a {
+    padding: 8px 12px 10px; font-size: 13px; font-weight: 600;
+    color: var(--muted); text-decoration: none;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  nav.site-nav a:hover { color: var(--ink); }
+  nav.site-nav a[aria-current="page"] {
+    color: var(--accent); border-bottom-color: var(--accent);
   }
   * { box-sizing: border-box; }
   body {
@@ -27,7 +45,9 @@
   .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
   header.page-head { margin-bottom: 6px; }
   header.page-head h1 { font-size: 26px; margin: 0 0 4px; font-weight: 700; }
-  header.page-head p.calfresh-intro { margin: 0 0 4px; color: var(--ink); font-size: 14px; }
+  header.page-head h1 .h1-info-tip {
+    margin: 0 0.28em 0 0.18em; vertical-align: middle; top: -0.12em;
+  }
   header.page-head p.sub { margin: 0; color: var(--muted); font-size: 14px; }
   .prototype-note {
     background: #fff7e8; border: 1px solid #f0d9a8; color: #6b4b12;
@@ -80,7 +100,7 @@
   .info-tip-btn:hover, .info-tip-btn:focus-visible {
     border-color: var(--accent); color: var(--accent); outline: none;
   }
-  .info-tip-btn:focus-visible { box-shadow: 0 0 0 3px rgba(43,111,122,0.28); }
+  .info-tip-btn:focus-visible { box-shadow: 0 0 0 3px rgba(75,165,186,0.28); }
   .info-tip-bubble {
     display: none; position: absolute; left: 0; top: calc(100% + 8px);
     width: 260px; z-index: 40; padding: 8px 10px;
@@ -105,14 +125,14 @@
     flex-basis: 100%; font-size: 11px; font-weight: 700; text-transform: uppercase;
     letter-spacing: .04em; margin-bottom: -4px;
   }
-  .link-a { background: rgba(217,123,63,0.05); }
+  .link-a { background: rgba(251,121,6,0.05); }
   .link-a .filters-kicker { color: var(--accent2); }
-  .link-b { background: rgba(43,111,122,0.05); }
+  .link-b { background: rgba(75,165,186,0.08); }
   .link-b .filters-kicker { color: var(--accent); }
   .filters.link-a, .time-range-control.link-a, .card.link-a { border-left: 4px solid var(--accent2); }
   .filters.link-b, .time-range-control.link-b, .card.link-b { border-left: 4px solid var(--accent); }
-  .card.link-a { background: rgba(217,123,63,0.05); }
-  .card.link-b { background: rgba(43,111,122,0.05); }
+  .card.link-a { background: rgba(251,121,6,0.05); }
+  .card.link-b { background: rgba(75,165,186,0.08); }
   .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 26px; }
   @media (max-width: 860px) { .charts-row { grid-template-columns: 1fr; } }
   /* Grid tracks default to a min-width equal to their content's intrinsic size, and a
@@ -245,11 +265,11 @@
   }
   .range-input:hover::-webkit-slider-thumb,
   .range-input:focus-visible::-webkit-slider-thumb {
-    box-shadow: 0 0 0 3px rgba(217,123,63,0.28), 0 1px 3px rgba(31,36,48,0.28);
+    box-shadow: 0 0 0 3px rgba(251,121,6,0.28), 0 1px 3px rgba(31,36,48,0.28);
   }
   .range-input:hover::-moz-range-thumb,
   .range-input:focus-visible::-moz-range-thumb {
-    box-shadow: 0 0 0 3px rgba(217,123,63,0.28), 0 1px 3px rgba(31,36,48,0.28);
+    box-shadow: 0 0 0 3px rgba(251,121,6,0.28), 0 1px 3px rgba(31,36,48,0.28);
   }
   .range-slider:active .range-input::-webkit-slider-thumb { cursor: grabbing; }
   .range-slider:active .range-input::-moz-range-thumb { cursor: grabbing; }
@@ -268,13 +288,13 @@
   .bucket-filter-head .filter-hint { max-width: none; }
   .bucket-filter-head .range-btn { margin-left: auto; }
   .card p.caption { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
-  /* Plot title sits on the chart for screenshots. Hover values are a floating
-     readout next to the point — not a reserved strip (that clipped and sat
-     on the title, Steph/Jared follow-up 2026-08-30). */
-  .chart-plot { position: relative; margin-top: 2px; }
+  /* Plot title sits on the chart for screenshots. Hover values float in the
+     title/caption band above the canvas — not a reserved strip (that clipped
+     the title, Steph/Jared 2026-08-29) and not on the plot (Diana, 2026-08-30). */
+  .chart-plot { position: relative; margin-top: 2px; overflow: visible; }
   .chart-plot-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
   .chart-hover {
-    display: none; position: absolute; z-index: 8; left: 0; top: 0;
+    display: none; position: absolute; z-index: 12; left: 0; top: 0;
     pointer-events: none; width: max-content;
     max-width: min(260px, calc(100% - 16px));
     font-size: 12px; line-height: 1.35; padding: 8px 10px;
@@ -418,8 +438,14 @@
 <body>
 <div class="wrap">
   <header class="page-head">
-    <h1>CalFresh Participation Trends</h1>
-    <p class="calfresh-intro">CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California.</p>
+    <nav class="site-nav" aria-label="Dashboard views">
+      <a href="index.html" aria-current="page">Participation Trends</a>
+      <a href="outcomes.html">Applications</a>
+    </nav>
+    <h1>CalFresh<span class="info-tip h1-info-tip">
+      <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="calfreshNameTip" aria-label="What CalFresh means">i</button>
+      <span id="calfreshNameTip" class="info-tip-bubble" role="tooltip">CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California.</span>
+    </span> Participation Trends</h1>
     <p class="sub">Working Prototype! Contact Diana Jensen at diana@djconsults.com for questions or suggestions.</p>
   </header>
 
@@ -519,7 +545,7 @@
         <p class="layers-hint">Check a group to add its line.</p>
         <p class="layers-lock-note" id="layersLockNote">Participant types are available when one county or one region is selected.</p>
         <div class="layers-list">
-          <label class="layer-toggle" id="allParticipantsToggle" style="--layer-color:#d97b3f"><input type="checkbox" id="allParticipantsCheckbox" checked><span class="layer-swatch" id="allParticipantsSwatch" style="background:#d97b3f"></span>All Participants</label>
+          <label class="layer-toggle" id="allParticipantsToggle" style="--layer-color:#FB7906"><input type="checkbox" id="allParticipantsCheckbox" checked><span class="layer-swatch" id="allParticipantsSwatch" style="background:#FB7906"></span>All Participants</label>
           <label class="layer-toggle" style="--layer-color:#c9a227"><input type="checkbox" id="ageBandCheckbox">
             <span class="layer-swatch-stack" aria-hidden="true"><span class="layer-swatch" style="background:#c9a227"></span><span class="layer-swatch" style="background:#5b3a8e"></span><span class="layer-swatch" style="background:#1f2430"></span></span>
             <span class="layer-toggle-copy">By Age Group (Children / 18–59 / 60+)
@@ -813,14 +839,16 @@ function hoverTooltipExternal(elId, placement) {
     let left = Math.max(8, Math.min(caretX - tipW / 2, plot.clientWidth - tipW - 8));
     let top;
     if (placement === 'above') {
-      // Sit well above the hovered month so the lines stay visible. If there
-      // isn't room inside the canvas, lift into the title/caption band rather
-      // than covering the plot (Diana, 2026-08-30).
+      // Follow the hovered month on x. Vertically, sit entirely above the
+      // canvas (title/caption band). Overflow the plot if needed, but stay
+      // inside the card (Diana, 2026-08-30 / 2026-09-01).
       const canvasTop = canvasRect.top - plotRect.top;
-      const abovePoint = caretY - tipH - 40;
-      const aboveCanvas = canvasTop - tipH - 8;
-      top = Math.min(abovePoint, aboveCanvas);
-      if (top < 8) top = 8;
+      top = canvasTop - tipH - 8;
+      const card = plot.closest('.card');
+      if (card) {
+        const minTop = card.getBoundingClientRect().top - plotRect.top + 8;
+        if (top < minTop) top = minTop;
+      }
     } else {
       const gap = 14;
       left = caretX + gap;
@@ -1740,7 +1768,7 @@ function buildTotalChart(counties, regions) {
 
   const values = singleFocus ? personsValues(singleCounty, singleRegion, labels) : [];
   const datasets = [];
-  const totalColor = singleRegion ? REGION_COLOR_BY_NAME[singleRegion] : '#d97b3f';
+  const totalColor = singleRegion ? REGION_COLOR_BY_NAME[singleRegion] : '#FB7906';
   allParticipantsSwatch.style.background = totalColor;
   allParticipantsToggle.style.setProperty('--layer-color', totalColor);
 
@@ -1785,7 +1813,7 @@ function buildTotalChart(counties, regions) {
 
   if (singleFocus) {
     if (showTotal) {
-      const color = singleRegion ? REGION_COLOR_BY_NAME[singleRegion] : '#d97b3f';
+      const color = singleRegion ? REGION_COLOR_BY_NAME[singleRegion] : '#FB7906';
       datasets.push({
         label: entityName,
         data: values,
@@ -2585,7 +2613,7 @@ function buildBucketChart() {
         {
           label: bucketRateLabel(),
           data: mergedValues,
-          backgroundColor: mergedValues.map(v => v >= 0 ? '#2b6f7a' : '#b5533f'),
+          backgroundColor: mergedValues.map(v => v >= 0 ? '#4BA5BA' : '#b5533f'),
           borderRadius: 2,
           order: 2,
           _groupRanges: groupRanges,
@@ -2610,7 +2638,7 @@ function buildBucketChart() {
         legend: { display: false },
         tooltip: {
           enabled: false,
-          external: hoverTooltipExternal('bucketChartHover'),
+          external: hoverTooltipExternal('bucketChartHover', 'above'),
           backgroundColor: 'rgba(24, 27, 36, 0.97)',
           titleColor: '#ffffff',
           bodyColor: '#ffffff',
