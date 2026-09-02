@@ -1,0 +1,2105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CalFresh Applications — Prototype</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
+<script src="data.js"></script>
+<style>
+  :root {
+    --ink: #1f2430;
+    --muted: #6A6A6A;
+    --line: #e2e4e9;
+    --bg: #fafafa;
+    --card: #ffffff;
+    --accent: #4BA5BA;
+    --accent2: #FB7906;
+    --dark-blue: #2C5985;
+    --gray-blue: #C4D6E4;
+    --purple: #BA5D81;
+    --light-purple: #E8C9D5;
+    --light-gray: #C0C0C0;
+    --grid: #ececec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
+  header.page-head { margin-bottom: 6px; }
+  header.page-head h1 { font-size: 26px; margin: 0 0 4px; font-weight: 700; }
+  header.page-head h1 .h1-info-tip {
+    margin: 0 0.28em 0 0.18em; vertical-align: middle; top: -0.12em;
+  }
+  header.page-head p.sub { margin: 0; color: var(--muted); font-size: 14px; }
+  header.page-head p.sub a { color: var(--accent); }
+  nav.site-nav {
+    display: flex; gap: 2px; flex-wrap: wrap; margin: 0 0 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  nav.site-nav a {
+    padding: 8px 12px 10px; font-size: 13px; font-weight: 600;
+    color: var(--muted); text-decoration: none;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  nav.site-nav a:hover { color: var(--ink); }
+  nav.site-nav a[aria-current="page"] {
+    color: var(--accent); border-bottom-color: var(--accent);
+  }
+  .prototype-note {
+    background: #fff7e8; border: 1px solid #f0d9a8; color: #6b4b12;
+    font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
+  }
+  .card-filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 14px; }
+  .card-filters-clear {
+    flex-basis: 100%;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  }
+  .filter-group { display: flex; flex-direction: column; gap: 6px; }
+  .filter-group label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .filter-group select {
+    font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line);
+    background: #fff; min-width: 200px;
+  }
+  .filter-group.multi { width: 200px; overflow: visible; }
+  .filter-group.multi select { min-height: 92px; width: 200px; }
+  .filter-hint { font-size: 11px; color: var(--muted); max-width: 220px; }
+  .filter-label-row { display: flex; align-items: center; gap: 6px; }
+  .filter-label-row label { margin: 0; }
+  .info-tip { position: relative; display: inline-flex; flex-shrink: 0; }
+  .info-tip-btn {
+    width: 16px; height: 16px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--muted); background: #fff; color: var(--muted);
+    font-size: 11px; font-weight: 700; font-style: italic; font-family: Georgia, "Times New Roman", serif;
+    line-height: 1; cursor: help;
+  }
+  .info-tip-btn:hover, .info-tip-btn:focus-visible {
+    border-color: var(--accent); color: var(--accent); outline: none;
+  }
+  .info-tip-btn:focus-visible { box-shadow: 0 0 0 3px rgba(75,165,186,0.28); }
+  .info-tip-bubble {
+    display: none; position: absolute; left: 0; top: calc(100% + 8px);
+    width: 260px; z-index: 40; padding: 8px 10px;
+    background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+    font-size: 12px; font-weight: 400; font-style: normal; text-transform: none;
+    letter-spacing: 0; line-height: 1.45;
+    box-shadow: 0 4px 14px rgba(31,36,48,0.16);
+  }
+  .info-tip:hover .info-tip-bubble,
+  .info-tip:focus-within .info-tip-bubble,
+  .info-tip-btn[aria-expanded="true"] + .info-tip-bubble { display: block; }
+  .card-filters-clear .filter-hint { max-width: none; }
+  .region-with-drill {
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start;
+  }
+  .drill-panel { max-width: 220px; min-width: 180px; }
+  .drill-panel-spacer {
+    visibility: hidden; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em; line-height: 1.2;
+  }
+  .link-a { background: rgba(251,121,6,0.05); }
+  .link-b { background: rgba(75,165,186,0.08); }
+  .filters.link-a, .time-range-control.link-a, .card.link-a { border-left: 4px solid var(--accent2); }
+  .filters.link-b, .time-range-control.link-b, .card.link-b { border-left: 4px solid var(--accent); }
+  .card.link-a { background: rgba(251,121,6,0.05); }
+  .card.link-b { background: rgba(75,165,186,0.08); }
+  .time-range-control { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px 16px; margin-bottom: 18px; }
+  .shared-controls { background: var(--card); }
+  .shared-filters { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .shared-filters .card-filters { margin-bottom: 0; }
+  .shared-filters-toggle {
+    display: block;
+    width: 100%; margin-top: 12px; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    cursor: pointer; text-align: left; color: var(--ink); font-family: inherit;
+  }
+  .shared-filters-toggle:hover { background: #f2f2f2; }
+  .shared-filters-toggle[aria-expanded="true"] {
+    border-color: var(--accent2); background: #fff7f0;
+  }
+  .shared-filters-toggle-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .03em; color: var(--muted);
+  }
+  .shared-filters-summary {
+    display: block; font-size: 13px; margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .filters-toggle-keep { white-space: nowrap; }
+  .filters-toggle-mark {
+    display: inline-block; width: 14px; height: 14px;
+    margin-left: 5px; vertical-align: -2px; position: relative;
+    color: var(--muted);
+  }
+  .filters-toggle-mark::before,
+  .filters-toggle-mark::after {
+    content: ""; position: absolute; background: currentColor; border-radius: 1px;
+  }
+  .filters-toggle-mark::before {
+    left: 2px; right: 2px; top: 6px; height: 2px;
+  }
+  .filters-toggle-mark::after {
+    top: 2px; bottom: 2px; left: 6px; width: 2px;
+  }
+  .shared-filters-toggle[aria-expanded="true"] .filters-toggle-mark::after { display: none; }
+  .shared-controls:not(.filters-open) .shared-filters { display: none; }
+  .bucket-filters:not(.filters-open) .bucket-filter-lists { display: none; }
+  .bucket-filters .shared-filters-toggle { margin-top: 0; }
+  .bucket-filters.filters-open .bucket-filter-lists {
+    margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line);
+  }
+  @media (max-width: 860px) {
+    .shared-controls {
+      position: sticky; top: 0; z-index: 20;
+      box-shadow: 0 2px 10px rgba(31,36,48,0.12);
+    }
+    .shared-controls.filters-open .shared-filters {
+      max-height: min(50vh, 320px);
+      overflow-y: auto;
+    }
+    .bucket-filters.filters-open .bucket-filter-lists {
+      max-height: min(50vh, 320px);
+      overflow-y: auto;
+    }
+  }
+  .time-range-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .time-range-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .time-range-label strong { color: var(--ink); font-weight: 700; text-transform: none; letter-spacing: 0; margin-left: 4px; }
+  .range-btn { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--ink); }
+  .range-btn:hover { background: #f2f2f2; }
+  .range-btn.active { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .drill-toggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; margin-top: 0; padding: 5px 8px;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    cursor: pointer; color: var(--ink); font-size: 12px; text-align: left; font-family: inherit;
+  }
+  .drill-toggle:hover:not(:disabled) { background: #f2f2f2; }
+  .drill-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+  .drill-toggle[aria-pressed="true"] {
+    background: #fff7f0; border-color: var(--accent2);
+  }
+  .drill-toggle-switch {
+    flex: 0 0 32px; width: 32px; height: 18px; border-radius: 9px;
+    background: #d1d5db; position: relative;
+  }
+  .drill-toggle[aria-pressed="true"] .drill-toggle-switch { background: var(--accent2); }
+  .drill-toggle-knob {
+    position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(31,36,48,0.25);
+    transition: left 0.15s ease;
+  }
+  .drill-toggle[aria-pressed="true"] .drill-toggle-knob { left: 16px; }
+  .chart-statewide-toggle {
+    display: inline-flex; width: auto; max-width: 100%; margin: 0 0 12px;
+  }
+  .range-slider { position: relative; height: 28px; margin: 0 4px; }
+  .range-track { position: absolute; top: 50%; left: 0; right: 0; height: 6px; margin-top: -3px; background: var(--grid); border-radius: 3px; pointer-events: none; }
+  .range-track-fill {
+    position: absolute; top: 0; height: 100%; border-radius: 3px;
+    background: var(--accent2); opacity: 0.85; pointer-events: none;
+  }
+  .range-hint { margin: 6px 4px 0; font-size: 11px; color: var(--muted); }
+  .range-input {
+    position: absolute; top: 0; left: 0; width: 100%; margin: 0; height: 28px;
+    background: transparent; pointer-events: none; -webkit-appearance: none; appearance: none;
+  }
+  .range-input::-webkit-slider-runnable-track { background: transparent; }
+  .range-input::-moz-range-track { background: transparent; }
+  .range-input::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; pointer-events: auto;
+    width: 18px; height: 18px; border-radius: 50%; background: var(--accent2);
+    border: 2px solid #fff; box-shadow: 0 1px 3px rgba(31,36,48,0.28); cursor: grab; margin-top: 5px;
+  }
+  .range-input::-moz-range-thumb {
+    pointer-events: auto; width: 18px; height: 18px; border-radius: 50%; background: var(--accent2);
+    border: 2px solid #fff; box-shadow: 0 1px 3px rgba(31,36,48,0.28); cursor: grab;
+  }
+  .range-input:hover::-webkit-slider-thumb,
+  .range-input:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(251,121,6,0.28), 0 1px 3px rgba(31,36,48,0.28);
+  }
+  .range-input:hover::-moz-range-thumb,
+  .range-input:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 3px rgba(251,121,6,0.28), 0 1px 3px rgba(31,36,48,0.28);
+  }
+  .range-slider:active .range-input::-webkit-slider-thumb { cursor: grabbing; }
+  .range-slider:active .range-input::-moz-range-thumb { cursor: grabbing; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 10px; margin-bottom: 22px; }
+  .card h2 { font-size: 15px; margin: 0 0 8px; }
+  .card p.caption { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+  .bucket-title-row {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .card .bucket-title-row h2 { margin: 0; }
+  .bucket-filter-head {
+    flex-basis: 100%;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .bucket-filter-head .filter-hint { max-width: none; }
+  .bucket-filter-head .range-btn { margin-left: auto; }
+  .chart-plot { position: relative; margin-top: 2px; overflow: visible; }
+  .area-pane, .area-panes { overflow: visible; }
+  .chart-plot-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .chart-hover {
+    display: none; position: absolute; z-index: 12; left: 0; top: 0;
+    pointer-events: none; width: max-content;
+    max-width: min(280px, calc(100% - 16px));
+    font-size: 12px; line-height: 1.35; padding: 8px 10px;
+    border-radius: 6px; background: rgba(24, 27, 36, 0.97); color: #fff;
+  }
+  .chart-hover.is-active { display: block; }
+  .chart-hover-title { font-weight: 700; margin-bottom: 2px; }
+  .chart-hover-note { opacity: 0.92; margin-bottom: 6px; font-style: italic; }
+  .chart-hover-row { display: flex; align-items: flex-start; gap: 6px; }
+  .chart-hover-swatch {
+    width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; margin-top: 3px;
+  }
+  .chart-holder { position: relative; height: 280px; min-width: 0; }
+  .received-holder { height: 120px; }
+  .received-plot { margin-top: 4px; }
+  .received-plot .chart-plot-title {
+    font-size: 12px; font-weight: 600; color: var(--muted); margin: 0 0 2px;
+  }
+  .area-panes {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px; margin-bottom: 8px;
+  }
+  .area-pane { min-width: 0; }
+  .outcome-legend {
+    display: flex; flex-wrap: wrap; gap: 12px 18px; margin: 0 0 10px;
+    font-size: 12px; color: var(--ink);
+  }
+  .outcome-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .outcome-legend i {
+    display: inline-block; width: 14px; height: 10px; border-radius: 2px;
+  }
+  .procedural-note {
+    font-size: 12px; color: var(--muted); line-height: 1.5; margin: 0 0 12px;
+    max-width: 720px;
+  }
+  .layers-control {
+    display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+    margin: 12px 0 8px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff;
+  }
+  .layers-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .layers-hint { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .layers-list { display: flex; flex-direction: column; gap: 2px; }
+  .layer-toggle {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--ink); cursor: pointer;
+    padding: 6px 8px; border-radius: 6px; --layer-color: var(--accent2);
+  }
+  .layer-toggle:hover { background: #f4f4f6; }
+  .layer-toggle:has(input:checked) {
+    background: color-mix(in srgb, var(--layer-color) 16%, #fff);
+  }
+  .layer-toggle:has(input:checked):hover {
+    background: color-mix(in srgb, var(--layer-color) 22%, #fff);
+  }
+  .layer-toggle input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none;
+    width: 18px; height: 18px; margin: 0; flex-shrink: 0;
+    border: 2px solid #8b9099; border-radius: 4px; background: #fff; cursor: pointer;
+  }
+  .layer-toggle input[type="checkbox"]:checked {
+    background-color: var(--layer-color); border-color: var(--layer-color);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 6.5l2.5 2.5L10 3.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: center; background-size: 12px 12px;
+  }
+  .layer-toggle input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--layer-color); outline-offset: 2px;
+  }
+  .layer-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .layers-caveat {
+    display: none; font-size: 11px; color: var(--muted); line-height: 1.5;
+    background: #f7f5f0; border-left: 3px solid #b5895a; padding: 6px 10px; margin: 0 0 10px;
+  }
+  .layers-caveat.show { display: block; }
+  .groupby-control { display: flex; align-items: center; gap: 8px; margin: 4px 0 14px; flex-wrap: wrap; }
+  .groupby-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .chart-legend { display: flex; gap: 16px; margin-left: auto; font-size: 11px; color: var(--muted); align-items: center; flex-wrap: wrap; }
+  .legend-item { display: inline-flex; align-items: center; }
+  .legend-swatch { display: inline-block; width: 18px; height: 0; margin-right: 5px; }
+  .legend-swatch.dashed { border-top: 1.5px dashed #111; }
+  .groupby-control .layer-toggle { padding: 4px 8px; font-size: 12px; }
+  #bucketChartHolder { height: 420px; overflow-x: auto; }
+  footer.source-note { margin-top: 34px; font-size: 11.5px; color: var(--muted); line-height: 1.6; border-top: 1px solid var(--line); padding-top: 14px; }
+  footer.source-note a { color: var(--accent); }
+  footer.source-note .footer-section-label {
+    display: block; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--ink); font-size: 10.5px; margin: 14px 0 4px;
+  }
+  footer.source-note .footer-section-label:first-child { margin-top: 0; }
+  footer.source-note .footer-notes { margin: 0; padding-left: 1.2em; }
+  footer.source-note .footer-notes li { margin: 0 0 0.55em; }
+  footer.source-note .footer-notes li:last-child { margin-bottom: 0; }
+  .live-note {
+    background: #eef6f4; border: 1px solid #c5ddd6; color: #1f4d43;
+    font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
+  }
+  .error-note { background: #fdecec; border-color: #e8b4b4; color: #6b1f1f; }
+  #dashboardMain[hidden] { display: none !important; }
+  .sr-only {
+    position: absolute !important; width: 1px !important; height: 1px !important;
+    padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+    clip: rect(0,0,0,0) !important; clip-path: inset(50%) !important;
+    white-space: nowrap !important; border: 0 !important;
+  }
+  @media print {
+    body { background: #fff; }
+    .link-a, .link-b, .card.link-a, .card.link-b { background: #fff !important; }
+    .card, .time-range-control, .shared-controls { box-shadow: none; }
+    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover { display: none; }
+    .shared-filters, .bucket-filter-lists { display: flex !important; border-top: 0; padding-top: 0; }
+    .filter-group.multi select { min-height: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page-head">
+    <nav class="site-nav" aria-label="Dashboard views">
+      <a href="index.html">Participation Trends</a>
+      <a href="outcomes.html" aria-current="page">Applications</a>
+    </nav>
+    <h1>CalFresh<span class="info-tip h1-info-tip">
+      <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="calfreshNameTip" aria-label="What CalFresh means">i</button>
+      <span id="calfreshNameTip" class="info-tip-bubble" role="tooltip">CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California.</span>
+    </span> Applications</h1>
+    <p class="sub">Working Prototype! Contact Diana Jensen at <a href="mailto:diana@djconsults.com">diana@djconsults.com</a> for questions or suggestions.</p>
+  </header>
+
+  <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
+
+  <div id="dashboardMain" hidden>
+  <div class="shared-controls time-range-control link-a" id="sharedControls">
+    <div class="time-range-header">
+      <span class="time-range-label">Showing<strong id="rangeLabel"></strong></span>
+      <button type="button" id="rangeLastTwoYears" class="range-btn">Last 2 years</button>
+      <button type="button" id="rangeSkipCovid" class="range-btn">Since 2021 (post COVID spike)</button>
+      <button type="button" id="rangeReset" class="range-btn">Full range</button>
+    </div>
+    <div class="range-slider">
+      <div class="range-track"><div class="range-track-fill" id="rangeTrackFill"></div></div>
+      <input type="range" id="rangeStart" class="range-input" min="0" max="0" value="0" step="1"
+        aria-label="Start of date range" title="Drag to set the start of the date range">
+      <input type="range" id="rangeEnd" class="range-input" min="0" max="0" value="0" step="1"
+        aria-label="End of date range" title="Drag to set the end of the date range">
+    </div>
+    <p class="range-hint">Drag either handle to change the date range</p>
+
+    <button type="button" id="sharedFiltersToggle" class="shared-filters-toggle"
+      aria-expanded="false" aria-controls="sharedFilters">
+      <span class="shared-filters-toggle-text">
+        <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
+        <span class="shared-filters-summary" id="sharedFiltersSummary">Alameda</span>
+      </span>
+    </button>
+    <div class="shared-filters" id="sharedFilters">
+      <div class="card-filters">
+        <div class="card-filters-clear">
+          <button type="button" id="clearCompareBtn" class="range-btn">Clear filters</button>
+          <div class="filter-hint">Click a name to add or remove it.</div>
+        </div>
+        <div class="filter-group multi">
+          <div class="filter-label-row">
+            <label for="compareSelect">Counties</label>
+            <span class="info-tip">
+              <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="countiesTip" aria-label="About the Counties filter">i</button>
+              <span id="countiesTip" class="info-tip-bubble" role="tooltip">California can be selected on its own. To compare a county, region, or size group with the state, use Add Statewide comparison. Each selected county, region, or size group gets its own stacked chart — stacks cannot overlay.</span>
+            </span>
+          </div>
+          <select id="compareSelect" multiple></select>
+        </div>
+        <div class="filter-group multi">
+          <div class="filter-label-row">
+            <label for="sizeCompareSelect">County size</label>
+            <span class="info-tip">
+              <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeCompareTip" aria-label="About the County size filter">i</button>
+              <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Adds one stacked chart per size group, using the combined counts of counties in that group (not an average of percentages). Leave empty to skip size-group charts. X-Large is the 6 largest counties by CalFresh households. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Independent of the bar chart below.</span>
+            </span>
+          </div>
+          <select id="sizeCompareSelect" multiple></select>
+        </div>
+        <div class="region-with-drill">
+          <div class="filter-group multi">
+            <div class="filter-label-row">
+              <label for="regionCompareSelect">Regions</label>
+              <span class="info-tip">
+                <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="regionsTip" aria-label="About the Regions filter">i</button>
+                <span id="regionsTip" class="info-tip-bubble" role="tooltip">Adds one stacked chart per region, using the combined application counts of member counties (not an average of percentages).</span>
+              </span>
+            </div>
+            <select id="regionCompareSelect" multiple></select>
+          </div>
+          <div class="filter-group drill-panel">
+            <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
+            <button type="button" id="drillRegionBtn" class="drill-toggle" aria-pressed="false" disabled
+              aria-label="Drill into region, off"
+              title="Select exactly one region to turn this on">
+              <span>Drill into region</span>
+              <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
+            </button>
+            <div class="filter-hint" id="drillRegionHint">Available when exactly one region is selected. When on, Counties follows that region.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card link-b">
+    <h2>Caseload movement</h2>
+    <p class="caption" id="movementCaption">Certified cases added and discontinued in the selected months</p>
+    <div class="outcome-legend" id="movementLegend"></div>
+    <div id="movementPanes" class="area-panes"></div>
+    <table class="sr-only" id="movementChartTable">
+      <caption>Caseload movement: additions, discontinuances, and net, by month</caption>
+      <thead><tr><th scope="col">Month</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card link-a">
+    <h2>Application Outcomes</h2>
+    <div class="groupby-control" role="group" aria-label="Population">
+      <span class="groupby-label">Population</span>
+      <button type="button" class="range-btn groupby-btn population-btn active" data-population="all" aria-pressed="true">All applications</button>
+      <button type="button" class="range-btn groupby-btn population-btn" data-population="students" aria-pressed="false">College students</button>
+    </div>
+    <p class="caption" id="areaCaption">Share of applications disposed that month</p>
+    <div class="outcome-legend" id="outcomeLegend"></div>
+    <p class="procedural-note">CDSS replaces counts under 11 with an asterisk. Those slices are plotted as 5 — hover a month to see which. Larger hidden totals, and counties that did not report, stay blank.</p>
+    <button type="button" id="statewideCompareBtn" class="drill-toggle chart-statewide-toggle"
+      aria-pressed="true" aria-label="Add Statewide comparison, on">
+      <span>Add Statewide comparison</span>
+      <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
+    </button>
+    <div id="areaPanes" class="area-panes"></div>
+    <div class="layers-control" id="areaLayersControl">
+      <span class="layers-label">Show on these charts</span>
+      <p class="layers-hint">Check to add a volume chart under each outcomes chart, using the same months.</p>
+      <div class="layers-list">
+        <label class="layer-toggle" style="--layer-color:#2a6ebb">
+          <input type="checkbox" id="layerAppsReceived">
+          <span class="layer-swatch" style="background:#2a6ebb"></span>
+          Applications received
+        </label>
+      </div>
+    </div>
+    <p class="layers-caveat" id="areaLayersCaveat">Applications received that month are not the applications in the stacks. The stacks are applications disposed that month, which include apps that arrived earlier. A spike in received can show up in later months’ outcome mix.</p>
+    <table class="sr-only" id="areaChartTable">
+      <caption>Application outcomes as a share of applications disposed, by month</caption>
+      <thead><tr><th scope="col">Month</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card link-b">
+    <div class="bucket-title-row">
+      <h2 id="bucketTitle">Application Outcomes by County</h2>
+    </div>
+    <div class="groupby-control" role="group" aria-label="Population">
+      <span class="groupby-label">Population</span>
+      <button type="button" class="range-btn groupby-btn population-btn active" data-population="all" aria-pressed="true">All applications</button>
+      <button type="button" class="range-btn groupby-btn population-btn" data-population="students" aria-pressed="false">College students</button>
+    </div>
+    <div class="groupby-control">
+      <span class="groupby-label">Month</span>
+      <select id="bucketMonthSelect"></select>
+    </div>
+    <div class="groupby-control">
+      <span class="groupby-label">Group by</span>
+      <button type="button" class="range-btn groupby-btn active" data-groupby="size">County size</button>
+      <button type="button" class="range-btn groupby-btn" data-groupby="region">Region</button>
+      <button type="button" class="range-btn groupby-btn" data-groupby="none">None (all counties)</button>
+    </div>
+    <div class="groupby-control">
+      <span class="groupby-label">Sort by</span>
+      <button type="button" class="range-btn groupby-btn active" data-sort="approved" aria-pressed="true">Approval rate</button>
+      <button type="button" class="range-btn groupby-btn" data-sort="procedural" id="sortProceduralBtn" aria-pressed="false">Procedural denial rate</button>
+      <div class="chart-legend" id="groupLineLegend">
+        <span class="legend-item"><span class="legend-swatch dashed"></span><span id="groupLineLegendLabel">Aggregate approval rate by group</span></span>
+      </div>
+    </div>
+    <div class="bucket-filters" id="bucketFilters">
+      <button type="button" id="bucketFiltersToggle" class="shared-filters-toggle"
+        aria-expanded="false" aria-controls="bucketFilterLists">
+        <span class="shared-filters-toggle-text">
+          <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
+          <span class="shared-filters-summary" id="bucketFiltersSummary">All counties</span>
+        </span>
+      </button>
+      <div class="card-filters bucket-filter-lists" id="bucketFilterLists">
+        <div class="bucket-filter-head">
+          <div class="filter-hint">Click a name to add or remove it. Leave empty to include all.</div>
+          <button type="button" id="clearFiltersBtn" class="range-btn">Clear all filters</button>
+        </div>
+        <div class="filter-group multi">
+          <label for="regionFilter">Region</label>
+          <select id="regionFilter" multiple></select>
+        </div>
+        <div class="filter-group multi">
+          <div class="filter-label-row">
+            <label for="sizeFilter">County size</label>
+            <span class="info-tip">
+              <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeTip" aria-label="About county size groups">i</button>
+              <span id="sizeTip" class="info-tip-bubble" role="tooltip">X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000.</span>
+            </span>
+          </div>
+          <select id="sizeFilter" multiple></select>
+        </div>
+        <div class="filter-group multi">
+          <label for="countyFilterMulti">County</label>
+          <select id="countyFilterMulti" multiple></select>
+        </div>
+      </div>
+    </div>
+    <div class="chart-plot">
+      <h3 class="chart-plot-title" id="bucketPlotTitle">Application Outcomes by County</h3>
+      <p class="caption" id="bucketSub"></p>
+      <div class="chart-hover" id="bucketChartHover" aria-live="polite"></div>
+      <div class="chart-holder" id="bucketChartHolder"><canvas id="bucketChart" aria-hidden="true"></canvas></div>
+    </div>
+    <table class="sr-only" id="bucketChartTable">
+      <caption>Application outcomes by county, grouped by county size</caption>
+      <thead><tr>
+        <th scope="col">County</th>
+        <th scope="col" id="bucketGroupColHeader">Size group</th>
+        <th scope="col">Approved</th>
+        <th scope="col">Withdrawn</th>
+        <th scope="col">Denied — ineligible</th>
+        <th scope="col">Denied — procedural</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <footer class="source-note">
+    <span class="footer-section-label">Sources</span>
+    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296 — Applications, Expedited Service, and Recertifications</a>, via the live <strong>CalFresh Data – Consolidated</strong> spreadsheet. All-application outcome percentages are of applications disposed that month (approved + denied ineligible + denied procedural + withdrawn). College student outcomes are from Master_Monthly (applications containing at least one student: approved, denied, or still pended). Caseload movement numbers are certified cases from Part C.
+
+    <span class="footer-section-label">Definitions</span>
+    County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000 — computed from the latest available month of Master_Monthly.
+
+    <span class="footer-section-label">Data notes</span>
+    <ul class="footer-notes">
+      <li>CF296 current-era (FY2025-26+) and CF296_Legacy (FY2016-17 through FY2024-25) are combined by item meaning.</li>
+      <li>CDSS uses “*” both for counts under 11 and for some larger complementary totals. When exactly one of the five outcome cells is starred, the missing value is recovered from the identity (disposed = approved + ineligible + procedural + withdrawn) if that recovered number is over 10. Remaining under-11 cells are plotted as 5 and called out in the hover; they are never shown as a count. Months with two or more large hidden cells, and counties CDSS listed as not reporting, stay blank.</li>
+      <li>Caseload movement uses CF296 Part C totals only: Item 5.a Applications approved (TOTAL / C. Total), Item 5.d Cases with eligibility reinstated and benefits pro-rated (TOTAL / C. Total), and Item 7 Cases discontinued during the month (TOTAL / C. Total). Net is additions minus discontinuances. Item 5’s other add reasons (status change, ICT, other approvals) are not included.</li>
+      <li>The optional applications-received chart under each outcomes trend is CF296 Item 1 (TOTAL), a count of applications filed that month. It is not the same as applications disposed that month (the stacks above it).</li>
+      <li>College student application columns on Master_Monthly (including unlabeled <code>New Applications …</code> / <code>Denial Reason …</code> / caseload slices in that block) are student-scoped, not the general applicant pool. The student stacked mix starts January 2023. Pended applications are still in process, so that mix is not CF296 “share of applications disposed.”</li>
+    </ul>
+  </footer>
+  </div>
+</div>
+
+<script>
+const COUNTY_REGIONS = {
+  'Alameda': 'Bay Area', 'Contra Costa': 'Bay Area', 'Marin': 'Bay Area', 'Napa': 'Bay Area',
+  'San Francisco': 'Bay Area', 'San Mateo': 'Bay Area', 'Santa Clara': 'Bay Area', 'Solano': 'Bay Area', 'Sonoma': 'Bay Area',
+  'Monterey': 'Central Coast', 'San Benito': 'Central Coast', 'San Luis Obispo': 'Central Coast',
+  'Santa Barbara': 'Central Coast', 'Santa Cruz': 'Central Coast', 'Ventura': 'Central Coast',
+  'Alpine': 'Central Sierra', 'Amador': 'Central Sierra', 'Calaveras': 'Central Sierra', 'Inyo': 'Central Sierra',
+  'Mariposa': 'Central Sierra', 'Mono': 'Central Sierra', 'Tuolumne': 'Central Sierra',
+  'Riverside': 'Inland Empire', 'San Bernardino': 'Inland Empire',
+  'Los Angeles': 'Los Angeles',
+  'Butte': 'Northern', 'Colusa': 'Northern', 'Del Norte': 'Northern', 'Glenn': 'Northern', 'Humboldt': 'Northern',
+  'Lake': 'Northern', 'Lassen': 'Northern', 'Mendocino': 'Northern', 'Modoc': 'Northern', 'Nevada': 'Northern',
+  'Plumas': 'Northern', 'Shasta': 'Northern', 'Siskiyou': 'Northern', 'Sierra': 'Northern', 'Tehama': 'Northern', 'Trinity': 'Northern',
+  'Imperial': 'Other Southern CA', 'Orange': 'Other Southern CA', 'San Diego': 'Other Southern CA',
+  'El Dorado': 'Sacramento Area', 'Placer': 'Sacramento Area', 'Sacramento': 'Sacramento Area',
+  'Sutter': 'Sacramento Area', 'Yolo': 'Sacramento Area', 'Yuba': 'Sacramento Area',
+  'Fresno': 'San Joaquin Valley', 'Kern': 'San Joaquin Valley', 'Kings': 'San Joaquin Valley', 'Madera': 'San Joaquin Valley',
+  'Merced': 'San Joaquin Valley', 'San Joaquin': 'San Joaquin Valley', 'Stanislaus': 'San Joaquin Valley', 'Tulare': 'San Joaquin Valley'
+};
+const REGION_ORDER = ['Bay Area', 'Central Coast', 'Central Sierra', 'Inland Empire', 'Los Angeles', 'Northern', 'Other Southern CA', 'Sacramento Area', 'San Joaquin Valley'];
+const BUCKET_ORDER = ['X-Large', 'Large', 'Medium', 'Small'];
+const SIZE_DISPLAY = {
+  'X-Large': 'X-Large (6 largest)',
+  'Large': 'Large',
+  'Medium': 'Medium',
+  'Small': 'Small'
+};
+
+function fmtMonth(m) {
+  const [y, mo] = m.split('-');
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return names[parseInt(mo,10)-1] + ' ' + y;
+}
+function fmtPct(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  return v.toFixed(0) + '%';
+}
+function fmtCount(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  return Math.round(v).toLocaleString('en-US');
+}
+function fmtNet(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  const n = Math.round(v);
+  return (n > 0 ? '+' : '') + n.toLocaleString('en-US');
+}
+function formatHoverRaw(p) {
+  if (typeof p.raw !== 'number') return String(p.raw);
+  if (typeof p.dataset.displayPct === 'number') return p.dataset.displayPct.toFixed(1) + '%';
+  if (p.dataset.valueKind === 'net') return fmtNet(p.raw);
+  if (p.dataset.valueKind === 'count') return fmtCount(p.raw);
+  return p.raw.toFixed(1) + '%';
+}
+function hexAlpha(hex, a) {
+  const h = hex.replace('#','');
+  const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
+
+function clearHoverTooltip(el) {
+  if (!el) return;
+  el.replaceChildren();
+  el.classList.remove('is-active');
+}
+function renderHoverTooltip(el, tooltip) {
+  el.replaceChildren();
+  const title = document.createElement('div');
+  title.className = 'chart-hover-title';
+  title.textContent = tooltip.title || '';
+  el.appendChild(title);
+  if (tooltip.note) {
+    const note = document.createElement('div');
+    note.className = 'chart-hover-note';
+    note.textContent = tooltip.note;
+    el.appendChild(note);
+  }
+  (tooltip.rows || []).forEach(row => {
+    const line = document.createElement('div');
+    line.className = 'chart-hover-row';
+    if (row.color) {
+      const sw = document.createElement('span');
+      sw.className = 'chart-hover-swatch';
+      sw.style.background = row.color;
+      line.appendChild(sw);
+    }
+    const txt = document.createElement('span');
+    txt.textContent = row.text;
+    line.appendChild(txt);
+    el.appendChild(line);
+  });
+  el.classList.add('is-active');
+}
+function hoverTooltipExternal(hoverId, placement, getNote) {
+  return function(context) {
+    const el = document.getElementById(hoverId);
+    if (!el) return;
+    const tooltip = context.tooltip;
+    if (!tooltip || tooltip.opacity === 0 || !tooltip.dataPoints || !tooltip.dataPoints.length) {
+      clearHoverTooltip(el);
+      return;
+    }
+    const items = tooltip.dataPoints.filter(p => p.raw !== null && p.raw !== undefined);
+    if (!items.length) { clearHoverTooltip(el); return; }
+    const title = (tooltip.title && tooltip.title.length) ? tooltip.title.join(' ') : fmtMonth(context.chart.data.labels[items[0].dataIndex]);
+    const rows = items.map(p => ({
+      color: p.dataset.borderColor || p.dataset.backgroundColor,
+      text: p.dataset.label + ': ' + formatHoverRaw(p)
+    }));
+    const note = typeof getNote === 'function' ? getNote(items[0].dataIndex, context) : null;
+    renderHoverTooltip(el, { title, note, rows });
+    const canvas = context.chart.canvas;
+    const plot = canvas.closest('.chart-plot');
+    if (!plot) return;
+    const plotRect = plot.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    const caretX = canvasRect.left - plotRect.left + tooltip.caretX;
+    const caretY = canvasRect.top - plotRect.top + tooltip.caretY;
+    const tipW = el.offsetWidth;
+    const tipH = el.offsetHeight;
+    let left = Math.max(8, Math.min(caretX - tipW / 2, plot.clientWidth - tipW - 8));
+    let top;
+    if (placement === 'above') {
+      // Follow the hovered month on x. Vertically, sit entirely above the
+      // canvas (title/caption/legend band) so the stacks stay visible.
+      // Overflow the plot if needed, but stay inside the card (Diana, 2026-08-30 / 2026-09-01).
+      const canvasTop = canvasRect.top - plotRect.top;
+      top = canvasTop - tipH - 8;
+      const card = plot.closest('.card');
+      if (card) {
+        const minTop = card.getBoundingClientRect().top - plotRect.top + 8;
+        if (top < minTop) top = minTop;
+      }
+      // Nested volume strip: stay inside this plot so the box doesn't cover
+      // the mix chart above it.
+      if (plot.classList.contains('received-plot') && top < 0) top = 0;
+    } else {
+      const gap = 14;
+      left = caretX + gap;
+      top = caretY - tipH / 2;
+      if (left + tipW > plot.clientWidth - 8) left = caretX - tipW - gap;
+      if (left < 8) {
+        left = Math.max(8, Math.min(caretX - tipW / 2, plot.clientWidth - tipW - 8));
+        top = caretY - tipH - gap;
+        if (top < 8) top = caretY + gap;
+      }
+      top = Math.max(8, Math.min(top, plot.clientHeight - tipH - 8));
+      left = Math.max(8, Math.min(left, plot.clientWidth - tipW - 8));
+    }
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+  };
+}
+
+function optionFromPointer(select, e) {
+  const t = e.target;
+  if (t && t.tagName === 'OPTION' && select.contains(t)) return t;
+  const hit = document.elementFromPoint(e.clientX, e.clientY);
+  if (hit && hit.tagName === 'OPTION' && select.contains(hit)) return hit;
+  return null;
+}
+function enablePlainClickToggle(select) {
+  select.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const option = optionFromPointer(select, e);
+    if (!option) return;
+    e.preventDefault();
+    const next = !option.selected;
+    const scroll = select.scrollTop;
+    option.selected = next;
+    select.focus();
+    select.scrollTop = scroll;
+    requestAnimationFrame(() => {
+      option.selected = next;
+      select.scrollTop = scroll;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+}
+
+function renderAccessibleTable(tbodyEl, rows) {
+  tbodyEl.innerHTML = '';
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    row.forEach(cell => {
+      const td = document.createElement('td');
+      td.textContent = cell;
+      tr.appendChild(td);
+    });
+    tbodyEl.appendChild(tr);
+  });
+}
+
+function monthAbbrev(mo) {
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return names[parseInt(mo, 10) - 1];
+}
+const monthYearAxisPlugin = {
+  id: 'monthYearAxis',
+  afterDraw(chart) {
+    if (!chart.options.plugins || !chart.options.plugins.monthYearAxis) return;
+    const labels = chart.data.labels;
+    if (!labels || !labels.length) return;
+    if (!/^\d{4}-\d{2}$/.test(String(labels[0]))) return;
+    const { ctx, chartArea, scales: { x } } = chart;
+    if (!chartArea) return;
+    const quarterIdx = [];
+    labels.forEach((m, i) => {
+      const mo = m.split('-')[1];
+      if (i === 0 || mo === '01' || mo === '04' || mo === '07' || mo === '10') quarterIdx.push(i);
+    });
+    const availWidth = chartArea.right - chartArea.left;
+    const minPxPerTick = 30;
+    const maxTicks = Math.max(1, Math.floor(availWidth / minPxPerTick));
+    const quarterStep = Math.max(1, Math.ceil(quarterIdx.length / maxTicks));
+    const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+    const legendOpt = chart.options.plugins && chart.options.plugins.legend;
+    const legendHeight = (chart.legend && legendOpt && legendOpt.position === 'bottom') ? chart.legend.height : 0;
+    const axisTop = chartArea.bottom + legendHeight;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    let lastYearShown = null;
+    if (quarterStep >= 4) {
+      const yearIdx = [];
+      labels.forEach((m, i) => {
+        if (i === 0 || m.split('-')[1] === '01') yearIdx.push(i);
+      });
+      const yearStep = Math.max(1, Math.ceil(yearIdx.length / maxTicks));
+      const shownYearIdx = yearIdx.filter((_, yi) => yi % yearStep === 0);
+      const lastYearIdx = yearIdx[yearIdx.length - 1];
+      if (shownYearIdx[shownYearIdx.length - 1] !== lastYearIdx) shownYearIdx.push(lastYearIdx);
+      shownYearIdx.forEach(i => {
+        const y = labels[i].split('-')[0];
+        const px = x.getPixelForValue(i);
+        ctx.font = 'bold 10px ' + fontStack;
+        ctx.fillStyle = '#333';
+        ctx.fillText(y, px, axisTop + 6);
+      });
+    } else {
+      const shownIdx = quarterIdx.filter((_, qi) => qi % quarterStep === 0);
+      const lastQuarterIdx = quarterIdx[quarterIdx.length - 1];
+      if (shownIdx[shownIdx.length - 1] !== lastQuarterIdx) shownIdx.push(lastQuarterIdx);
+      shownIdx.forEach(i => {
+        const [y, mo] = labels[i].split('-');
+        const px = x.getPixelForValue(i);
+        ctx.font = '10px ' + fontStack;
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText(monthAbbrev(mo), px, axisTop + 6);
+        if ((mo === '01' || i === 0) && y !== lastYearShown) {
+          ctx.save();
+          ctx.font = 'bold 10px ' + fontStack;
+          ctx.fillStyle = '#333';
+          ctx.fillText(y, px, axisTop + 19);
+          ctx.restore();
+          lastYearShown = y;
+        }
+      });
+    }
+    ctx.restore();
+  }
+};
+Chart.register(monthYearAxisPlugin);
+
+const groupDividerPlugin = {
+  id: 'groupDividers',
+  afterDatasetsDraw(chart) {
+    const barDs = chart.data.datasets.find(d => d._groupRanges);
+    if (!barDs) return;
+    const groups = barDs._groupRanges;
+    const { ctx, chartArea, scales: { x, y } } = chart;
+    if (!chartArea) return;
+    const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+    groups.forEach((g, gi) => {
+      const midIdx = (g.start + g.end) / 2;
+      const midX = x.getPixelForValue(midIdx);
+      ctx.save();
+      ctx.font = '11px ' + fontStack;
+      ctx.fillStyle = '#333';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.translate(midX, chartArea.top - 10);
+      ctx.rotate(-Math.PI / 4);
+      ctx.fillText(g.name, 0, 0);
+      ctx.restore();
+      if (gi > 0) {
+        const boundaryX = x.getPixelForValue(g.start - 0.5);
+        ctx.save();
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(boundaryX, chartArea.top);
+        ctx.lineTo(boundaryX, chartArea.bottom);
+        ctx.stroke();
+        ctx.restore();
+      }
+      if (g.end > g.start && g.lineMarks && g.lineMarks.length) {
+        const leftX = x.getPixelForValue(g.start - 0.5) + 4;
+        g.lineMarks.forEach(m => {
+          const markY = y.getPixelForValue(m.plotY);
+          ctx.save();
+          ctx.font = '10px ' + fontStack;
+          ctx.fillStyle = m.color;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = m.baseline || 'top';
+          ctx.fillText(m.text, leftX, markY + (m.yOffset || 3));
+          ctx.restore();
+        });
+      }
+    });
+  }
+};
+Chart.register(groupDividerPlugin);
+
+function alignZeroRanges(minL, maxL, minR, maxR) {
+  minL = Math.min(0, minL);
+  maxL = Math.max(0, maxL);
+  minR = Math.min(0, minR);
+  maxR = Math.max(0, maxR);
+  if (minL === maxL) maxL = minL + 1;
+  if (minR === maxR) maxR = minR + 1;
+  const zeroL = -minL / (maxL - minL);
+  const zeroR = -minR / (maxR - minR);
+  const target = Math.min(zeroL, zeroR);
+  function applyZero(min, max, z) {
+    if (z <= 1e-9) return { min: 0, max: Math.max(max, 1) };
+    if (z >= 1 - 1e-9) return { min: Math.min(min, -1), max: 0 };
+    const maxFromMin = min === 0 ? max : min * (z - 1) / z;
+    const minFromMax = max === 0 ? min : max * z / (z - 1);
+    return {
+      min: Math.min(min, minFromMax),
+      max: Math.max(max, maxFromMin)
+    };
+  }
+  const left = applyZero(minL, maxL, target);
+  const right = applyZero(minR, maxR, target);
+  return { minL: left.min, maxL: left.max, minR: right.min, maxR: right.max };
+}
+function niceOutward(v) {
+  if (v === 0) return 0;
+  const sign = v < 0 ? -1 : 1;
+  const a = Math.abs(v);
+  const exp = Math.floor(Math.log10(a));
+  const mag = Math.pow(10, exp);
+  const n = a / mag;
+  let nice;
+  if (n <= 1) nice = 1;
+  else if (n <= 2) nice = 2;
+  else if (n <= 2.5) nice = 2.5;
+  else if (n <= 5) nice = 5;
+  else nice = 10;
+  return sign * nice * mag;
+}
+function movementBarExtents(monthly) {
+  let min = 0, max = 0;
+  monthly.forEach(row => {
+    if (!row || row.additions == null || row.exits == null) return;
+    max = Math.max(max, row.additions);
+    min = Math.min(min, -row.exits);
+  });
+  return { min: niceOutward(min), max: niceOutward(max) };
+}
+function movementNetExtents(monthly) {
+  let min = 0, max = 0;
+  monthly.forEach(row => {
+    if (!row || row.net == null) return;
+    min = Math.min(min, row.net);
+    max = Math.max(max, row.net);
+  });
+  return { min: niceOutward(min), max: niceOutward(max) };
+}
+
+function initDashboard() {
+let STACK = DATA.stack || OUTCOME_STACK;
+let populationMode = 'all';
+const compareSelect = document.getElementById('compareSelect');
+const regionCompareSelect = document.getElementById('regionCompareSelect');
+const sizeCompareSelect = document.getElementById('sizeCompareSelect');
+const sharedControls = document.getElementById('sharedControls');
+const sharedFiltersToggle = document.getElementById('sharedFiltersToggle');
+const sharedFiltersSummary = document.getElementById('sharedFiltersSummary');
+const statewideCompareBtn = document.getElementById('statewideCompareBtn');
+let statewideCompare = true;
+const areaCharts = [];
+const receivedCharts = [];
+const movementCharts = [];
+const MOVEMENT_SERIES = [
+  { key: 'caseApproved', label: 'Applications approved', color: '#4BA5BA', sign: 1 },
+  { key: 'reinstated', label: 'Reinstated (prorated)', color: '#2C5985', sign: 1 },
+  { key: 'discontinued', label: 'Discontinuances', color: '#FB7906', sign: -1 }
+];
+const RECEIVED_COLOR = '#2a6ebb';
+const receivedCheckbox = document.getElementById('layerAppsReceived');
+const areaLayersCaveatEl = document.getElementById('areaLayersCaveat');
+let showReceived = false;
+
+function renderOutcomeLegend() {
+  let html = STACK.slice().reverse().map(s =>
+    '<span><i style="background:' + s.color + '"></i>' + s.label + '</span>'
+  ).join('');
+  if (showReceived) {
+    html += '<span><i style="background:' + RECEIVED_COLOR + '"></i>Applications received</span>';
+  }
+  document.getElementById('outcomeLegend').innerHTML = html;
+}
+renderOutcomeLegend();
+document.getElementById('movementLegend').innerHTML = MOVEMENT_SERIES.map(s =>
+  '<span><i style="background:' + s.color + '"></i>' + s.label + '</span>'
+).join('') + '<span><i style="background:#1f2430;height:2px;width:14px;margin-top:4px"></i>Net</span>';
+
+function syncStatewideToggleUi(on) {
+  statewideCompareBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  statewideCompareBtn.setAttribute('aria-label', on ? 'Add Statewide comparison, on' : 'Add Statewide comparison, off');
+}
+
+const allEntities = ['Statewide', ...DATA.all_counties];
+allEntities.forEach(c => {
+  const opt = document.createElement('option');
+  opt.value = c; opt.textContent = c === 'Statewide' ? 'California (Statewide)' : c;
+  compareSelect.appendChild(opt);
+});
+REGION_ORDER.forEach(r => {
+  const opt = document.createElement('option');
+  opt.value = r; opt.textContent = r;
+  regionCompareSelect.appendChild(opt);
+});
+BUCKET_ORDER.forEach(s => {
+  const opt = document.createElement('option');
+  opt.value = s; opt.textContent = SIZE_DISPLAY[s] || s;
+  sizeCompareSelect.appendChild(opt);
+});
+Array.from(compareSelect.options).forEach(o => { o.selected = o.value === 'Alameda'; });
+
+const rangeStartInput = document.getElementById('rangeStart');
+const rangeEndInput = document.getElementById('rangeEnd');
+const rangeLabelEl = document.getElementById('rangeLabel');
+const rangeTrackFill = document.getElementById('rangeTrackFill');
+const monthCount = DATA.months.length;
+const DEFAULT_RANGE_MONTHS = 24;
+function lastNMonthsStart(n) {
+  return Math.max(0, monthCount - n);
+}
+rangeStartInput.max = monthCount - 1;
+rangeEndInput.max = monthCount - 1;
+let rangeStart = lastNMonthsStart(DEFAULT_RANGE_MONTHS);
+let rangeEnd = monthCount - 1;
+rangeStartInput.value = rangeStart;
+rangeEndInput.value = rangeEnd;
+
+function updateRangeLabel() {
+  rangeLabelEl.textContent = ' ' + fmtMonth(DATA.months[rangeStart]) + ' – ' + fmtMonth(DATA.months[rangeEnd]);
+  const max = Math.max(monthCount - 1, 1);
+  rangeTrackFill.style.left = (rangeStart / max * 100) + '%';
+  rangeTrackFill.style.width = ((rangeEnd - rangeStart) / max * 100) + '%';
+}
+function currentCounties() {
+  return Array.from(compareSelect.selectedOptions).map(o => o.value);
+}
+function currentRegions() {
+  return Array.from(regionCompareSelect.selectedOptions).map(o => o.value);
+}
+function currentSizes() {
+  return Array.from(sizeCompareSelect.selectedOptions).map(o => o.value);
+}
+function countyMatchesSizes(c, sizes) {
+  if (!sizes.length) return true;
+  if (c === 'Statewide') return true;
+  const size = DATA.county_meta[c] && DATA.county_meta[c].size;
+  return sizes.includes(size);
+}
+function regionMemberCounties(region, sizes) {
+  let members = DATA.all_counties.filter(c => COUNTY_REGIONS[c] === region);
+  if (sizes && sizes.length) {
+    members = members.filter(c => sizes.includes(DATA.county_meta[c] && DATA.county_meta[c].size));
+  }
+  return members;
+}
+function sizeMemberCounties(size) {
+  return DATA.all_counties.filter(c => DATA.county_meta[c] && DATA.county_meta[c].size === size);
+}
+function currentSelection() {
+  const sizes = currentSizes();
+  const counties = currentCounties().filter(c => countyMatchesSizes(c, sizes));
+  const regions = currentRegions().filter(r => regionMemberCounties(r, sizes).length > 0);
+  if (!counties.length && !regions.length && !sizes.length) {
+    return { counties: ['Statewide'], regions: [], sizes: [] };
+  }
+  return { counties, regions, sizes };
+}
+function updateFiltersSummary(counties, regions, sizes) {
+  const names = counties.map(c => c === 'Statewide' ? 'California' : c)
+    .concat(regions)
+    .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
+  sharedFiltersSummary.textContent = names.length ? names.join(' · ') : 'California';
+}
+function updateStatewideToggleState(counties) {
+  const already = counties.includes('Statewide');
+  statewideCompareBtn.disabled = already;
+  statewideCompareBtn.title = already
+    ? 'California is already selected in Counties'
+    : 'Add a California stacked chart for comparison';
+}
+
+function countsForCounty(county, month) {
+  if (populationMode === 'students') {
+    const s = DATA.student_series && DATA.student_series[county];
+    if (!s) return null;
+    return {
+      disposed: s.disposed[month],
+      approved: s.approved[month],
+      denied: s.denied[month],
+      pended: s.pended[month],
+      estimated: estimatedFlagsFor(s, month, STUDENT_OUTCOME_PART_KEYS)
+    };
+  }
+  const s = DATA.series[county];
+  if (!s) return null;
+  return {
+    disposed: s.disposed[month],
+    approved: s.approved[month],
+    withdrawn: s.withdrawn[month],
+    ineligible: s.ineligible[month],
+    procedural: s.procedural[month],
+    estimated: estimatedFlagsFor(s, month)
+  };
+}
+function countsForEntity(entity, month) {
+  const series = populationMode === 'students' ? DATA.student_series : DATA.series;
+  if (entity.kind === 'region') {
+    return sumOutcomeCounts(regionMemberCounties(entity.id, currentSizes()), month, series, STACK);
+  }
+  if (entity.kind === 'size') {
+    return sumOutcomeCounts(sizeMemberCounties(entity.id), month, series, STACK);
+  }
+  return countsForCounty(entity.id, month);
+}
+function currentShares(counts) {
+  return outcomeShares(counts, STACK);
+}
+function receivedForCounty(county, month) {
+  const s = DATA.series[county];
+  if (!s || !s.received) return null;
+  const v = s.received[month];
+  return v == null ? null : v;
+}
+function receivedForEntity(entity, month) {
+  if (entity.kind === 'region' || entity.kind === 'size') {
+    const members = entity.kind === 'region'
+      ? regionMemberCounties(entity.id, currentSizes())
+      : sizeMemberCounties(entity.id);
+    let sum = 0, any = false;
+    members.forEach(c => {
+      const v = receivedForCounty(c, month);
+      if (v != null) { sum += v; any = true; }
+    });
+    return any ? sum : null;
+  }
+  return receivedForCounty(entity.id, month);
+}
+function movementForEntity(entity, month) {
+  if (entity.kind === 'region') {
+    return sumMovementCounts(regionMemberCounties(entity.id, currentSizes()), month, DATA.series);
+  }
+  if (entity.kind === 'size') {
+    return sumMovementCounts(sizeMemberCounties(entity.id), month, DATA.series);
+  }
+  return movementForCounty(entity.id, month, DATA.series);
+}
+function lockYAxisWidth(axis) {
+  axis.width = 72;
+}
+function stackDatasets(labels, entity) {
+  return STACK.map(s => ({
+    label: s.label,
+    data: labels.map(m => {
+      const shares = currentShares(countsForEntity(entity, m));
+      return shares ? shares[s.key] : null;
+    }),
+    backgroundColor: hexAlpha(s.color, 0.85),
+    borderColor: s.color,
+    borderWidth: 1,
+    pointRadius: 0,
+    fill: true,
+    tension: 0.15,
+    spanGaps: false,
+    yAxisID: 'y'
+  }));
+}
+
+function paneEntities(counties, regions, sizes) {
+  const panes = [];
+  const addStatewide = statewideCompare && !counties.includes('Statewide');
+  if (addStatewide) panes.push({ id: 'Statewide', kind: 'county', title: 'California' });
+  counties.forEach(c => {
+    panes.push({
+      id: c,
+      kind: 'county',
+      title: c === 'Statewide' ? 'California' : c
+    });
+  });
+  regions.forEach(r => panes.push({ id: r, kind: 'region', title: r + ' region' }));
+  (sizes || []).forEach(s => panes.push({
+    id: s,
+    kind: 'size',
+    title: SIZE_DISPLAY[s] || s
+  }));
+  return panes;
+}
+function selectionNames(counties, regions, sizes) {
+  return counties.map(c => c === 'Statewide' ? 'California' : c)
+    .concat(regions.map(r => r + ' (region)'))
+    .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
+}
+
+function buildMovementCharts() {
+  const { counties, regions, sizes } = currentSelection();
+  const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
+  const panes = paneEntities(counties, regions, sizes);
+  const holder = document.getElementById('movementPanes');
+  movementCharts.forEach(c => c.destroy());
+  movementCharts.length = 0;
+  holder.innerHTML = '';
+
+  const captionParts = selectionNames(counties, regions, sizes);
+  const addStatewide = statewideCompare && !counties.includes('Statewide');
+  if (addStatewide) captionParts.unshift('California');
+  document.getElementById('movementCaption').textContent =
+    'Certified cases added and discontinued — ' +
+    fmtMonth(labels[0]) + ' – ' + fmtMonth(labels[labels.length - 1]) +
+    ' — ' + captionParts.filter(Boolean).join(', ');
+
+  const tableHeaders = ['Month'];
+  const tableSeries = [];
+
+  panes.forEach((pane, pi) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'area-pane chart-plot';
+    const title = document.createElement('h3');
+    title.className = 'chart-plot-title';
+    title.textContent = pane.title;
+    const hover = document.createElement('div');
+    hover.className = 'chart-hover';
+    hover.id = 'movementHover' + pi;
+    hover.setAttribute('aria-live', 'polite');
+    const canvasHold = document.createElement('div');
+    canvasHold.className = 'chart-holder';
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute('aria-hidden', 'true');
+    canvasHold.appendChild(canvas);
+    wrap.appendChild(title);
+    wrap.appendChild(hover);
+    wrap.appendChild(canvasHold);
+    holder.appendChild(wrap);
+
+    const monthly = labels.map(m => movementForEntity(pane, m));
+    const barDatasets = MOVEMENT_SERIES.map(s => ({
+      type: 'bar',
+      label: s.label,
+      data: monthly.map(row => {
+        if (!row || row[s.key] == null) return null;
+        return s.sign * row[s.key];
+      }),
+      backgroundColor: s.color,
+      stack: 'caseload',
+      yAxisID: 'y',
+      valueKind: 'count',
+      order: 2
+    }));
+    const netDataset = {
+      type: 'line',
+      label: 'Net',
+      data: monthly.map(row => row ? row.net : null),
+      borderColor: '#1f2430',
+      backgroundColor: '#1f2430',
+      pointRadius: 0,
+      borderWidth: 2,
+      fill: false,
+      spanGaps: false,
+      yAxisID: 'y1',
+      valueKind: 'net',
+      order: 1
+    };
+    tableHeaders.push(pane.title + ' — Additions', pane.title + ' — Exits', pane.title + ' — Net');
+    tableSeries.push({ pane, monthly });
+
+    const barExt = movementBarExtents(monthly);
+    const netExt = movementNetExtents(monthly);
+    const aligned = alignZeroRanges(barExt.min, barExt.max, netExt.min, netExt.max);
+
+    const chart = new Chart(canvas, {
+      type: 'bar',
+      data: { labels, datasets: barDatasets.concat([netDataset]) },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false, axis: 'x' },
+        layout: { padding: { top: 8, bottom: 30 } },
+        plugins: {
+          legend: { display: false },
+          monthYearAxis: true,
+          tooltip: {
+            enabled: false,
+            external: hoverTooltipExternal('movementHover' + pi, 'above'),
+            filter: item => item.dataset.type !== 'line' || item.dataset.label === 'Net',
+            itemSort: (a, b) => {
+              const order = ['Applications approved', 'Reinstated (prorated)', 'Discontinuances', 'Net'];
+              return order.indexOf(a.dataset.label) - order.indexOf(b.dataset.label);
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, ticks: { display: false }, grid: { display: false } },
+          y: {
+            stacked: true, beginAtZero: true, position: 'left',
+            bounds: 'data', min: aligned.minL, max: aligned.maxL,
+            ticks: { callback: v => fmtCount(v) },
+            grid: {
+              color: ctx => ctx.tick.value === 0 ? '#c5c9d2' : '#f0f0f0'
+            }
+          },
+          y1: {
+            stacked: false, beginAtZero: true, position: 'right',
+            bounds: 'data', min: aligned.minR, max: aligned.maxR,
+            ticks: { callback: v => fmtNet(v), color: '#1f2430' },
+            grid: { drawOnChartArea: false }
+          }
+        }
+      }
+    });
+    movementCharts.push(chart);
+  });
+
+  const thead = document.querySelector('#movementChartTable thead tr');
+  thead.innerHTML = tableHeaders.map(h => '<th scope="col">' + h + '</th>').join('');
+  renderAccessibleTable(document.querySelector('#movementChartTable tbody'), labels.map((m, i) => {
+    const row = [fmtMonth(m)];
+    tableSeries.forEach(ts => {
+      const rec = ts.monthly[i];
+      row.push(rec && rec.additions != null ? fmtCount(rec.additions) : 'n/a');
+      row.push(rec && rec.exits != null ? fmtCount(rec.exits) : 'n/a');
+      row.push(rec && rec.net != null ? fmtNet(rec.net) : 'n/a');
+    });
+    return row;
+  }));
+}
+
+function buildAreaCharts() {
+  updateRangeLabel();
+  const { counties, regions, sizes } = currentSelection();
+  updateFiltersSummary(counties, regions, sizes);
+  updateStatewideToggleState(counties);
+  buildMovementCharts();
+  const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
+  const panes = paneEntities(counties, regions, sizes);
+  const holder = document.getElementById('areaPanes');
+  areaCharts.forEach(c => c.destroy());
+  areaCharts.length = 0;
+  receivedCharts.forEach(c => c.destroy());
+  receivedCharts.length = 0;
+  holder.innerHTML = '';
+
+  const tableHeaders = ['Month'];
+  const tableSeries = [];
+
+  panes.forEach((pane, pi) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'area-pane';
+    const mixPlot = document.createElement('div');
+    mixPlot.className = 'chart-plot';
+    const title = document.createElement('h3');
+    title.className = 'chart-plot-title';
+    title.textContent = pane.title;
+    const hover = document.createElement('div');
+    hover.className = 'chart-hover';
+    hover.id = 'areaHover' + pi;
+    hover.setAttribute('aria-live', 'polite');
+    const canvasHold = document.createElement('div');
+    canvasHold.className = 'chart-holder';
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute('aria-hidden', 'true');
+    canvasHold.appendChild(canvas);
+    mixPlot.appendChild(title);
+    mixPlot.appendChild(hover);
+    mixPlot.appendChild(canvasHold);
+    wrap.appendChild(mixPlot);
+    holder.appendChild(wrap);
+
+    const datasets = stackDatasets(labels, pane);
+    STACK.forEach(s => tableHeaders.push(pane.title + ' — ' + s.label));
+    if (showReceived) tableHeaders.push(pane.title + ' — Applications received');
+    const receivedData = showReceived ? labels.map(m => receivedForEntity(pane, m)) : null;
+    tableSeries.push({ pane, datasets, receivedData });
+    const mixChart = new Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false, axis: 'x' },
+        layout: { padding: { top: 8, bottom: showReceived ? 8 : 30 } },
+        plugins: {
+          legend: { display: false },
+          monthYearAxis: !showReceived,
+          tooltip: {
+            enabled: false,
+            external: hoverTooltipExternal('areaHover' + pi, 'above', idx => {
+              return smallCellHoverNote(countsForEntity(pane, labels[idx]), STACK);
+            }),
+            itemSort: (a, b) => {
+              const order = STACK.map(s => s.label);
+              return order.indexOf(b.dataset.label) - order.indexOf(a.dataset.label);
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { display: false }, grid: { display: false } },
+          y: {
+            stacked: true, min: 0, max: 100,
+            afterFit: lockYAxisWidth,
+            ticks: { callback: v => v + '%' },
+            grid: { color: '#f0f0f0' }
+          }
+        }
+      }
+    });
+    areaCharts.push(mixChart);
+
+    if (!showReceived) return;
+
+    const recPlot = document.createElement('div');
+    recPlot.className = 'chart-plot received-plot';
+    const recTitle = document.createElement('h4');
+    recTitle.className = 'chart-plot-title';
+    recTitle.textContent = 'Applications received';
+    const recHover = document.createElement('div');
+    recHover.className = 'chart-hover';
+    recHover.id = 'areaReceivedHover' + pi;
+    recHover.setAttribute('aria-live', 'polite');
+    const recHold = document.createElement('div');
+    recHold.className = 'chart-holder received-holder';
+    const recCanvas = document.createElement('canvas');
+    recCanvas.setAttribute('aria-hidden', 'true');
+    recHold.appendChild(recCanvas);
+    recPlot.appendChild(recTitle);
+    recPlot.appendChild(recHover);
+    recPlot.appendChild(recHold);
+    wrap.appendChild(recPlot);
+
+    const recChart = new Chart(recCanvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Applications received',
+          data: receivedData,
+          borderColor: RECEIVED_COLOR,
+          backgroundColor: hexAlpha(RECEIVED_COLOR, 0.28),
+          fill: true,
+          pointRadius: 0,
+          borderWidth: 2,
+          tension: 0.15,
+          spanGaps: false,
+          valueKind: 'count'
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false, axis: 'x' },
+        layout: { padding: { top: 4, bottom: 30 } },
+        plugins: {
+          legend: { display: false },
+          monthYearAxis: true,
+          tooltip: {
+            enabled: false,
+            external: hoverTooltipExternal('areaReceivedHover' + pi, 'above')
+          }
+        },
+        scales: {
+          x: { ticks: { display: false }, grid: { display: false } },
+          y: {
+            beginAtZero: true, min: 0,
+            afterFit: lockYAxisWidth,
+            ticks: { callback: v => fmtCount(v), maxTicksLimit: 4 },
+            grid: { color: '#f0f0f0' }
+          }
+        }
+      }
+    });
+    receivedCharts.push(recChart);
+  });
+
+  const captionParts = selectionNames(counties, regions, sizes);
+  const addStatewide = statewideCompare && !counties.includes('Statewide');
+  if (addStatewide) captionParts.unshift('California');
+  document.getElementById('areaCaption').textContent = populationMode === 'students'
+    ? 'Share of student applications approved, denied, or still pended — ' + captionParts.filter(Boolean).join(', ')
+    : 'Share of applications disposed — ' + captionParts.filter(Boolean).join(', ');
+  document.querySelector('#areaChartTable caption').textContent = populationMode === 'students'
+    ? 'College student application outcomes as a share of approved, denied, or pended, by month'
+    : 'Application outcomes as a share of applications disposed, by month';
+
+  const thead = document.querySelector('#areaChartTable thead tr');
+  thead.innerHTML = tableHeaders.map(h => '<th scope="col">' + h + '</th>').join('');
+  renderAccessibleTable(document.querySelector('#areaChartTable tbody'), labels.map((m, i) => {
+    const row = [fmtMonth(m)];
+    tableSeries.forEach(ts => {
+      STACK.forEach(s => {
+        const ds = ts.datasets.find(d => d.label === s.label);
+        const v = ds && ds.data[i];
+        row.push(v == null ? 'n/a' : v.toFixed(1) + '%');
+      });
+      if (showReceived) {
+        const v = ts.receivedData && ts.receivedData[i];
+        row.push(v == null ? 'n/a' : fmtCount(v));
+      }
+    });
+    return row;
+  }));
+}
+
+function handleRangeInput() {
+  let s = parseInt(rangeStartInput.value, 10);
+  let e = parseInt(rangeEndInput.value, 10);
+  if (s > e) {
+    if (this === rangeStartInput) { e = s; rangeEndInput.value = e; }
+    else { s = e; rangeStartInput.value = s; }
+  }
+  rangeStart = s;
+  rangeEnd = e;
+  rangePresetBtns.forEach(b => b.classList.remove('active'));
+  buildAreaCharts();
+}
+rangeStartInput.addEventListener('input', handleRangeInput);
+rangeEndInput.addEventListener('input', handleRangeInput);
+
+const rangeLastTwoYearsBtn = document.getElementById('rangeLastTwoYears');
+const rangeSkipCovidBtn = document.getElementById('rangeSkipCovid');
+const rangeResetBtn = document.getElementById('rangeReset');
+const rangePresetBtns = [rangeLastTwoYearsBtn, rangeSkipCovidBtn, rangeResetBtn];
+function setActivePresetBtn(btn) {
+  rangePresetBtns.forEach(b => b.classList.toggle('active', b === btn));
+}
+function applyRange(start, end, activeBtn) {
+  rangeStart = start;
+  rangeEnd = end;
+  rangeStartInput.value = rangeStart;
+  rangeEndInput.value = rangeEnd;
+  setActivePresetBtn(activeBtn);
+  buildAreaCharts();
+}
+rangeLastTwoYearsBtn.addEventListener('click', () => {
+  applyRange(lastNMonthsStart(DEFAULT_RANGE_MONTHS), monthCount - 1, rangeLastTwoYearsBtn);
+});
+rangeSkipCovidBtn.addEventListener('click', () => {
+  const idx = DATA.months.indexOf('2021-01');
+  applyRange(idx === -1 ? 0 : idx, monthCount - 1, rangeSkipCovidBtn);
+});
+rangeResetBtn.addEventListener('click', () => {
+  applyRange(0, monthCount - 1, rangeResetBtn);
+});
+setActivePresetBtn(rangeLastTwoYearsBtn);
+
+statewideCompareBtn.addEventListener('click', () => {
+  if (statewideCompareBtn.disabled) return;
+  statewideCompare = !statewideCompare;
+  syncStatewideToggleUi(statewideCompare);
+  buildAreaCharts();
+});
+
+const drillRegionBtn = document.getElementById('drillRegionBtn');
+let drillActive = false;
+function drillTargetFor(region) {
+  return new Set(regionMemberCounties(region, currentSizes()));
+}
+function countiesMatchDrill(region) {
+  const target = drillTargetFor(region);
+  const selected = new Set(currentCounties());
+  if (selected.size !== target.size) return false;
+  for (const v of target) if (!selected.has(v)) return false;
+  return true;
+}
+function setDrillActive(on) {
+  drillActive = !!on;
+  drillRegionBtn.setAttribute('aria-pressed', drillActive ? 'true' : 'false');
+  drillRegionBtn.setAttribute('aria-label', drillActive ? 'Drill into region, on' : 'Drill into region, off');
+  updateDrillButtonState();
+}
+function updateDrillButtonState() {
+  const n = currentRegions().length;
+  drillRegionBtn.disabled = !drillActive && n !== 1;
+  const hint = document.getElementById('drillRegionHint');
+  if (drillActive) {
+    hint.textContent = 'On: Counties follows the selected region. Switching regions keeps the drill-down on.';
+    drillRegionBtn.title = 'Drill into region is on';
+  } else if (n === 1) {
+    hint.textContent = 'Available — turn on to break this region into its counties.';
+    drillRegionBtn.title = 'Turn on to drill into this region';
+  } else if (n > 1) {
+    hint.textContent = 'Select only one region to turn this on — it can’t follow more than one at a time.';
+    drillRegionBtn.title = 'Select exactly one region to turn this on';
+  } else {
+    hint.textContent = 'Available when exactly one region is selected. When on, Counties follows that region.';
+    drillRegionBtn.title = 'Select exactly one region to turn this on';
+  }
+}
+function applyDrillIfActive() {
+  if (!drillActive) return;
+  const regions = currentRegions();
+  if (regions.length !== 1) return;
+  const target = drillTargetFor(regions[0]);
+  Array.from(compareSelect.options).forEach(o => { o.selected = target.has(o.value); });
+}
+function dropCountiesOutsideSizes() {
+  const sizes = currentSizes();
+  if (!sizes.length) return;
+  Array.from(compareSelect.options).forEach(o => {
+    if (o.selected && !countyMatchesSizes(o.value, sizes)) o.selected = false;
+  });
+}
+function includeSizesOfSelectedCounties() {
+  const sizes = currentSizes();
+  if (!sizes.length) return;
+  Array.from(compareSelect.selectedOptions).forEach(o => {
+    if (o.value === 'Statewide') return;
+    const s = DATA.county_meta[o.value] && DATA.county_meta[o.value].size;
+    if (!s) return;
+    Array.from(sizeCompareSelect.options).forEach(opt => {
+      if (opt.value === s) opt.selected = true;
+    });
+  });
+}
+
+compareSelect.addEventListener('change', () => {
+  includeSizesOfSelectedCounties();
+  if (drillActive) {
+    const regions = currentRegions();
+    if (regions.length !== 1 || !countiesMatchDrill(regions[0])) setDrillActive(false);
+  }
+  buildAreaCharts();
+});
+regionCompareSelect.addEventListener('change', () => {
+  updateDrillButtonState();
+  applyDrillIfActive();
+  buildAreaCharts();
+});
+sizeCompareSelect.addEventListener('change', () => {
+  dropCountiesOutsideSizes();
+  applyDrillIfActive();
+  buildAreaCharts();
+});
+sharedFiltersToggle.addEventListener('click', () => {
+  const open = !sharedControls.classList.contains('filters-open');
+  sharedControls.classList.toggle('filters-open', open);
+  sharedFiltersToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+drillRegionBtn.addEventListener('click', () => {
+  if (drillActive) {
+    setDrillActive(false);
+    Array.from(compareSelect.options).forEach(o => { o.selected = false; });
+  } else {
+    if (currentRegions().length !== 1) return;
+    setDrillActive(true);
+    applyDrillIfActive();
+  }
+  buildAreaCharts();
+});
+document.getElementById('clearCompareBtn').addEventListener('click', () => {
+  [compareSelect, regionCompareSelect, sizeCompareSelect].forEach(el => {
+    Array.from(el.options).forEach(o => { o.selected = false; });
+  });
+  setDrillActive(false);
+  updateDrillButtonState();
+  buildAreaCharts();
+});
+
+[compareSelect, regionCompareSelect, sizeCompareSelect].forEach(enablePlainClickToggle);
+updateDrillButtonState();
+receivedCheckbox.addEventListener('change', () => {
+  showReceived = receivedCheckbox.checked;
+  areaLayersCaveatEl.classList.toggle('show', showReceived);
+  renderOutcomeLegend();
+  buildAreaCharts();
+});
+buildAreaCharts();
+
+let resizeRAF = null;
+window.addEventListener('resize', () => {
+  if (resizeRAF) cancelAnimationFrame(resizeRAF);
+  resizeRAF = requestAnimationFrame(() => {
+    areaCharts.forEach(c => c.resize());
+    receivedCharts.forEach(c => c.resize());
+    movementCharts.forEach(c => c.resize());
+    if (bucketChart) bucketChart.resize();
+  });
+});
+
+function countyRowsForMonth(month) {
+  const rows = [];
+  const stateShares = currentShares(countsForCounty('Statewide', month));
+  if (stateShares) {
+    rows.push({
+      county: 'Statewide',
+      size: null,
+      kind: 'statewide',
+      shares: stateShares,
+      counts: countsForCounty('Statewide', month)
+    });
+  }
+  DATA.all_counties.forEach(c => {
+    const shares = currentShares(countsForCounty(c, month));
+    const size = DATA.county_meta[c] && DATA.county_meta[c].size;
+    if (!shares || !size) return;
+    rows.push({ county: c, size, kind: 'county', shares, counts: countsForCounty(c, month) });
+  });
+  return rows;
+}
+function countyBarLabel(county) {
+  return county === 'Statewide' ? 'California' : county;
+}
+
+const regionFilterEl = document.getElementById('regionFilter');
+const sizeFilterEl = document.getElementById('sizeFilter');
+const countyFilterEl = document.getElementById('countyFilterMulti');
+REGION_ORDER.forEach(r => {
+  const opt = document.createElement('option');
+  opt.value = r; opt.textContent = r;
+  regionFilterEl.appendChild(opt);
+});
+BUCKET_ORDER.forEach(s => {
+  const opt = document.createElement('option');
+  opt.value = s; opt.textContent = SIZE_DISPLAY[s] || s;
+  sizeFilterEl.appendChild(opt);
+});
+DATA.all_counties.forEach(c => {
+  const opt = document.createElement('option');
+  opt.value = c; opt.textContent = c;
+  countyFilterEl.appendChild(opt);
+});
+[regionFilterEl, sizeFilterEl, countyFilterEl].forEach(enablePlainClickToggle);
+
+const bucketMonthSelect = document.getElementById('bucketMonthSelect');
+let selectedBucketMonth = DATA.latest_complete_month;
+function populateBucketMonthSelect() {
+  const months = DATA.months.filter(m => currentShares(countsForCounty('Statewide', m))).slice().reverse();
+  const keep = months.includes(selectedBucketMonth) ? selectedBucketMonth : (months[0] || DATA.latest_complete_month);
+  bucketMonthSelect.innerHTML = '';
+  months.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = fmtMonth(m);
+    bucketMonthSelect.appendChild(opt);
+  });
+  selectedBucketMonth = keep;
+  bucketMonthSelect.value = selectedBucketMonth;
+}
+populateBucketMonthSelect();
+bucketMonthSelect.addEventListener('change', () => {
+  selectedBucketMonth = bucketMonthSelect.value;
+  buildBucketChart();
+});
+
+let bucketChart;
+let groupByMode = 'size';
+let sortByMode = 'approved';
+const groupByBtns = Array.from(document.querySelectorAll('[data-groupby]'));
+const sortByBtns = Array.from(document.querySelectorAll('[data-sort]'));
+const GROUP_COL_LABELS = { size: 'Size group', region: 'Region', none: 'Group' };
+const GROUP_LINE_COLOR = '#111';
+const GROUP_LINE_LEGEND_LABELS = {
+  approved: 'Aggregate approval rate by group',
+  procedural: 'Aggregate procedural denial rate by group'
+};
+const groupLineLegend = document.getElementById('groupLineLegend');
+const groupLineLegendLabel = document.getElementById('groupLineLegendLabel');
+function updateGroupLineLegend() {
+  if (groupLineLegend) groupLineLegend.style.display = groupByMode === 'none' ? 'none' : '';
+  if (groupLineLegendLabel) {
+    groupLineLegendLabel.textContent = GROUP_LINE_LEGEND_LABELS[sortByMode] || GROUP_LINE_LEGEND_LABELS.approved;
+  }
+}
+groupByBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    groupByMode = btn.getAttribute('data-groupby');
+    groupByBtns.forEach(b => b.classList.toggle('active', b === btn));
+    updateGroupLineLegend();
+    buildBucketChart();
+  });
+});
+sortByBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    sortByMode = btn.getAttribute('data-sort');
+    sortByBtns.forEach(b => {
+      const on = b === btn;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    updateGroupLineLegend();
+    buildBucketChart();
+  });
+});
+updateGroupLineLegend();
+
+function sortCountyRows(rows, key) {
+  return rows.slice().sort((a, b) => {
+    const av = a.shares[key];
+    const bv = b.shares[key];
+    if (av == null && bv == null) return a.county.localeCompare(b.county);
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (bv !== av) return bv - av;
+    return a.county.localeCompare(b.county);
+  });
+}
+function computeGroups(filteredRows, mode) {
+  const stateRows = filteredRows.filter(r => r.kind === 'statewide');
+  const countyRows = filteredRows.filter(r => r.kind !== 'statewide');
+  const sortRows = rows => sortCountyRows(rows, sortByMode);
+  if (mode === 'region') {
+    const groups = [];
+    if (stateRows.length) groups.push({ name: 'California', rows: stateRows });
+    REGION_ORDER.forEach(region => {
+      const rows = sortRows(countyRows.filter(r => COUNTY_REGIONS[r.county] === region));
+      if (rows.length) groups.push({ name: region, rows });
+    });
+    return groups;
+  }
+  if (mode === 'none') {
+    const rows = stateRows.concat(sortRows(countyRows));
+    return rows.length ? [{ name: 'All counties', rows }] : [];
+  }
+  const groups = [];
+  if (stateRows.length) groups.push({ name: 'California', rows: stateRows });
+  BUCKET_ORDER.forEach(bucket => {
+    const rows = sortRows(countyRows.filter(r => r.size === bucket));
+    if (rows.length) groups.push({ name: SIZE_DISPLAY[bucket] || bucket, rows });
+  });
+  return groups;
+}
+function weightedShare(rows, key) {
+  let disposed = 0, part = 0;
+  rows.forEach(r => {
+    if (!r.counts || r.counts.disposed == null) return;
+    disposed += r.counts.disposed;
+    part += r.counts[key] || 0;
+  });
+  if (!disposed) return null;
+  return (part / disposed) * 100;
+}
+function updateBucketFiltersSummary() {
+  const el = document.getElementById('bucketFiltersSummary');
+  if (!el) return;
+  const names = [
+    ...Array.from(regionFilterEl.selectedOptions).map(o => o.textContent),
+    ...Array.from(sizeFilterEl.selectedOptions).map(o => o.textContent),
+    ...Array.from(countyFilterEl.selectedOptions).map(o => o.textContent)
+  ];
+  el.textContent = names.length ? names.join(', ') : 'All counties';
+}
+
+function buildBucketChart() {
+  updateBucketFiltersSummary();
+  document.getElementById('bucketSub').textContent = fmtMonth(selectedBucketMonth);
+  const studentMix = populationMode === 'students';
+  document.getElementById('bucketTitle').textContent = studentMix
+    ? 'College student application outcomes by county'
+    : 'Application Outcomes by County';
+  document.getElementById('bucketPlotTitle').textContent =
+    (studentMix ? 'College student application outcomes by county' : 'Application Outcomes by County') +
+    ' — ' + fmtMonth(selectedBucketMonth);
+  const selectedRegions = Array.from(regionFilterEl.selectedOptions).map(o => o.value);
+  const selectedSizes = Array.from(sizeFilterEl.selectedOptions).map(o => o.value);
+  const selectedCounties = Array.from(countyFilterEl.selectedOptions).map(o => o.value);
+  const filteredRows = countyRowsForMonth(selectedBucketMonth).filter(r => {
+    if (r.kind === 'statewide') return true;
+    return (selectedRegions.length === 0 || selectedRegions.includes(COUNTY_REGIONS[r.county])) &&
+      (selectedSizes.length === 0 || selectedSizes.includes(r.size)) &&
+      (selectedCounties.length === 0 || selectedCounties.includes(r.county));
+  });
+  const groupLabel = GROUP_COL_LABELS[groupByMode] || 'Group';
+  const bucketHead = document.querySelector('#bucketChartTable thead tr');
+  bucketHead.innerHTML = '<th scope="col">County</th>' +
+    '<th scope="col" id="bucketGroupColHeader">' + groupLabel + '</th>' +
+    STACK.map(s => '<th scope="col">' + s.label + '</th>').join('');
+
+  const mergedLabels = [];
+  const mergedRows = [];
+  const groupRanges = [];
+  computeGroups(filteredRows, groupByMode).forEach(g => {
+    const start = mergedLabels.length;
+    g.rows.forEach(r => { mergedLabels.push(countyBarLabel(r.county)); mergedRows.push(r); });
+    const end = mergedLabels.length - 1;
+    const skipAgg = groupByMode === 'none' || g.name === 'California';
+    const approval = skipAgg ? null : weightedShare(g.rows, 'approved');
+    const procedural = skipAgg ? null : weightedShare(g.rows, 'procedural');
+    const lineMarks = [];
+    if (sortByMode === 'approved' && approval != null && end > start) {
+      lineMarks.push({
+        plotY: approval, color: GROUP_LINE_COLOR,
+        text: 'Approval ' + approval.toFixed(0) + '%',
+        baseline: 'top', yOffset: 3
+      });
+    }
+    if (sortByMode === 'procedural' && procedural != null && end > start) {
+      lineMarks.push({
+        plotY: 100 - procedural, color: GROUP_LINE_COLOR,
+        text: 'Procedural ' + procedural.toFixed(0) + '%',
+        baseline: 'bottom', yOffset: -2
+      });
+    }
+    groupRanges.push({
+      name: g.name, start, end,
+      approval, procedural, lineMarks
+    });
+  });
+
+  const stackDatasets = STACK.map(s => ({
+    label: s.label,
+    data: mergedRows.map(r => r.shares[s.key]),
+    backgroundColor: s.color,
+    borderWidth: 0,
+    order: 2,
+    stack: 'outcomes',
+    _groupRanges: s.key === 'approved' ? groupRanges : undefined
+  }));
+  const groupLineDatasets = [];
+  groupRanges.forEach(g => {
+    if (g.end <= g.start) return;
+    if (sortByMode === 'approved' && g.approval != null) {
+      groupLineDatasets.push({
+        type: 'line',
+        label: 'Aggregate approval (' + g.name + ')',
+        data: mergedLabels.map((_, i) => (i >= g.start && i <= g.end) ? g.approval : null),
+        borderColor: GROUP_LINE_COLOR,
+        borderDash: [5, 3],
+        pointRadius: 0,
+        borderWidth: 1.25,
+        spanGaps: false,
+        order: 1,
+        stack: 'group-line-' + g.name,
+        displayPct: g.approval
+      });
+    }
+    if (sortByMode === 'procedural' && g.procedural != null) {
+      groupLineDatasets.push({
+        type: 'line',
+        label: 'Aggregate procedural denial (' + g.name + ')',
+        data: mergedLabels.map((_, i) => (i >= g.start && i <= g.end) ? (100 - g.procedural) : null),
+        borderColor: GROUP_LINE_COLOR,
+        borderDash: [5, 3],
+        pointRadius: 0,
+        borderWidth: 1.25,
+        spanGaps: false,
+        order: 1,
+        stack: 'group-line-' + g.name,
+        displayPct: g.procedural
+      });
+    }
+  });
+
+  if (bucketChart) bucketChart.destroy();
+  clearHoverTooltip(document.getElementById('bucketChartHover'));
+  bucketChart = new Chart(document.getElementById('bucketChart'), {
+    type: 'bar',
+    data: { labels: mergedLabels, datasets: [...stackDatasets, ...groupLineDatasets] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false, axis: 'x' },
+      layout: { padding: { top: 95 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal('bucketChartHover', 'above', idx => {
+            return smallCellHoverNote(mergedRows[idx] && mergedRows[idx].counts, STACK);
+          }),
+          itemSort: (a, b) => {
+            const order = STACK.map(s => s.label);
+            const ai = order.indexOf(a.dataset.label);
+            const bi = order.indexOf(b.dataset.label);
+            if (ai === -1 && bi === -1) return 0;
+            if (ai === -1) return 1;
+            if (bi === -1) return -1;
+            return bi - ai;
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, ticks: { maxRotation: 60, minRotation: 45, font: { size: 10 } }, grid: { display: false } },
+        y: {
+          stacked: true, min: 0, max: 100,
+          ticks: { callback: v => v + '%' },
+          grid: { color: '#f0f0f0' }
+        }
+      }
+    }
+  });
+
+  renderAccessibleTable(document.querySelector('#bucketChartTable tbody'), mergedRows.map(r => [
+    countyBarLabel(r.county),
+    r.kind === 'statewide' ? 'California' :
+      (groupByMode === 'region' ? (COUNTY_REGIONS[r.county] || '') :
+        (groupByMode === 'none' ? 'All counties' : (SIZE_DISPLAY[r.size] || r.size))),
+    ...STACK.map(s => fmtPct(r.shares[s.key]))
+  ]));
+  const groupCaption = groupByMode === 'region' ? 'grouped by region'
+    : (groupByMode === 'none' ? 'all counties' : 'grouped by county size');
+  const sortCaption = sortByMode === 'procedural'
+    ? 'sorted by procedural denial rate, highest first'
+    : 'sorted by approval rate, highest first';
+  const popCaption = populationMode === 'students' ? 'college student applications, ' : '';
+  document.querySelector('#bucketChartTable caption').textContent =
+    'Application outcomes by county, ' + popCaption + groupCaption + ', ' + sortCaption;
+}
+
+const bucketFilters = document.getElementById('bucketFilters');
+const bucketFiltersToggle = document.getElementById('bucketFiltersToggle');
+bucketFiltersToggle.addEventListener('click', () => {
+  const open = !bucketFilters.classList.contains('filters-open');
+  bucketFilters.classList.toggle('filters-open', open);
+  bucketFiltersToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+[regionFilterEl, sizeFilterEl, countyFilterEl].forEach(el => {
+  el.addEventListener('change', buildBucketChart);
+});
+document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+  [regionFilterEl, sizeFilterEl, countyFilterEl].forEach(el => {
+    Array.from(el.options).forEach(o => { o.selected = false; });
+  });
+  buildBucketChart();
+});
+buildBucketChart();
+
+const populationBtns = Array.from(document.querySelectorAll('.population-btn'));
+const sortProceduralBtn = document.getElementById('sortProceduralBtn');
+const areaLayersControl = document.getElementById('areaLayersControl');
+function syncPopulationUi() {
+  populationBtns.forEach(btn => {
+    const on = btn.getAttribute('data-population') === populationMode;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const student = populationMode === 'students';
+  if (sortProceduralBtn) sortProceduralBtn.hidden = student;
+  if (areaLayersControl) areaLayersControl.hidden = student;
+  if (student) {
+    if (showReceived) {
+      showReceived = false;
+      if (receivedCheckbox) receivedCheckbox.checked = false;
+      if (areaLayersCaveatEl) areaLayersCaveatEl.classList.remove('show');
+    }
+    if (sortByMode === 'procedural') {
+      sortByMode = 'approved';
+      sortByBtns.forEach(b => {
+        const on = b.getAttribute('data-sort') === 'approved';
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+  }
+  updateGroupLineLegend();
+  renderOutcomeLegend();
+}
+function setPopulation(mode) {
+  if (mode === populationMode) return;
+  populationMode = mode;
+  STACK = mode === 'students'
+    ? (DATA.student_stack || STUDENT_OUTCOME_STACK)
+    : (DATA.stack || OUTCOME_STACK);
+  syncPopulationUi();
+  populateBucketMonthSelect();
+  buildAreaCharts();
+  buildBucketChart();
+}
+populationBtns.forEach(btn => {
+  btn.addEventListener('click', () => setPopulation(btn.getAttribute('data-population')));
+});
+}
+
+document.querySelectorAll('.info-tip').forEach(tip => {
+  const btn = tip.querySelector('.info-tip-btn');
+  if (!btn) return;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    document.querySelectorAll('.info-tip-btn').forEach(other => {
+      if (other !== btn) other.setAttribute('aria-expanded', 'false');
+    });
+    btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+  });
+});
+document.addEventListener('click', () => {
+  document.querySelectorAll('.info-tip-btn').forEach(btn => {
+    btn.setAttribute('aria-expanded', 'false');
+  });
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.info-tip-btn').forEach(btn => {
+    btn.setAttribute('aria-expanded', 'false');
+  });
+});
+
+startLiveOutcomesDashboard(initDashboard);
+</script>
+</body>
+</html>
