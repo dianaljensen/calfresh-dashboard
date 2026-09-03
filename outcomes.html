@@ -17,8 +17,7 @@
     --accent2: #FB7906;
     --dark-blue: #2C5985;
     --gray-blue: #C4D6E4;
-    --purple: #BA5D81;
-    --light-purple: #E8C9D5;
+    --denied: #A89890;
     --light-gray: #C0C0C0;
     --grid: #ececec;
   }
@@ -108,9 +107,21 @@
   .card.link-a { background: rgba(251,121,6,0.05); }
   .card.link-b { background: rgba(75,165,186,0.08); }
   .time-range-control { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px 16px; margin-bottom: 18px; }
-  .shared-controls { background: var(--card); }
-  .shared-filters { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
-  .shared-filters .card-filters { margin-bottom: 0; }
+  .section-controls {
+    margin: 0 0 14px;
+    padding: 0 0 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-controls .shared-filters { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .section-controls .shared-filters .card-filters { margin-bottom: 0; }
+  .section-controls.filters-open .shared-filters {
+    max-height: min(50vh, 320px);
+    overflow-y: auto;
+  }
+  .section-controls.populations-mode .places-only-filters { display: none; }
+  .filters-label-pops { display: none; }
+  .section-controls.populations-mode .filters-label-places { display: none; }
+  .section-controls.populations-mode .filters-label-pops { display: inline; }
   .shared-filters-toggle {
     display: block;
     width: 100%; margin-top: 12px; padding: 8px 10px;
@@ -146,25 +157,13 @@
     top: 2px; bottom: 2px; left: 6px; width: 2px;
   }
   .shared-filters-toggle[aria-expanded="true"] .filters-toggle-mark::after { display: none; }
-  .shared-controls:not(.filters-open) .shared-filters { display: none; }
+  .section-controls:not(.filters-open) .shared-filters { display: none; }
   .bucket-filters:not(.filters-open) .bucket-filter-lists { display: none; }
   .bucket-filters .shared-filters-toggle { margin-top: 0; }
   .bucket-filters.filters-open .bucket-filter-lists {
     margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line);
-  }
-  @media (max-width: 860px) {
-    .shared-controls {
-      position: sticky; top: 0; z-index: 20;
-      box-shadow: 0 2px 10px rgba(31,36,48,0.12);
-    }
-    .shared-controls.filters-open .shared-filters {
-      max-height: min(50vh, 320px);
-      overflow-y: auto;
-    }
-    .bucket-filters.filters-open .bucket-filter-lists {
-      max-height: min(50vh, 320px);
-      overflow-y: auto;
-    }
+    max-height: min(50vh, 320px);
+    overflow-y: auto;
   }
   .time-range-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
   .time-range-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
@@ -231,6 +230,10 @@
   .range-slider:active .range-input::-moz-range-thumb { cursor: grabbing; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 10px; margin-bottom: 22px; }
   .card h2 { font-size: 15px; margin: 0 0 8px; }
+  .card-title-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px;
+  }
+  .card-title-row h2 { margin: 0; }
   .card p.caption { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
   .bucket-title-row {
     display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px;
@@ -242,19 +245,38 @@
   }
   .bucket-filter-head .filter-hint { max-width: none; }
   .bucket-filter-head .range-btn { margin-left: auto; }
-  .chart-plot { position: relative; margin-top: 2px; overflow: visible; }
+  .chart-plot { position: relative; margin-top: 2px; overflow: visible; --plot-title-inset: 0px; }
   .area-pane, .area-panes { overflow: visible; }
-  .chart-plot-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .chart-plot-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; line-height: 1.25; }
+  .chart-plot-metric,
+  .chart-plot-place { display: block; }
+  .chart-plot-place {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+  /* Metric + place is two lines on every mix column, so the canvases line up. */
+  .outcome-grid .outcome-cell > .chart-plot > .chart-plot-title {
+    min-height: calc(1.25em + 1.12em);
+  }
+  .chart-plot > h2,
+  .chart-plot > h3,
+  .chart-plot > h4,
+  .chart-plot > .caption {
+    padding-left: var(--plot-title-inset);
+  }
   .chart-hover {
-    display: none; position: absolute; z-index: 12; left: 0; top: 0;
+    display: none; position: fixed; z-index: 30; left: 0; top: 0;
     pointer-events: none; width: max-content;
-    max-width: min(280px, calc(100% - 16px));
+    max-width: min(280px, calc(100vw - 16px));
     font-size: 12px; line-height: 1.35; padding: 8px 10px;
     border-radius: 6px; background: rgba(24, 27, 36, 0.97); color: #fff;
   }
   .chart-hover.is-active { display: block; }
   .chart-hover-title { font-weight: 700; margin-bottom: 2px; }
   .chart-hover-note { opacity: 0.92; margin-bottom: 6px; font-style: italic; }
+  .chart-hover-row + .chart-hover-note { margin-top: 6px; margin-bottom: 0; }
   .chart-hover-row { display: flex; align-items: flex-start; gap: 6px; }
   .chart-hover-swatch {
     width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; margin-top: 3px;
@@ -269,7 +291,65 @@
     display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 16px; margin-bottom: 8px;
   }
+  .outcome-grid {
+    display: grid;
+    gap: 6px 16px;
+    overflow-x: auto;
+    margin: 0 0 12px;
+    align-items: start;
+  }
+  .outcome-row-toggle {
+    display: flex; align-items: center; gap: 6px;
+    grid-column: 1 / -1;
+    width: 100%; max-width: none; min-width: 0;
+    margin: 0; padding: 8px 0 4px;
+    border: 0; border-top: 1px solid var(--line);
+    background: transparent; cursor: pointer;
+    font-family: inherit; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em;
+    color: var(--muted); text-align: left; line-height: 1.25;
+  }
+  .outcome-row-toggle:first-child { border-top: 0; padding-top: 2px; }
+  .outcome-row-toggle:hover, .outcome-row-toggle:focus-visible { color: var(--ink); outline: none; }
+  .outcome-row-toggle[aria-expanded="true"] { color: var(--ink); padding-bottom: 2px; }
+  .outcome-row-toggle.collapsed { padding: 8px 0; }
+  .outcome-row-toggle .filters-toggle-mark { margin: 0; color: currentColor; }
+  .outcome-row-toggle[aria-expanded="true"] .filters-toggle-mark::after { display: none; }
+  .outcome-cell { min-width: 260px; }
+  .outcome-cell-empty { min-height: 24px; }
+  .outcome-grid .chart-holder { height: 240px; }
+  .outcome-grid .nested-holder { height: 140px; }
+  .outcome-cell .chart-plot, .outcome-cell .nested-plot { margin-top: 0; }
+  .layer-toggle[hidden] { display: none !important; }
+  .explore-mode-hint { font-size: 11px; color: var(--muted); margin: 0 0 8px; }
   .area-pane { min-width: 0; }
+  .pane-legend {
+    display: flex; flex-wrap: wrap; gap: 8px 12px; margin: 0 0 6px;
+    font-size: 11px; color: var(--muted);
+  }
+  .pane-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .pane-legend i {
+    display: inline-block; width: 12px; height: 8px; border-radius: 2px;
+  }
+  .pane-subtitle {
+    font-size: 11px; color: var(--muted); margin: 0 0 6px; line-height: 1.35; font-weight: 400;
+  }
+  .compare-pops-row {
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start;
+    margin: 0 0 8px;
+  }
+  .compare-pops-row .chart-statewide-toggle { margin: 0; }
+  .compare-pops-panel { max-width: 420px; min-width: 220px; }
+  .compare-pops-panel .filter-label-row { width: 100%; }
+  .compare-pops-panel .filter-label-row .drill-toggle { width: auto; flex: 1 1 auto; }
+  .compare-pops-panel .filter-hint { max-width: none; margin-top: 4px; }
+  .card-title-row .info-tip-bubble { width: 320px; }
+  .nested-plot { margin-top: 4px; }
+  .nested-plot .chart-plot-title {
+    font-size: 12px; font-weight: 600; color: var(--muted); margin: 0 0 2px;
+    line-height: 1.35; max-width: 100%;
+  }
+  .nested-holder { height: 140px; }
   .outcome-legend {
     display: flex; flex-wrap: wrap; gap: 12px 18px; margin: 0 0 10px;
     font-size: 12px; color: var(--ink);
@@ -284,11 +364,11 @@
   }
   .layers-control {
     display: flex; flex-direction: column; align-items: stretch; gap: 6px;
-    margin: 12px 0 8px; padding: 10px 12px;
+    margin: 8px 0 8px; padding: 8px 12px;
     border: 1px solid var(--line); border-radius: 8px; background: #fff;
   }
+  .layers-control[hidden] { display: none !important; }
   .layers-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
-  .layers-hint { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
   .layers-list { display: flex; flex-direction: column; gap: 2px; }
   .layer-toggle {
     display: flex; align-items: center; gap: 8px;
@@ -354,7 +434,7 @@
   @media print {
     body { background: #fff; }
     .link-a, .link-b, .card.link-a, .card.link-b { background: #fff !important; }
-    .card, .time-range-control, .shared-controls { box-shadow: none; }
+    .card, .time-range-control, .section-controls { box-shadow: none; position: static; }
     .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover { display: none; }
     .shared-filters, .bucket-filter-lists { display: flex !important; border-top: 0; padding-top: 0; }
     .filter-group.multi select { min-height: auto; }
@@ -378,123 +458,120 @@
   <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
 
   <div id="dashboardMain" hidden>
-  <div class="shared-controls time-range-control link-a" id="sharedControls">
-    <div class="time-range-header">
-      <span class="time-range-label">Showing<strong id="rangeLabel"></strong></span>
-      <button type="button" id="rangeLastTwoYears" class="range-btn">Last 2 years</button>
-      <button type="button" id="rangeSkipCovid" class="range-btn">Since 2021 (post COVID spike)</button>
-      <button type="button" id="rangeReset" class="range-btn">Full range</button>
-    </div>
-    <div class="range-slider">
-      <div class="range-track"><div class="range-track-fill" id="rangeTrackFill"></div></div>
-      <input type="range" id="rangeStart" class="range-input" min="0" max="0" value="0" step="1"
-        aria-label="Start of date range" title="Drag to set the start of the date range">
-      <input type="range" id="rangeEnd" class="range-input" min="0" max="0" value="0" step="1"
-        aria-label="End of date range" title="Drag to set the end of the date range">
-    </div>
-    <p class="range-hint">Drag either handle to change the date range</p>
+  <template id="geoRangeTemplate">
+    <div class="section-controls populations-mode">
+      <div class="time-range-header">
+        <span class="time-range-label">Showing<strong class="range-label-text"></strong></span>
+        <button type="button" class="range-btn range-preset" data-preset="last2">Last 2 years</button>
+        <button type="button" class="range-btn range-preset" data-preset="since2021">Since 2021 (post COVID spike)</button>
+        <button type="button" class="range-btn range-preset" data-preset="full">Full range</button>
+      </div>
+      <div class="range-slider">
+        <div class="range-track"><div class="range-track-fill"></div></div>
+        <input type="range" class="range-input range-start" min="0" max="0" value="0" step="1"
+          aria-label="Start of date range" title="Drag to set the start of the date range">
+        <input type="range" class="range-input range-end" min="0" max="0" value="0" step="1"
+          aria-label="End of date range" title="Drag to set the end of the date range">
+      </div>
+      <p class="range-hint">Drag either handle to change the date range</p>
 
-    <button type="button" id="sharedFiltersToggle" class="shared-filters-toggle"
-      aria-expanded="false" aria-controls="sharedFilters">
-      <span class="shared-filters-toggle-text">
-        <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
-        <span class="shared-filters-summary" id="sharedFiltersSummary">Alameda</span>
-      </span>
-    </button>
-    <div class="shared-filters" id="sharedFilters">
-      <div class="card-filters">
-        <div class="card-filters-clear">
-          <button type="button" id="clearCompareBtn" class="range-btn">Clear filters</button>
-          <div class="filter-hint">Click a name to add or remove it.</div>
-        </div>
-        <div class="filter-group multi">
-          <div class="filter-label-row">
-            <label for="compareSelect">Counties</label>
-            <span class="info-tip">
-              <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="countiesTip" aria-label="About the Counties filter">i</button>
-              <span id="countiesTip" class="info-tip-bubble" role="tooltip">California can be selected on its own. To compare a county, region, or size group with the state, use Add Statewide comparison. Each selected county, region, or size group gets its own stacked chart — stacks cannot overlay.</span>
-            </span>
+      <button type="button" class="shared-filters-toggle"
+        aria-expanded="false" aria-controls="sharedFilters">
+        <span class="shared-filters-toggle-text">
+          <span class="shared-filters-toggle-label">
+            <span class="filters-label-places">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
+            <span class="filters-label-pops">County <span class="filters-toggle-mark" aria-hidden="true"></span></span>
+          </span>
+          <span class="shared-filters-summary" id="sharedFiltersSummary">Sacramento</span>
+        </span>
+      </button>
+      <div class="shared-filters" id="sharedFilters">
+        <div class="card-filters">
+          <div class="card-filters-clear">
+            <button type="button" class="range-btn clear-geo-btn">Clear filters</button>
+            <div class="filter-hint geo-filter-hint">Click a county to view it.</div>
           </div>
-          <select id="compareSelect" multiple></select>
-        </div>
-        <div class="filter-group multi">
-          <div class="filter-label-row">
-            <label for="sizeCompareSelect">County size</label>
-            <span class="info-tip">
-              <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeCompareTip" aria-label="About the County size filter">i</button>
-              <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Adds one stacked chart per size group, using the combined counts of counties in that group (not an average of percentages). Leave empty to skip size-group charts. X-Large is the 6 largest counties by CalFresh households. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Independent of the bar chart below.</span>
-            </span>
-          </div>
-          <select id="sizeCompareSelect" multiple></select>
-        </div>
-        <div class="region-with-drill">
           <div class="filter-group multi">
             <div class="filter-label-row">
-              <label for="regionCompareSelect">Regions</label>
+              <label for="compareSelect" class="compare-select-label">County</label>
               <span class="info-tip">
-                <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="regionsTip" aria-label="About the Regions filter">i</button>
-                <span id="regionsTip" class="info-tip-bubble" role="tooltip">Adds one stacked chart per region, using the combined application counts of member counties (not an average of percentages).</span>
+                <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="countiesTip" aria-label="About the Counties filter">i</button>
+                <span id="countiesTip" class="info-tip-bubble" role="tooltip">California can be selected with a county, region, or size group to compare to the state. Each selected place gets its own column — stacks cannot overlay.</span>
               </span>
             </div>
-            <select id="regionCompareSelect" multiple></select>
+            <select id="compareSelect" class="filter-counties" multiple></select>
           </div>
-          <div class="filter-group drill-panel">
-            <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
-            <button type="button" id="drillRegionBtn" class="drill-toggle" aria-pressed="false" disabled
-              aria-label="Drill into region, off"
-              title="Select exactly one region to turn this on">
-              <span>Drill into region</span>
-              <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
-            </button>
-            <div class="filter-hint" id="drillRegionHint">Available when exactly one region is selected. When on, Counties follows that region.</div>
+          <div class="filter-group multi places-only-filters">
+            <div class="filter-label-row">
+              <label for="sizeCompareSelect">County size</label>
+              <span class="info-tip">
+                <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeCompareTip" aria-label="About the County size filter">i</button>
+                <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Adds one stacked chart per size group, using the combined counts of counties in that group (not an average of percentages). Leave empty to skip size-group charts. X-Large is the 6 largest counties by CalFresh households. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Independent of the bar chart below.</span>
+              </span>
+            </div>
+            <select id="sizeCompareSelect" class="filter-sizes" multiple></select>
+          </div>
+          <div class="region-with-drill places-only-filters">
+            <div class="filter-group multi">
+              <div class="filter-label-row">
+                <label for="regionCompareSelect">Regions</label>
+                <span class="info-tip">
+                  <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="regionsTip" aria-label="About the Regions filter">i</button>
+                  <span id="regionsTip" class="info-tip-bubble" role="tooltip">Adds one stacked chart per region, using the combined application counts of member counties (not an average of percentages).</span>
+                </span>
+              </div>
+              <select id="regionCompareSelect" class="filter-regions" multiple></select>
+            </div>
+            <div class="filter-group drill-panel">
+              <div class="filter-label-row">
+                <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
+                <span class="info-tip">
+                  <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="drillGroupTip" aria-label="About drill into group">i</button>
+                  <span id="drillGroupTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate stays on the chart. If both a region and a size are selected, Counties follows the region — still limited to the selected sizes. Turning the switch off clears Counties.</span>
+                </span>
+              </div>
+              <button type="button" class="drill-toggle" aria-pressed="false" disabled
+                aria-label="Drill into group, off"
+                title="Select exactly one region or one size group to turn this on">
+                <span class="drill-toggle-label">Drill into group</span>
+                <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
+              </button>
+              <div class="filter-hint drill-hint">Available when exactly one region or one size group is selected.</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-
-  <div class="card link-b">
-    <h2>Caseload movement</h2>
-    <p class="caption" id="movementCaption">Certified cases added and discontinued in the selected months</p>
-    <div class="outcome-legend" id="movementLegend"></div>
-    <div id="movementPanes" class="area-panes"></div>
-    <table class="sr-only" id="movementChartTable">
-      <caption>Caseload movement: additions, discontinuances, and net, by month</caption>
-      <thead><tr><th scope="col">Month</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  </template>
 
   <div class="card link-a">
-    <h2>Application Outcomes</h2>
+    <div class="card-title-row">
+      <h2>Application Outcome Trends</h2>
+      <span class="info-tip">
+        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="outcomesTip" aria-label="About application outcome trends">i</button>
+        <span id="outcomesTip" class="info-tip-bubble" role="tooltip">Rows expand from the section labels; Outcomes starts open. All applications, college student applications, and SSI household applications use different recipes — they cannot overlay on one chart. Student outcomes are share of applications disposed (approved or denied). Pended applications are still in process and sit on hover, not in the mix. When the nine denial-reason columns are close to Denied, the mix is Approved / Ineligible / Procedurally Denied / Other; otherwise Approved / Denied. SSI outcomes are Approved / Denied until ineligible and procedural are close to Denied, then that split (plus Other for a small leftover). Hover on a stacked mix includes the count those percents are of. SSI Denial details is households with only SSI recipients (not the some-SSI mix above). Channels uses GetCalFresh, BenefitsCal / Other Online, and Other. On SSI, GetCalFresh is labeled GetCalFresh (SSA) and is <code>SSA_GCF_apps_submit</code> subtracted from Online SSI. CDSS replaces counts under 11 with an asterisk; those slices are plotted as 5. Hover percents then start with ~ and note that some data was masked. Larger hidden totals, and counties that did not report, stay blank. Student Denial details ungroups the large reason types (ineligible, over income, failed to provide income, failed determination, missed interview, procedural); Other is unavailable, out of the home, ineligible CF student, and residual.</span>
+      </span>
+    </div>
+    <div class="groupby-control" role="group" aria-label="Compare">
+      <span class="groupby-label">Compare</span>
+      <button type="button" class="range-btn groupby-btn explore-mode-btn" data-mode="places" aria-pressed="false">Places</button>
+      <button type="button" class="range-btn groupby-btn explore-mode-btn active" data-mode="populations" aria-pressed="true">Populations</button>
+      <span class="info-tip">
+        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="exploreModeTip" aria-label="About compare modes">i</button>
+        <span id="exploreModeTip" class="info-tip-bubble" role="tooltip">Places sits selected counties, regions, or size groups side by side for one population. Populations sits All / college student / SSI household applications side by side for one place. Mixes cannot overlay. Date range and place filters stay in sync with Caseload movement.</span>
+      </span>
+    </div>
     <div class="groupby-control" role="group" aria-label="Population">
       <span class="groupby-label">Population</span>
-      <button type="button" class="range-btn groupby-btn population-btn active" data-population="all" aria-pressed="true">All applications</button>
-      <button type="button" class="range-btn groupby-btn population-btn" data-population="students" aria-pressed="false">College students</button>
+      <button type="button" class="range-btn groupby-btn area-population-btn active" data-population="all" aria-pressed="true">All applications</button>
+      <button type="button" class="range-btn groupby-btn area-population-btn active" data-population="students" aria-pressed="true">College student applications</button>
+      <button type="button" class="range-btn groupby-btn area-population-btn active" data-population="ssi" aria-pressed="true">SSI household applications</button>
     </div>
+    <div id="trendsGeoRange"></div>
     <p class="caption" id="areaCaption">Share of applications disposed that month</p>
-    <div class="outcome-legend" id="outcomeLegend"></div>
-    <p class="procedural-note">CDSS replaces counts under 11 with an asterisk. Those slices are plotted as 5 — hover a month to see which. Larger hidden totals, and counties that did not report, stay blank.</p>
-    <button type="button" id="statewideCompareBtn" class="drill-toggle chart-statewide-toggle"
-      aria-pressed="true" aria-label="Add Statewide comparison, on">
-      <span>Add Statewide comparison</span>
-      <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
-    </button>
-    <div id="areaPanes" class="area-panes"></div>
-    <div class="layers-control" id="areaLayersControl">
-      <span class="layers-label">Show on these charts</span>
-      <p class="layers-hint">Check to add a volume chart under each outcomes chart, using the same months.</p>
-      <div class="layers-list">
-        <label class="layer-toggle" style="--layer-color:#2a6ebb">
-          <input type="checkbox" id="layerAppsReceived">
-          <span class="layer-swatch" style="background:#2a6ebb"></span>
-          Applications received
-        </label>
-      </div>
-    </div>
-    <p class="layers-caveat" id="areaLayersCaveat">Applications received that month are not the applications in the stacks. The stacks are applications disposed that month, which include apps that arrived earlier. A spike in received can show up in later months’ outcome mix.</p>
+    <div id="areaPanes" class="outcome-grid"></div>
     <table class="sr-only" id="areaChartTable">
-      <caption>Application outcomes as a share of applications disposed, by month</caption>
+      <caption>Application outcome trends as a share of applications disposed, by month</caption>
       <thead><tr><th scope="col">Month</th></tr></thead>
       <tbody></tbody>
     </table>
@@ -502,12 +579,13 @@
 
   <div class="card link-b">
     <div class="bucket-title-row">
-      <h2 id="bucketTitle">Application Outcomes by County</h2>
+      <h2 id="bucketTitle">Application Outcomes Monthly Snapshot by County</h2>
     </div>
     <div class="groupby-control" role="group" aria-label="Population">
       <span class="groupby-label">Population</span>
-      <button type="button" class="range-btn groupby-btn population-btn active" data-population="all" aria-pressed="true">All applications</button>
-      <button type="button" class="range-btn groupby-btn population-btn" data-population="students" aria-pressed="false">College students</button>
+      <button type="button" class="range-btn groupby-btn bucket-population-btn active" data-population="all" aria-pressed="true">All applications</button>
+      <button type="button" class="range-btn groupby-btn bucket-population-btn" data-population="students" aria-pressed="false">College student applications</button>
+      <button type="button" class="range-btn groupby-btn bucket-population-btn" data-population="ssi" aria-pressed="false">SSI household applications</button>
     </div>
     <div class="groupby-control">
       <span class="groupby-label">Month</span>
@@ -561,28 +639,49 @@
       </div>
     </div>
     <div class="chart-plot">
-      <h3 class="chart-plot-title" id="bucketPlotTitle">Application Outcomes by County</h3>
+      <h3 class="chart-plot-title" id="bucketPlotTitle">Application Outcomes Monthly Snapshot by County</h3>
       <p class="caption" id="bucketSub"></p>
       <div class="chart-hover" id="bucketChartHover" aria-live="polite"></div>
       <div class="chart-holder" id="bucketChartHolder"><canvas id="bucketChart" aria-hidden="true"></canvas></div>
     </div>
     <table class="sr-only" id="bucketChartTable">
-      <caption>Application outcomes by county, grouped by county size</caption>
+      <caption>Application outcomes monthly snapshot by county, grouped by county size</caption>
       <thead><tr>
         <th scope="col">County</th>
         <th scope="col" id="bucketGroupColHeader">Size group</th>
         <th scope="col">Approved</th>
         <th scope="col">Withdrawn</th>
         <th scope="col">Denied — ineligible</th>
-        <th scope="col">Denied — procedural</th>
+        <th scope="col">Procedurally Denied</th>
       </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card link-b">
+    <h2>Caseload movement</h2>
+    <div class="groupby-control" role="group" aria-label="Compare">
+      <span class="groupby-label">Compare</span>
+      <button type="button" class="range-btn groupby-btn explore-mode-btn" data-mode="places" aria-pressed="false">Places</button>
+      <button type="button" class="range-btn groupby-btn explore-mode-btn active" data-mode="populations" aria-pressed="true">Populations</button>
+      <span class="info-tip">
+        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementExploreModeTip" aria-label="About compare modes">i</button>
+        <span id="movementExploreModeTip" class="info-tip-bubble" role="tooltip">Places sits selected counties, regions, or size groups side by side. Populations shows one place. Changing this also updates Application Outcome Trends.</span>
+      </span>
+    </div>
+    <div id="movementGeoRange"></div>
+    <p class="caption" id="movementCaption">Certified cases added and discontinued</p>
+    <div id="movementPanes" class="area-panes"></div>
+    <table class="sr-only" id="movementChartTable">
+      <caption>Caseload movement: additions, discontinuances, and net, by month</caption>
+      <thead><tr><th scope="col">Month</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
 
   <footer class="source-note">
     <span class="footer-section-label">Sources</span>
-    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296 — Applications, Expedited Service, and Recertifications</a>, via the live <strong>CalFresh Data – Consolidated</strong> spreadsheet. All-application outcome percentages are of applications disposed that month (approved + denied ineligible + denied procedural + withdrawn). College student outcomes are from Master_Monthly (applications containing at least one student: approved, denied, or still pended). Caseload movement numbers are certified cases from Part C.
+    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296 — Applications, Expedited Service, and Recertifications</a> and Master_Monthly, via the live <strong>CalFresh Data – Consolidated</strong> spreadsheet. All-application outcome percentages are of applications disposed that month (approved + denied ineligible + denied procedural + withdrawn). College student outcomes are applications containing at least one student that were approved or denied that month (pended applications are still in process and are not in that mix). Total applications is Master_Monthly <code>Applications Received</code> (all), <code>New Applications Age Total</code> (students), or <code>Online Apps - SSI</code> + <code>Non-Online Apps - SSI</code> (SSI). Channels is a 100% mix of GetCalFresh, BenefitsCal / Other Online, and Other (SSI GetCalFresh is SSA office filings, labeled GetCalFresh (SSA)). SSI household outcomes are applications from households with at least some SSI. Caseload movement numbers are certified cases from Part C.
 
     <span class="footer-section-label">Definitions</span>
     County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000 — computed from the latest available month of Master_Monthly.
@@ -590,10 +689,16 @@
     <span class="footer-section-label">Data notes</span>
     <ul class="footer-notes">
       <li>CF296 current-era (FY2025-26+) and CF296_Legacy (FY2016-17 through FY2024-25) are combined by item meaning.</li>
-      <li>CDSS uses “*” both for counts under 11 and for some larger complementary totals. When exactly one of the five outcome cells is starred, the missing value is recovered from the identity (disposed = approved + ineligible + procedural + withdrawn) if that recovered number is over 10. Remaining under-11 cells are plotted as 5 and called out in the hover; they are never shown as a count. Months with two or more large hidden cells, and counties CDSS listed as not reporting, stay blank.</li>
-      <li>Caseload movement uses CF296 Part C totals only: Item 5.a Applications approved (TOTAL / C. Total), Item 5.d Cases with eligibility reinstated and benefits pro-rated (TOTAL / C. Total), and Item 7 Cases discontinued during the month (TOTAL / C. Total). Net is additions minus discontinuances. Item 5’s other add reasons (status change, ICT, other approvals) are not included.</li>
-      <li>The optional applications-received chart under each outcomes trend is CF296 Item 1 (TOTAL), a count of applications filed that month. It is not the same as applications disposed that month (the stacks above it).</li>
-      <li>College student application columns on Master_Monthly (including unlabeled <code>New Applications …</code> / <code>Denial Reason …</code> / caseload slices in that block) are student-scoped, not the general applicant pool. The student stacked mix starts January 2023. Pended applications are still in process, so that mix is not CF296 “share of applications disposed.”</li>
+      <li>CDSS uses “*” both for counts under 11 and for some larger complementary totals. When exactly one of the five outcome cells is starred, the missing value is recovered from the identity (disposed = approved + ineligible + procedural + withdrawn) if that recovered number is over 10. Remaining under-11 cells are plotted as 5; hover percents then start with ~ and the tooltip notes that some data was masked. They are never shown as a count. Months with two or more large hidden cells, and counties CDSS listed as not reporting, stay blank (a complete month next to those gaps still draws as its own slice).</li>
+      <li>Caseload movement uses CF296 Part C Item 5.a Applications approved, Item 5.d Cases with eligibility reinstated and benefits pro-rated, and Item 7 Cases discontinued during the month. When the TOTAL cell is starred, PACF + NACF is used (that is the identity). If PACF or NACF is also starred, that part is plotted as 5. Net is additions minus discontinuances. Item 5’s other add reasons (status change, ICT, other approvals) are not included.</li>
+      <li>Total applications (expandable row) is Master_Monthly <code>Applications Received</code> for All applications, <code>New Applications Age Total</code> for college students, and <code>Online Apps - SSI</code> + <code>Non-Online Apps - SSI</code> for SSI households. Do not impute 5 on those volume series. They are not CF296 Item 1.</li>
+      <li>Channels (expandable row) use the same three names where the columns exist. All applications: GetCalFresh = <code>All_GCF_apps_submit</code>, BenefitsCal / Other Online = <code>Online Applications Received</code> − GetCalFresh, Other = <code>Applications Received</code> − Online (100% of received; after June 2025 GetCalFresh is 0 and a dashed marker sits at July 2025). College students: GetCalFresh = <code>Applications Submitted via Code for America</code>, BenefitsCal / Other Online = Other Online Source + BenefitsCal, Other = Other Source. Student Code for America is not <code>CfA_GCF_apps_submit</code> and continues after June 2025 at a small volume. SSI: GetCalFresh (SSA) = <code>SSA_GCF_apps_submit</code> (SSA office filings via GetCalFresh on behalf of SSI recipients), BenefitsCal / Other Online = <code>Online Apps - SSI</code> − GetCalFresh (SSA), Other = <code>Non-Online Apps - SSI</code>. SSA GCF last has a nonzero statewide count in September 2024. Some CalWIN counties reported 0 SSI online and non-online from December 2019 through May 2022 while still reporting SSA GCF; those months stay blank rather than drawing a negative online remainder.</li>
+      <li>College student applications (volume) is Master_Monthly <code>New Applications Age Total</code>. It is not CF296 applications received, and it is not a checksum of approved + denied + pended.</li>
+      <li>Student Channels groups those four <code>Applications Submitted via …</code> columns into GetCalFresh, BenefitsCal / Other Online, and Other. The four still sum to the student approved + denied + pended mix. Code for America continues after June 2025 at a small volume as BenefitsCal takes over.</li>
+      <li>College student application columns on Master_Monthly (including unlabeled <code>New Applications …</code> / <code>Denial Reason …</code> / caseload slices in that block) are student-scoped, not the general applicant pool. The student stacked mix starts January 2023 and is share of applications disposed (approved + denied). Pended applications are still in process — hover shows the count, excluded from the mix. When the nine denial-reason columns are close to total denials, the mix is Approved / Ineligible / Procedurally Denied / Other (Ineligible = ineligible + ineligible CF student + over income; Procedurally Denied = procedural + missed interview + failed to provide income + failed determination; Other = unavailable + out of the home + residual). Otherwise it is Approved / Denied of that two-part total (early 2023, when the reasons under-count). Denial details ungroups the large types; Other there is unavailable, out of the home, ineligible CF student, and residual. Named Ineligible + Procedural alone are only a subset of denials.</li>
+      <li>SSI applications (volume) is Master_Monthly <code>Online Apps - SSI</code> + <code>Non-Online Apps - SSI</code>. Reporting starts June 2019. That sum is nearly approved + denied from mid-2022 on; it is not CF296 applications received, and it is not the SSI-only online/non-online pair. Starred cells stay blank rather than plotted as 5. Several CalWIN counties reported 0 for both volume columns December 2019–May 2022 (SSI outcomes still exist those months).</li>
+      <li>SSI household outcomes are Master_Monthly applications from households with at least some SSI. When ineligible + procedural is close to denied, the mix is approved / ineligible / procedural / Other. Otherwise it is approved / denied of that two-part total (CalWIN counties ~2020–May 2022, and months where the split overshoots, including a bad November 2025 statewide ineligible reading). That lumped Denied is drawn in warm grey, not the procedural orange. There is no pended or withdrawn column. SSI Denial details is households with only SSI recipients: ineligible vs procedural, a subset of some-SSI denials.</li>
+      <li>Stacked mix hover includes the count those percents are of: applications disposed (all), college student applications disposed (approved or denied — not <code>New Applications Age Total</code>), SSI household applications disposed. Student mix hover also notes applications still pended, which are not in the mix. Channels hover is applications received (all / SSI) or the student source total. Denial details hover is applications denied.</li>
     </ul>
   </footer>
   </div>
@@ -626,6 +731,26 @@ const SIZE_DISPLAY = {
   'Medium': 'Medium',
   'Small': 'Small'
 };
+const POPULATION_META = {
+  all: {
+    id: 'all',
+    label: 'All applications',
+    caption: 'Share of applications disposed that month',
+    mixDenom: 'Applications disposed'
+  },
+  students: {
+    id: 'students',
+    label: 'College student applications',
+    caption: 'Share of student applications disposed that month',
+    mixDenom: 'College student applications disposed'
+  },
+  ssi: {
+    id: 'ssi',
+    label: 'SSI household applications',
+    caption: 'Share of applications from households with at least some SSI',
+    mixDenom: 'SSI household applications disposed'
+  }
+};
 
 function fmtMonth(m) {
   const [y, mo] = m.split('-');
@@ -645,18 +770,42 @@ function fmtNet(v) {
   const n = Math.round(v);
   return (n > 0 ? '+' : '') + n.toLocaleString('en-US');
 }
-function formatHoverRaw(p) {
-  if (typeof p.raw !== 'number') return String(p.raw);
-  if (typeof p.dataset.displayPct === 'number') return p.dataset.displayPct.toFixed(1) + '%';
-  if (p.dataset.valueKind === 'net') return fmtNet(p.raw);
-  if (p.dataset.valueKind === 'count') return fmtCount(p.raw);
-  return p.raw.toFixed(1) + '%';
+function shareHoverExtra(counts, stack, denomLabel) {
+  const masked = maskedShareHover(counts, stack);
+  let note = (counts && counts.disposed != null && denomLabel)
+    ? fmtCount(counts.disposed) + ' ' + denomLabel
+    : null;
+  if (counts && counts.pended != null) {
+    const pendedNote = fmtCount(counts.pended) + ' still pended (not in this mix)';
+    note = note ? note + '. ' + pendedNote : pendedNote;
+  }
+  if (!masked && !note) return null;
+  return {
+    note: note,
+    footer: masked ? masked.footer : null,
+    approx: !!(masked && masked.approx)
+  };
+}
+function formatHoverRaw(p, approx) {
+  let text;
+  if (typeof p.raw !== 'number') text = String(p.raw);
+  else if (typeof p.dataset.displayPct === 'number') text = p.dataset.displayPct.toFixed(1) + '%';
+  else if (p.dataset.valueKind === 'net') text = fmtNet(p.raw);
+  else if (p.dataset.valueKind === 'count') text = fmtCount(p.raw);
+  else text = p.raw.toFixed(1) + '%';
+  if (approx && text && text !== 'n/a') text = '~' + text;
+  return text;
 }
 function hexAlpha(hex, a) {
   const h = hex.replace('#','');
   const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
   const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
   return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
+// Stacked area fills must go to the previous slice. fill: true is origin, so
+// every band paints over Approved — SSI’s extra Denied/Other layers greying the teal.
+function stackFill(i) {
+  return i === 0 ? 'origin' : '-1';
 }
 
 function clearHoverTooltip(el) {
@@ -690,6 +839,12 @@ function renderHoverTooltip(el, tooltip) {
     line.appendChild(txt);
     el.appendChild(line);
   });
+  if (tooltip.footer) {
+    const footer = document.createElement('div');
+    footer.className = 'chart-hover-note';
+    footer.textContent = tooltip.footer;
+    el.appendChild(footer);
+  }
   el.classList.add('is-active');
 }
 function hoverTooltipExternal(hoverId, placement, getNote) {
@@ -701,52 +856,68 @@ function hoverTooltipExternal(hoverId, placement, getNote) {
       clearHoverTooltip(el);
       return;
     }
-    const items = tooltip.dataPoints.filter(p => p.raw !== null && p.raw !== undefined);
+    const items = tooltip.dataPoints.filter(p => {
+      if (p.raw === null || p.raw === undefined) return false;
+      if (p.dataset.hideZeroHover && p.raw === 0) return false;
+      return true;
+    });
     if (!items.length) { clearHoverTooltip(el); return; }
     const title = (tooltip.title && tooltip.title.length) ? tooltip.title.join(' ') : fmtMonth(context.chart.data.labels[items[0].dataIndex]);
+    let note = null;
+    let footer = null;
+    let approx = false;
+    if (typeof getNote === 'function') {
+      const extra = getNote(items[0].dataIndex, context);
+      if (extra && typeof extra === 'object') {
+        note = extra.note || null;
+        footer = extra.footer || null;
+        approx = !!extra.approx;
+      } else if (typeof extra === 'string') {
+        note = extra;
+      }
+    }
     const rows = items.map(p => ({
       color: p.dataset.borderColor || p.dataset.backgroundColor,
-      text: p.dataset.label + ': ' + formatHoverRaw(p)
+      text: p.dataset.label + ': ' + formatHoverRaw(p, approx)
     }));
-    const note = typeof getNote === 'function' ? getNote(items[0].dataIndex, context) : null;
-    renderHoverTooltip(el, { title, note, rows });
+    renderHoverTooltip(el, { title, note, rows, footer });
     const canvas = context.chart.canvas;
     const plot = canvas.closest('.chart-plot');
     if (!plot) return;
     const plotRect = plot.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
-    const caretX = canvasRect.left - plotRect.left + tooltip.caretX;
-    const caretY = canvasRect.top - plotRect.top + tooltip.caretY;
+    const caretX = canvasRect.left + tooltip.caretX;
+    const caretY = canvasRect.top + tooltip.caretY;
     const tipW = el.offsetWidth;
     const tipH = el.offsetHeight;
-    let left = Math.max(8, Math.min(caretX - tipW / 2, plot.clientWidth - tipW - 8));
+    // Viewport coords (position:fixed) so overflow-x on the outcomes grid
+    // cannot clip the box behind row titles.
+    let left = Math.max(plotRect.left + 8, Math.min(caretX - tipW / 2, plotRect.right - tipW - 8));
     let top;
     if (placement === 'above') {
       // Follow the hovered month on x. Vertically, sit entirely above the
       // canvas (title/caption/legend band) so the stacks stay visible.
-      // Overflow the plot if needed, but stay inside the card (Diana, 2026-08-30 / 2026-09-01).
-      const canvasTop = canvasRect.top - plotRect.top;
-      top = canvasTop - tipH - 8;
-      const card = plot.closest('.card');
-      if (card) {
-        const minTop = card.getBoundingClientRect().top - plotRect.top + 8;
+      top = canvasRect.top - tipH - 8;
+      if (plot.classList.contains('received-plot')) {
+        if (top < plotRect.top) top = plotRect.top;
+      } else {
+        const card = plot.closest('.card');
+        const minTop = card ? card.getBoundingClientRect().top + 8 : 8;
         if (top < minTop) top = minTop;
+        if (top < 8) top = 8;
       }
-      // Nested volume strip: stay inside this plot so the box doesn't cover
-      // the mix chart above it.
-      if (plot.classList.contains('received-plot') && top < 0) top = 0;
     } else {
       const gap = 14;
       left = caretX + gap;
       top = caretY - tipH / 2;
-      if (left + tipW > plot.clientWidth - 8) left = caretX - tipW - gap;
-      if (left < 8) {
-        left = Math.max(8, Math.min(caretX - tipW / 2, plot.clientWidth - tipW - 8));
+      if (left + tipW > plotRect.right - 8) left = caretX - tipW - gap;
+      if (left < plotRect.left + 8) {
+        left = Math.max(plotRect.left + 8, Math.min(caretX - tipW / 2, plotRect.right - tipW - 8));
         top = caretY - tipH - gap;
-        if (top < 8) top = caretY + gap;
+        if (top < plotRect.top + 8) top = caretY + gap;
       }
-      top = Math.max(8, Math.min(top, plot.clientHeight - tipH - 8));
-      left = Math.max(8, Math.min(left, plot.clientWidth - tipW - 8));
+      top = Math.max(plotRect.top + 8, Math.min(top, plotRect.bottom - tipH - 8));
+      left = Math.max(plotRect.left + 8, Math.min(left, plotRect.right - tipW - 8));
     }
     el.style.left = left + 'px';
     el.style.top = top + 'px';
@@ -863,6 +1034,217 @@ const monthYearAxisPlugin = {
   }
 };
 Chart.register(monthYearAxisPlugin);
+const monthMarkerPlugin = {
+  id: 'monthMarkers',
+  afterDatasetsDraw(chart) {
+    const cfg = chart.options.plugins && chart.options.plugins.monthMarkers;
+    const lines = cfg && cfg.lines;
+    if (!lines || !lines.length) return;
+    const months = chart.data.labels;
+    const { ctx, chartArea, scales: { x } } = chart;
+    if (!chartArea) return;
+    lines.forEach(line => {
+      const idx = months.indexOf(line.month);
+      if (idx === -1) return;
+      const xPos = x.getPixelForValue(idx);
+      ctx.save();
+      ctx.strokeStyle = line.color || '#555';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash(line.dash || [4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(xPos, chartArea.top);
+      ctx.lineTo(xPos, chartArea.bottom);
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+};
+Chart.register(monthMarkerPlugin);
+
+const isolatedStackSlicePlugin = {
+  id: 'isolatedStackSlices',
+  beforeDatasetsDraw(chart) {
+    const cfg = chart.options.plugins && chart.options.plugins.isolatedStackSlices;
+    if (!cfg) return;
+    const x = chart.scales.x;
+    const y = chart.scales.y;
+    const { ctx, chartArea, data } = chart;
+    if (!x || !y || !chartArea) return;
+    const stacked = data.datasets.filter((d, i) => {
+      if (!chart.isDatasetVisible(i)) return false;
+      if (d.yAxisID && d.yAxisID !== 'y') return false;
+      return d.fill;
+    });
+    if (!stacked.length) return;
+    const n = data.labels.length;
+    for (let i = 0; i < n; i++) {
+      if (stacked.every(d => d.data[i] == null)) continue;
+      const prevMissing = i === 0 || stacked.every(d => d.data[i - 1] == null);
+      const nextMissing = i === n - 1 || stacked.every(d => d.data[i + 1] == null);
+      if (!(prevMissing && nextMissing)) continue;
+      let half;
+      if (n === 1) half = (chartArea.right - chartArea.left) / 2;
+      else if (i < n - 1) half = Math.abs(x.getPixelForValue(i + 1) - x.getPixelForValue(i)) / 2;
+      else half = Math.abs(x.getPixelForValue(i) - x.getPixelForValue(i - 1)) / 2;
+      const cx = x.getPixelForValue(i);
+      const left = Math.max(chartArea.left, cx - half);
+      const right = Math.min(chartArea.right, cx + half);
+      let pos = 0;
+      let neg = 0;
+      stacked.forEach(d => {
+        const v = d.data[i];
+        if (v == null) return;
+        const from = v >= 0 ? pos : neg;
+        const to = from + v;
+        if (v >= 0) pos = to;
+        else neg = to;
+        const y0 = y.getPixelForValue(from);
+        const y1 = y.getPixelForValue(to);
+        ctx.save();
+        ctx.fillStyle = d.backgroundColor || d.borderColor;
+        ctx.fillRect(left, Math.min(y0, y1), Math.max(1, right - left), Math.abs(y1 - y0));
+        ctx.restore();
+      });
+    }
+  }
+};
+Chart.register(isolatedStackSlicePlugin);
+
+function contrastInk(color) {
+  let r = 0, g = 0, b = 0;
+  const hex = String(color || '').replace('#', '');
+  const rgb = String(color || '').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (rgb) {
+    r = +rgb[1]; g = +rgb[2]; b = +rgb[3];
+  } else if (hex.length === 3) {
+    r = parseInt(hex[0] + hex[0], 16);
+    g = parseInt(hex[1] + hex[1], 16);
+    b = parseInt(hex[2] + hex[2], 16);
+  } else if (hex.length >= 6) {
+    r = parseInt(hex.slice(0, 2), 16);
+    g = parseInt(hex.slice(2, 4), 16);
+    b = parseInt(hex.slice(4, 6), 16);
+  }
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return lum > 0.58 ? '#1f2430' : '#fff';
+}
+const stackBandLabelPlugin = {
+  id: 'stackBandLabels',
+  afterDatasetsDraw(chart) {
+    const cfg = chart.options.plugins && chart.options.plugins.stackBandLabels;
+    if (!cfg) return;
+    const minH = cfg.minHeight || 13;
+    const x = chart.scales.x;
+    const y = chart.scales.y;
+    const { ctx, chartArea, data } = chart;
+    if (!x || !y || !chartArea) return;
+    const stacked = data.datasets.filter((d, i) => {
+      if (!chart.isDatasetVisible(i)) return false;
+      if (d.yAxisID && d.yAxisID !== 'y') return false;
+      return d.fill;
+    });
+    const n = data.labels.length;
+    ctx.save();
+    ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+    if (stacked.length && n) {
+      function monthComplete(i) {
+        if (stacked.some(d => d.data[i] == null)) return false;
+        const prevMissing = i === 0 || stacked.every(d => d.data[i - 1] == null);
+        const nextMissing = i === n - 1 || stacked.every(d => d.data[i + 1] == null);
+        return !(prevMissing && nextMissing);
+      }
+      function labelableCount(i) {
+        let pos = 0, neg = 0, nLabel = 0;
+        stacked.forEach(d => {
+          const v = d.data[i];
+          if (v == null || v === 0) return;
+          const from = v >= 0 ? pos : neg;
+          const to = from + v;
+          if (v >= 0) pos = to;
+          else neg = to;
+          if (Math.abs(y.getPixelForValue(from) - y.getPixelForValue(to)) >= minH) nLabel++;
+        });
+        return nLabel;
+      }
+      let bestIdx = -1;
+      let bestScore = -1;
+      const start = Math.floor(n * 0.42);
+      for (let i = start; i < n; i++) {
+        if (!monthComplete(i)) continue;
+        const score = labelableCount(i);
+        if (score >= bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+      if (bestIdx === -1) {
+        for (let i = n - 1; i >= 0; i--) {
+          if (stacked.every(d => d.data[i] != null)) { bestIdx = i; break; }
+        }
+      }
+      if (bestIdx !== -1 && stacked.length >= 2) {
+        let pos = 0;
+        let neg = 0;
+        stacked.forEach(d => {
+          const v = d.data[bestIdx];
+          if (v == null) return;
+          const from = v >= 0 ? pos : neg;
+          const to = from + v;
+          if (v >= 0) pos = to;
+          else neg = to;
+          const label = d.bandLabel || d.label;
+          if (!label || v === 0) return;
+          const y0 = y.getPixelForValue(from);
+          const y1 = y.getPixelForValue(to);
+          if (Math.abs(y1 - y0) < minH) return;
+          const midY = (y0 + y1) / 2;
+          const px = x.getPixelForValue(bestIdx);
+          const textW = ctx.measureText(label).width;
+          ctx.textAlign = 'right';
+          let tx = px - 4;
+          if (tx - textW < chartArea.left + 4) {
+            ctx.textAlign = 'left';
+            tx = Math.min(px + 4, chartArea.right - textW - 4);
+          }
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = contrastInk(d.borderColor || d.backgroundColor);
+          ctx.fillText(label, tx, midY);
+        });
+      }
+    }
+    data.datasets.forEach((d, i) => {
+      if (!d.lineLabel || !chart.isDatasetVisible(i)) return;
+      const scale = chart.scales[d.yAxisID || 'y'];
+      if (!scale) return;
+      let idx = -1;
+      for (let j = n - 1; j >= 0; j--) {
+        if (d.data[j] != null) { idx = j; break; }
+      }
+      if (idx === -1) return;
+      ctx.fillStyle = d.borderColor || '#1f2430';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      const lx = Math.min(x.getPixelForValue(idx), chartArea.right - 4);
+      ctx.fillText(d.lineLabel, lx, scale.getPixelForValue(d.data[idx]) - 3);
+    });
+    ctx.restore();
+  }
+};
+Chart.register(stackBandLabelPlugin);
+
+const plotTitleAlignPlugin = {
+  id: 'plotTitleAlign',
+  afterLayout(chart) {
+    const plot = chart.canvas && chart.canvas.closest('.chart-plot');
+    const area = chart.chartArea;
+    if (!plot || !area) return;
+    const next = Math.max(0, Math.round(area.left)) + 'px';
+    if (plot.style.getPropertyValue('--plot-title-inset') !== next) {
+      plot.style.setProperty('--plot-title-inset', next);
+    }
+  }
+};
+Chart.register(plotTitleAlignPlugin);
 
 const groupDividerPlugin = {
   id: 'groupDividers',
@@ -914,30 +1296,6 @@ const groupDividerPlugin = {
 };
 Chart.register(groupDividerPlugin);
 
-function alignZeroRanges(minL, maxL, minR, maxR) {
-  minL = Math.min(0, minL);
-  maxL = Math.max(0, maxL);
-  minR = Math.min(0, minR);
-  maxR = Math.max(0, maxR);
-  if (minL === maxL) maxL = minL + 1;
-  if (minR === maxR) maxR = minR + 1;
-  const zeroL = -minL / (maxL - minL);
-  const zeroR = -minR / (maxR - minR);
-  const target = Math.min(zeroL, zeroR);
-  function applyZero(min, max, z) {
-    if (z <= 1e-9) return { min: 0, max: Math.max(max, 1) };
-    if (z >= 1 - 1e-9) return { min: Math.min(min, -1), max: 0 };
-    const maxFromMin = min === 0 ? max : min * (z - 1) / z;
-    const minFromMax = max === 0 ? min : max * z / (z - 1);
-    return {
-      min: Math.min(min, minFromMax),
-      max: Math.max(max, maxFromMin)
-    };
-  }
-  const left = applyZero(minL, maxL, target);
-  const right = applyZero(minR, maxR, target);
-  return { minL: left.min, maxL: left.max, minR: right.min, maxR: right.max };
-}
 function niceOutward(v) {
   if (v === 0) return 0;
   const sign = v < 0 ? -1 : 1;
@@ -953,116 +1311,171 @@ function niceOutward(v) {
   else nice = 10;
   return sign * nice * mag;
 }
-function movementBarExtents(monthly) {
+function movementScaleExtents(monthly) {
   let min = 0, max = 0;
   monthly.forEach(row => {
-    if (!row || row.additions == null || row.exits == null) return;
-    max = Math.max(max, row.additions);
-    min = Math.min(min, -row.exits);
+    if (!row) return;
+    if (row.additions != null) max = Math.max(max, row.additions);
+    if (row.exits != null) min = Math.min(min, -row.exits);
+    if (row.net != null) {
+      min = Math.min(min, row.net);
+      max = Math.max(max, row.net);
+    }
   });
-  return { min: niceOutward(min), max: niceOutward(max) };
-}
-function movementNetExtents(monthly) {
-  let min = 0, max = 0;
-  monthly.forEach(row => {
-    if (!row || row.net == null) return;
-    min = Math.min(min, row.net);
-    max = Math.max(max, row.net);
-  });
-  return { min: niceOutward(min), max: niceOutward(max) };
+  min = niceOutward(min);
+  max = niceOutward(max);
+  if (min === max) max = min + 1;
+  return { min: min, max: max };
 }
 
 function initDashboard() {
 let STACK = DATA.stack || OUTCOME_STACK;
 let populationMode = 'all';
-const compareSelect = document.getElementById('compareSelect');
-const regionCompareSelect = document.getElementById('regionCompareSelect');
-const sizeCompareSelect = document.getElementById('sizeCompareSelect');
-const sharedControls = document.getElementById('sharedControls');
-const sharedFiltersToggle = document.getElementById('sharedFiltersToggle');
-const sharedFiltersSummary = document.getElementById('sharedFiltersSummary');
-const statewideCompareBtn = document.getElementById('statewideCompareBtn');
-let statewideCompare = true;
+let exploreMode = 'populations';
+let comparePopSet = ['all', 'students', 'ssi'];
+let lastPopulationCounties = [];
+const geoRangeRoots = [];
+let syncingFilters = false;
+let selectedCounties = [];
+let selectedRegions = [];
+let selectedSizes = [];
+let rangePreset = 'last2';
+let drillActive = false;
 const areaCharts = [];
-const receivedCharts = [];
+const nestedCharts = [];
 const movementCharts = [];
 const MOVEMENT_SERIES = [
-  { key: 'caseApproved', label: 'Applications approved', color: '#4BA5BA', sign: 1 },
-  { key: 'reinstated', label: 'Reinstated (prorated)', color: '#2C5985', sign: 1 },
-  { key: 'discontinued', label: 'Discontinuances', color: '#FB7906', sign: -1 }
+  { key: 'caseApproved', label: 'Applications approved', shortLabel: 'Approved', color: '#4BA5BA', sign: 1 },
+  { key: 'reinstated', label: 'Reinstated (prorated)', shortLabel: 'Reinstated', color: '#2C5985', sign: 1 },
+  { key: 'discontinued', label: 'Discontinuances', shortLabel: 'Discontinuances', color: '#FB7906', sign: -1 }
 ];
 const RECEIVED_COLOR = '#2a6ebb';
-const receivedCheckbox = document.getElementById('layerAppsReceived');
-const areaLayersCaveatEl = document.getElementById('areaLayersCaveat');
-let showReceived = false;
+const GRID_ROWS = [
+  { id: 'outcomes', label: 'Outcomes' },
+  { id: 'totals', label: 'Total applications' },
+  { id: 'channels', label: 'Channels' },
+  { id: 'denials', label: 'Denial details' }
+];
+const openRows = { outcomes: true, totals: false, channels: false, denials: false };
 
-function renderOutcomeLegend() {
-  let html = STACK.slice().reverse().map(s =>
-    '<span><i style="background:' + s.color + '"></i>' + s.label + '</span>'
-  ).join('');
-  if (showReceived) {
-    html += '<span><i style="background:' + RECEIVED_COLOR + '"></i>Applications received</span>';
-  }
-  document.getElementById('outcomeLegend').innerHTML = html;
+function stackFor(mode) {
+  return populationStack(mode);
 }
-renderOutcomeLegend();
-document.getElementById('movementLegend').innerHTML = MOVEMENT_SERIES.map(s =>
-  '<span><i style="background:' + s.color + '"></i>' + s.label + '</span>'
-).join('') + '<span><i style="background:#1f2430;height:2px;width:14px;margin-top:4px"></i>Net</span>';
+function popLabel(mode) {
+  return (POPULATION_META[mode] && POPULATION_META[mode].label) || mode;
+}
 
-function syncStatewideToggleUi(on) {
-  statewideCompareBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-  statewideCompareBtn.setAttribute('aria-label', on ? 'Add Statewide comparison, on' : 'Add Statewide comparison, off');
+function denialsRowAvailable() {
+  const modes = visibleOutcomeModes();
+  return modes.indexOf('students') !== -1 || modes.indexOf('ssi') !== -1;
 }
 
 const allEntities = ['Statewide', ...DATA.all_counties];
-allEntities.forEach(c => {
-  const opt = document.createElement('option');
-  opt.value = c; opt.textContent = c === 'Statewide' ? 'California (Statewide)' : c;
-  compareSelect.appendChild(opt);
-});
-REGION_ORDER.forEach(r => {
-  const opt = document.createElement('option');
-  opt.value = r; opt.textContent = r;
-  regionCompareSelect.appendChild(opt);
-});
-BUCKET_ORDER.forEach(s => {
-  const opt = document.createElement('option');
-  opt.value = s; opt.textContent = SIZE_DISPLAY[s] || s;
-  sizeCompareSelect.appendChild(opt);
-});
-Array.from(compareSelect.options).forEach(o => { o.selected = o.value === 'Alameda'; });
+const DEFAULT_COUNTY = 'Sacramento';
+selectedCounties = [DEFAULT_COUNTY];
+lastPopulationCounties = [DEFAULT_COUNTY];
 
-const rangeStartInput = document.getElementById('rangeStart');
-const rangeEndInput = document.getElementById('rangeEnd');
-const rangeLabelEl = document.getElementById('rangeLabel');
-const rangeTrackFill = document.getElementById('rangeTrackFill');
+function uniquifyIds(root, prefix) {
+  const map = {};
+  root.querySelectorAll('[id]').forEach(el => {
+    map[el.id] = prefix + '-' + el.id;
+    el.id = map[el.id];
+  });
+  root.querySelectorAll('[for]').forEach(el => {
+    if (map[el.htmlFor]) el.htmlFor = map[el.htmlFor];
+  });
+  ['aria-controls', 'aria-labelledby'].forEach(attr => {
+    root.querySelectorAll('[' + attr + ']').forEach(el => {
+      const v = el.getAttribute(attr);
+      if (map[v]) el.setAttribute(attr, map[v]);
+    });
+  });
+}
+function selectedFromSelect(select) {
+  return Array.from(select.selectedOptions).map(o => o.value);
+}
+function writeSelectValues(select, values) {
+  const want = new Set(values);
+  Array.from(select.options).forEach(o => { o.selected = want.has(o.value); });
+}
+function fillPlaceOptions(root) {
+  const countySel = root.querySelector('.filter-counties');
+  const regionSel = root.querySelector('.filter-regions');
+  const sizeSel = root.querySelector('.filter-sizes');
+  allEntities.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c === 'Statewide' ? 'California (Statewide)' : c;
+    countySel.appendChild(opt);
+  });
+  REGION_ORDER.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r;
+    opt.textContent = r;
+    regionSel.appendChild(opt);
+  });
+  BUCKET_ORDER.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = SIZE_DISPLAY[s] || s;
+    sizeSel.appendChild(opt);
+  });
+}
+function mountGeoRange(hostId, prefix) {
+  const host = document.getElementById(hostId);
+  const frag = document.getElementById('geoRangeTemplate').content.cloneNode(true);
+  uniquifyIds(frag, prefix);
+  host.appendChild(frag);
+  const root = host.querySelector('.section-controls');
+  fillPlaceOptions(root);
+  const start = root.querySelector('.range-start');
+  const end = root.querySelector('.range-end');
+  start.max = monthCount - 1;
+  end.max = monthCount - 1;
+  root.querySelector('.shared-filters-toggle').addEventListener('click', () => {
+    const open = !root.classList.contains('filters-open');
+    root.classList.toggle('filters-open', open);
+    root.querySelector('.shared-filters-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  start.addEventListener('input', () => onRangeInput(root, 'start'));
+  end.addEventListener('input', () => onRangeInput(root, 'end'));
+  root.querySelectorAll('.range-preset').forEach(btn => {
+    btn.addEventListener('click', () => applyRangePreset(btn.getAttribute('data-preset')));
+  });
+  root.querySelector('.filter-counties').addEventListener('change', () => onPlaceFilterChange(root, 'counties'));
+  root.querySelector('.filter-regions').addEventListener('change', () => onPlaceFilterChange(root, 'regions'));
+  root.querySelector('.filter-sizes').addEventListener('change', () => onPlaceFilterChange(root, 'sizes'));
+  root.querySelector('.drill-toggle').addEventListener('click', onDrillToggle);
+  root.querySelector('.clear-geo-btn').addEventListener('click', clearGeoFilters);
+  ['.filter-counties', '.filter-regions', '.filter-sizes'].forEach(sel => {
+    enablePlainClickToggle(root.querySelector(sel));
+  });
+  geoRangeRoots.push(root);
+  return root;
+}
+
 const monthCount = DATA.months.length;
 const DEFAULT_RANGE_MONTHS = 24;
 function lastNMonthsStart(n) {
   return Math.max(0, monthCount - n);
 }
-rangeStartInput.max = monthCount - 1;
-rangeEndInput.max = monthCount - 1;
 let rangeStart = lastNMonthsStart(DEFAULT_RANGE_MONTHS);
 let rangeEnd = monthCount - 1;
-rangeStartInput.value = rangeStart;
-rangeEndInput.value = rangeEnd;
+
+mountGeoRange('trendsGeoRange', 'trends');
+mountGeoRange('movementGeoRange', 'movement');
 
 function updateRangeLabel() {
-  rangeLabelEl.textContent = ' ' + fmtMonth(DATA.months[rangeStart]) + ' – ' + fmtMonth(DATA.months[rangeEnd]);
-  const max = Math.max(monthCount - 1, 1);
-  rangeTrackFill.style.left = (rangeStart / max * 100) + '%';
-  rangeTrackFill.style.width = ((rangeEnd - rangeStart) / max * 100) + '%';
+  syncGeoRangeUi();
 }
 function currentCounties() {
-  return Array.from(compareSelect.selectedOptions).map(o => o.value);
+  return selectedCounties.slice();
 }
 function currentRegions() {
-  return Array.from(regionCompareSelect.selectedOptions).map(o => o.value);
+  return selectedRegions.slice();
 }
 function currentSizes() {
-  return Array.from(sizeCompareSelect.selectedOptions).map(o => o.value);
+  return selectedSizes.slice();
 }
 function countyMatchesSizes(c, sizes) {
   if (!sizes.length) return true;
@@ -1089,32 +1502,140 @@ function currentSelection() {
   }
   return { counties, regions, sizes };
 }
+function countiesWithStateLast(counties) {
+  return counties.filter(c => c !== 'Statewide').concat(counties.filter(c => c === 'Statewide'));
+}
 function updateFiltersSummary(counties, regions, sizes) {
-  const names = counties.map(c => c === 'Statewide' ? 'California' : c)
+  const names = countiesWithStateLast(counties).map(c => c === 'Statewide' ? 'California' : c)
     .concat(regions)
     .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
-  sharedFiltersSummary.textContent = names.length ? names.join(' · ') : 'California';
-}
-function updateStatewideToggleState(counties) {
-  const already = counties.includes('Statewide');
-  statewideCompareBtn.disabled = already;
-  statewideCompareBtn.title = already
-    ? 'California is already selected in Counties'
-    : 'Add a California stacked chart for comparison';
+  const text = names.length ? names.join(' · ') : 'California';
+  geoRangeRoots.forEach(root => {
+    const el = root.querySelector('.shared-filters-summary');
+    if (el) el.textContent = text;
+  });
 }
 
-function countsForCounty(county, month) {
-  if (populationMode === 'students') {
-    const s = DATA.student_series && DATA.student_series[county];
-    if (!s) return null;
-    return {
-      disposed: s.disposed[month],
-      approved: s.approved[month],
-      denied: s.denied[month],
-      pended: s.pended[month],
-      estimated: estimatedFlagsFor(s, month, STUDENT_OUTCOME_PART_KEYS)
-    };
+function entityMembers(entity) {
+  if (entity.kind === 'region') return regionMemberCounties(entity.id, currentSizes());
+  if (entity.kind === 'size') return sizeMemberCounties(entity.id);
+  return null;
+}
+function visibleOutcomeModes() {
+  if (exploreMode === 'populations') {
+    return ['all', 'students', 'ssi'].filter(p => comparePopSet.indexOf(p) !== -1);
   }
+  return [populationMode];
+}
+function focusPlaceCount() {
+  const { counties, regions, sizes } = currentSelection();
+  return counties.length + regions.length + sizes.length;
+}
+function collapseToOnePlace() {
+  const { counties, regions, sizes } = currentSelection();
+  const preferredCounty = counties.find(c => c !== 'Statewide') || counties[0];
+  if (preferredCounty) {
+    selectedCounties = [preferredCounty];
+    selectedRegions = [];
+    selectedSizes = [];
+  } else if (regions[0]) {
+    selectedCounties = [];
+    selectedRegions = [regions[0]];
+    selectedSizes = [];
+  } else if (sizes[0]) {
+    selectedCounties = [];
+    selectedRegions = [];
+    selectedSizes = [sizes[0]];
+  }
+}
+function syncExploreModeUi() {
+  document.querySelectorAll('.explore-mode-btn').forEach(btn => {
+    const on = btn.getAttribute('data-mode') === exploreMode;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  syncPlaceFilterUi();
+}
+function syncPlaceFilterUi() {
+  syncGeoRangeUi();
+}
+function keepOnePopulationCounty() {
+  const added = selectedCounties.filter(v => lastPopulationCounties.indexOf(v) === -1);
+  let keep = added.length ? added[added.length - 1] : (selectedCounties[0] || lastPopulationCounties[0]);
+  if (!keep) keep = DEFAULT_COUNTY;
+  selectedCounties = [keep];
+  selectedRegions = [];
+  selectedSizes = [];
+  lastPopulationCounties = [keep];
+}
+function maybeSwitchToPlaces() {
+  if (exploreMode !== 'populations') return;
+  if (focusPlaceCount() <= 1) return;
+  exploreMode = 'places';
+  populationMode = comparePopSet[0] || 'all';
+  STACK = stackFor(populationMode);
+  syncExploreModeUi();
+  syncPopulationUi();
+}
+function rowHasContent(rowId, population) {
+  if (rowId === 'denials') return population === 'students' || population === 'ssi';
+  return true;
+}
+function gcfSunsetLines() {
+  return [{ month: GCF_SUNSET_MONTH, color: '#555', dash: [4, 3] }];
+}
+
+function ssiRawForCounty(county, month) {
+  const s = DATA.ssi_series && DATA.ssi_series[county];
+  if (!s) return null;
+  return {
+    approved: s.approved[month],
+    denied: s.denied[month],
+    ineligible: s.ineligible[month],
+    procedural: s.procedural[month],
+    ssiOnlyIneligible: s.ssiOnlyIneligible[month],
+    ssiOnlyProcedural: s.ssiOnlyProcedural[month],
+    estimated: estimatedFlagsFor(s, month, SSI_RAW_KEYS)
+  };
+}
+function studentRawForCounty(county, month) {
+  const s = DATA.student_series && DATA.student_series[county];
+  if (!s) return null;
+  const keys = STUDENT_DENIAL_REASON_COLS.map(d => d.key);
+  const den = DATA.student_denial_series && DATA.student_denial_series[county];
+  const raw = {
+    approved: s.approved[month],
+    denied: s.denied[month],
+    pended: s.pended[month],
+    estimated: estimatedFlagsFor(s, month, STUDENT_OUTCOME_PART_KEYS)
+  };
+  if (den) {
+    keys.forEach(k => { raw[k] = den[k][month]; });
+    const denFlags = estimatedFlagsFor(den, month, keys);
+    keys.forEach(k => { if (denFlags[k]) raw.estimated[k] = true; });
+  } else {
+    keys.forEach(k => { raw[k] = null; });
+  }
+  return raw;
+}
+function studentRawForEntity(entity, month) {
+  const members = entityMembers(entity);
+  const keys = STUDENT_DENIAL_REASON_COLS.map(d => d.key);
+  if (members) {
+    const outcomes = sumSeriesKeys(members, month, DATA.student_series, ['approved', 'denied', 'pended']);
+    const parts = sumSeriesKeys(members, month, DATA.student_denial_series, keys);
+    if (!outcomes) return null;
+    const raw = Object.assign({}, outcomes, parts || {});
+    raw.estimated = Object.assign({}, outcomes.estimated || {}, (parts && parts.estimated) || {});
+    if (!parts) keys.forEach(k => { if (raw[k] == null) raw[k] = null; });
+    return raw;
+  }
+  return studentRawForCounty(entity.id, month);
+}
+function countsForCounty(county, month, mode) {
+  const pop = mode || populationMode;
+  if (pop === 'students') return studentHeadlineFromRaw(studentRawForCounty(county, month));
+  if (pop === 'ssi') return ssiHeadlineFromRaw(ssiRawForCounty(county, month));
   const s = DATA.series[county];
   if (!s) return null;
   return {
@@ -1126,38 +1647,134 @@ function countsForCounty(county, month) {
     estimated: estimatedFlagsFor(s, month)
   };
 }
-function countsForEntity(entity, month) {
-  const series = populationMode === 'students' ? DATA.student_series : DATA.series;
-  if (entity.kind === 'region') {
-    return sumOutcomeCounts(regionMemberCounties(entity.id, currentSizes()), month, series, STACK);
+function countsForEntity(entity, month, mode) {
+  const pop = mode || populationMode;
+  const members = entityMembers(entity);
+  if (pop === 'students') return studentHeadlineFromRaw(studentRawForEntity(entity, month));
+  if (pop === 'ssi') {
+    if (members) {
+      return ssiHeadlineFromRaw(sumSeriesKeys(members, month, DATA.ssi_series, ['approved', 'denied', 'ineligible', 'procedural']));
+    }
+    return countsForCounty(entity.id, month, 'ssi');
   }
-  if (entity.kind === 'size') {
-    return sumOutcomeCounts(sizeMemberCounties(entity.id), month, series, STACK);
+  if (members) return sumOutcomeCounts(members, month, DATA.series, stackFor(pop));
+  return countsForCounty(entity.id, month, pop);
+}
+function currentShares(counts, mode) {
+  return outcomeShares(counts, stackFor(mode || populationMode));
+}
+function studentDenialCountsForEntity(entity, month) {
+  const keys = STUDENT_DENIAL_REASON_COLS.map(d => d.key);
+  const members = entityMembers(entity);
+  if (members) {
+    const denied = sumSeriesKeys(members, month, DATA.student_series, ['denied']);
+    const parts = sumSeriesKeys(members, month, DATA.student_denial_series, keys);
+    if (!denied || !parts) return null;
+    return studentDenialFromParts(denied.denied, parts, parts.estimated);
   }
-  return countsForCounty(entity.id, month);
+  const den = DATA.student_denial_series && DATA.student_denial_series[entity.id];
+  const stu = DATA.student_series && DATA.student_series[entity.id];
+  if (!den || !stu) return null;
+  const parts = {};
+  keys.forEach(k => { parts[k] = den[k][month]; });
+  return studentDenialFromParts(stu.denied[month], parts, estimatedFlagsFor(den, month, keys));
 }
-function currentShares(counts) {
-  return outcomeShares(counts, STACK);
+function studentSourceCountsForEntity(entity, month) {
+  const members = entityMembers(entity);
+  if (members) {
+    return studentChannelFromRaw(sumSeriesKeys(members, month, DATA.student_source_series, STUDENT_SOURCE_KEYS));
+  }
+  const s = DATA.student_source_series && DATA.student_source_series[entity.id];
+  if (!s) return null;
+  const raw = { estimated: estimatedFlagsFor(s, month, STUDENT_SOURCE_KEYS) };
+  STUDENT_SOURCE_KEYS.forEach(k => { raw[k] = s[k][month]; });
+  return studentChannelFromRaw(raw);
 }
-function receivedForCounty(county, month) {
-  const s = DATA.series[county];
-  if (!s || !s.received) return null;
-  const v = s.received[month];
+function ssiOnlyCountsForEntity(entity, month) {
+  const members = entityMembers(entity);
+  if (members) {
+    const raw = sumSeriesKeys(members, month, DATA.ssi_series, ['ssiOnlyIneligible', 'ssiOnlyProcedural']);
+    return ssiOnlyFromRaw(raw);
+  }
+  return ssiOnlyFromRaw(ssiRawForCounty(entity.id, month));
+}
+function studentNewAppsForCounty(county, month) {
+  const s = DATA.student_series && DATA.student_series[county];
+  if (!s || !s.newApps) return null;
+  const v = s.newApps[month];
   return v == null ? null : v;
 }
+function studentNewAppsForEntity(entity, month) {
+  const members = entityMembers(entity);
+  if (!members) return studentNewAppsForCounty(entity.id, month);
+  let sum = 0, any = false;
+  members.forEach(c => {
+    const v = studentNewAppsForCounty(c, month);
+    if (v != null) { sum += v; any = true; }
+  });
+  return any ? sum : null;
+}
+function ssiAppsForCounty(county, month) {
+  const s = DATA.ssi_series && DATA.ssi_series[county];
+  if (!s || !s.onlineApps || !s.nonOnlineApps) return null;
+  const online = s.onlineApps[month];
+  const nonOnline = s.nonOnlineApps[month];
+  if (online == null || nonOnline == null) return null;
+  return online + nonOnline;
+}
+function ssiAppsForEntity(entity, month) {
+  const members = entityMembers(entity);
+  if (!members) return ssiAppsForCounty(entity.id, month);
+  const raw = sumSeriesKeys(members, month, DATA.ssi_series, ['onlineApps', 'nonOnlineApps']);
+  if (!raw) return null;
+  return raw.onlineApps + raw.nonOnlineApps;
+}
+function channelRawForCounty(county, month) {
+  const s = DATA.channel_series && DATA.channel_series[county];
+  if (!s) return null;
+  return {
+    received: s.received[month],
+    online: s.online[month],
+    gcfAll: s.gcfAll[month],
+    gcfCfa: s.gcfCfa[month],
+    gcfCbo: s.gcfCbo[month],
+    gcfSsa: s.gcfSsa[month]
+  };
+}
+function channelRawForEntity(entity, month) {
+  const members = entityMembers(entity);
+  if (!members) return channelRawForCounty(entity.id, month);
+  const vol = sumSeriesKeys(members, month, DATA.channel_series, ['received', 'online']);
+  const gcf = sumSeriesKeys(members, month, DATA.channel_series, ['gcfAll', 'gcfCfa', 'gcfCbo', 'gcfSsa']);
+  if (!vol && !gcf) return null;
+  return Object.assign({}, vol || {}, gcf || {});
+}
 function receivedForEntity(entity, month) {
-  if (entity.kind === 'region' || entity.kind === 'size') {
-    const members = entity.kind === 'region'
-      ? regionMemberCounties(entity.id, currentSizes())
-      : sizeMemberCounties(entity.id);
-    let sum = 0, any = false;
+  const raw = channelRawForEntity(entity, month);
+  return raw && raw.received != null ? raw.received : null;
+}
+function ssiChannelCountsForEntity(entity, month) {
+  const members = entityMembers(entity);
+  if (members) {
+    const vol = sumSeriesKeys(members, month, DATA.ssi_series, ['onlineApps', 'nonOnlineApps']);
+    if (!vol) return null;
+    let gcfSsa = 0;
     members.forEach(c => {
-      const v = receivedForCounty(c, month);
-      if (v != null) { sum += v; any = true; }
+      const s = DATA.channel_series && DATA.channel_series[c];
+      const v = s && s.gcfSsa && s.gcfSsa[month];
+      if (v != null) gcfSsa += v;
     });
-    return any ? sum : null;
+    vol.gcfSsa = gcfSsa;
+    return ssiChannelFromRaw(vol);
   }
-  return receivedForCounty(entity.id, month);
+  const s = DATA.ssi_series && DATA.ssi_series[entity.id];
+  if (!s) return null;
+  const ch = channelRawForCounty(entity.id, month);
+  return ssiChannelFromRaw({
+    onlineApps: s.onlineApps && s.onlineApps[month],
+    nonOnlineApps: s.nonOnlineApps && s.nonOnlineApps[month],
+    gcfSsa: ch && ch.gcfSsa
+  });
 }
 function movementForEntity(entity, month) {
   if (entity.kind === 'region') {
@@ -1171,29 +1788,30 @@ function movementForEntity(entity, month) {
 function lockYAxisWidth(axis) {
   axis.width = 72;
 }
-function stackDatasets(labels, entity) {
-  return STACK.map(s => ({
+function stackDatasets(labels, entity, mode) {
+  const stack = stackFor(mode);
+  return stack.map((s, i) => ({
     label: s.label,
     data: labels.map(m => {
-      const shares = currentShares(countsForEntity(entity, m));
+      const shares = currentShares(countsForEntity(entity, m, mode), mode);
       return shares ? shares[s.key] : null;
     }),
     backgroundColor: hexAlpha(s.color, 0.85),
     borderColor: s.color,
     borderWidth: 1,
     pointRadius: 0,
-    fill: true,
-    tension: 0.15,
+    fill: stackFill(i),
+    tension: 0,
     spanGaps: false,
-    yAxisID: 'y'
+    yAxisID: 'y',
+    bandLabel: s.shortLabel || s.label,
+    hideZeroHover: mode === 'ssi' || mode === 'students'
   }));
 }
 
 function paneEntities(counties, regions, sizes) {
   const panes = [];
-  const addStatewide = statewideCompare && !counties.includes('Statewide');
-  if (addStatewide) panes.push({ id: 'Statewide', kind: 'county', title: 'California' });
-  counties.forEach(c => {
+  countiesWithStateLast(counties).forEach(c => {
     panes.push({
       id: c,
       kind: 'county',
@@ -1209,7 +1827,7 @@ function paneEntities(counties, regions, sizes) {
   return panes;
 }
 function selectionNames(counties, regions, sizes) {
-  return counties.map(c => c === 'Statewide' ? 'California' : c)
+  return countiesWithStateLast(counties).map(c => c === 'Statewide' ? 'California' : c)
     .concat(regions.map(r => r + ' (region)'))
     .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
 }
@@ -1224,8 +1842,6 @@ function buildMovementCharts() {
   holder.innerHTML = '';
 
   const captionParts = selectionNames(counties, regions, sizes);
-  const addStatewide = statewideCompare && !counties.includes('Statewide');
-  if (addStatewide) captionParts.unshift('California');
   document.getElementById('movementCaption').textContent =
     'Certified cases added and discontinued — ' +
     fmtMonth(labels[0]) + ' – ' + fmtMonth(labels[labels.length - 1]) +
@@ -1255,17 +1871,24 @@ function buildMovementCharts() {
     holder.appendChild(wrap);
 
     const monthly = labels.map(m => movementForEntity(pane, m));
-    const barDatasets = MOVEMENT_SERIES.map(s => ({
-      type: 'bar',
+    const stackDatasets = MOVEMENT_SERIES.map((s, i) => ({
+      type: 'line',
       label: s.label,
       data: monthly.map(row => {
         if (!row || row[s.key] == null) return null;
         return s.sign * row[s.key];
       }),
-      backgroundColor: s.color,
+      backgroundColor: hexAlpha(s.color, 0.85),
+      borderColor: s.color,
+      borderWidth: 1,
+      pointRadius: 0,
+      fill: stackFill(i),
+      tension: 0.15,
+      spanGaps: false,
       stack: 'caseload',
       yAxisID: 'y',
       valueKind: 'count',
+      bandLabel: s.shortLabel || s.label,
       order: 2
     }));
     const netDataset = {
@@ -1277,21 +1900,21 @@ function buildMovementCharts() {
       pointRadius: 0,
       borderWidth: 2,
       fill: false,
+      tension: 0.15,
       spanGaps: false,
       yAxisID: 'y1',
       valueKind: 'net',
+      lineLabel: 'Net',
       order: 1
     };
     tableHeaders.push(pane.title + ' — Additions', pane.title + ' — Exits', pane.title + ' — Net');
     tableSeries.push({ pane, monthly });
 
-    const barExt = movementBarExtents(monthly);
-    const netExt = movementNetExtents(monthly);
-    const aligned = alignZeroRanges(barExt.min, barExt.max, netExt.min, netExt.max);
+    const scaleExt = movementScaleExtents(monthly);
 
     const chart = new Chart(canvas, {
-      type: 'bar',
-      data: { labels, datasets: barDatasets.concat([netDataset]) },
+      type: 'line',
+      data: { labels, datasets: stackDatasets.concat([netDataset]) },
       options: {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false, axis: 'x' },
@@ -1299,10 +1922,13 @@ function buildMovementCharts() {
         plugins: {
           legend: { display: false },
           monthYearAxis: true,
+          isolatedStackSlices: true,
+          stackBandLabels: true,
           tooltip: {
             enabled: false,
-            external: hoverTooltipExternal('movementHover' + pi, 'above'),
-            filter: item => item.dataset.type !== 'line' || item.dataset.label === 'Net',
+            external: hoverTooltipExternal('movementHover' + pi, 'above', idx => {
+              return smallCellMovementNote(monthly[idx]);
+            }),
             itemSort: (a, b) => {
               const order = ['Applications approved', 'Reinstated (prorated)', 'Discontinuances', 'Net'];
               return order.indexOf(a.dataset.label) - order.indexOf(b.dataset.label);
@@ -1310,10 +1936,10 @@ function buildMovementCharts() {
           }
         },
         scales: {
-          x: { stacked: true, ticks: { display: false }, grid: { display: false } },
+          x: { ticks: { display: false }, grid: { display: false } },
           y: {
             stacked: true, beginAtZero: true, position: 'left',
-            bounds: 'data', min: aligned.minL, max: aligned.maxL,
+            bounds: 'data', min: scaleExt.min, max: scaleExt.max,
             ticks: { callback: v => fmtCount(v) },
             grid: {
               color: ctx => ctx.tick.value === 0 ? '#c5c9d2' : '#f0f0f0'
@@ -1321,8 +1947,8 @@ function buildMovementCharts() {
           },
           y1: {
             stacked: false, beginAtZero: true, position: 'right',
-            bounds: 'data', min: aligned.minR, max: aligned.maxR,
-            ticks: { callback: v => fmtNet(v), color: '#1f2430' },
+            display: false,
+            bounds: 'data', min: scaleExt.min, max: scaleExt.max,
             grid: { drawOnChartArea: false }
           }
         }
@@ -1345,342 +1971,683 @@ function buildMovementCharts() {
   }));
 }
 
+function outcomeColumns(geos) {
+  const modes = visibleOutcomeModes();
+  if (exploreMode === 'populations') {
+    const geo = geos[0] || { id: 'Statewide', kind: 'county', title: 'California' };
+    return modes.map(mode => ({
+      id: geo.id,
+      kind: geo.kind,
+      geoTitle: geo.title,
+      population: mode,
+      title: popLabel(mode) + ' — ' + geo.title,
+      stack: stackFor(mode)
+    }));
+  }
+  const mode = modes[0] || 'all';
+  return geos.map(g => ({
+    id: g.id,
+    kind: g.kind,
+    geoTitle: g.title,
+    population: mode,
+    title: popLabel(mode) + ' — ' + g.title,
+    stack: stackFor(mode)
+  }));
+}
+function appendRowToggle(holder, row, expanded) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'outcome-row-toggle' + (expanded ? '' : ' collapsed');
+  btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  btn.innerHTML = '<span class="filters-toggle-mark" aria-hidden="true"></span>' + row.label;
+  btn.addEventListener('click', () => {
+    openRows[row.id] = !openRows[row.id];
+    buildAreaCharts();
+  });
+  holder.appendChild(btn);
+  return btn;
+}
+function appendNestedShareChart(wrap, hoverId, titleText, labels, stack, countsAt, showMonthAxis, monthMarkers, denomLabel, hideZeroHover) {
+  const recPlot = document.createElement('div');
+  recPlot.className = 'chart-plot nested-plot received-plot';
+  const recTitle = document.createElement('h4');
+  recTitle.className = 'chart-plot-title';
+  recTitle.textContent = titleText;
+  const recHover = document.createElement('div');
+  recHover.className = 'chart-hover';
+  recHover.id = hoverId;
+  recHover.setAttribute('aria-live', 'polite');
+  const recHold = document.createElement('div');
+  recHold.className = 'chart-holder nested-holder';
+  const recCanvas = document.createElement('canvas');
+  recCanvas.setAttribute('aria-hidden', 'true');
+  recHold.appendChild(recCanvas);
+  recPlot.appendChild(recTitle);
+  recPlot.appendChild(recHover);
+  recPlot.appendChild(recHold);
+  wrap.appendChild(recPlot);
+  const datasets = stack.map((s, i) => ({
+    label: s.label,
+    data: labels.map(m => {
+      const shares = outcomeShares(countsAt(m), stack);
+      return shares ? shares[s.key] : null;
+    }),
+    backgroundColor: hexAlpha(s.color, 0.85),
+    borderColor: s.color,
+    borderWidth: 1,
+    pointRadius: 0,
+    fill: stackFill(i),
+    tension: 0,
+    spanGaps: false,
+    yAxisID: 'y',
+    bandLabel: s.shortLabel || s.label,
+    hideZeroHover: !!hideZeroHover
+  }));
+  const chart = new Chart(recCanvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false, axis: 'x' },
+      layout: { padding: { top: 4, bottom: showMonthAxis ? 30 : 8 } },
+      plugins: {
+        legend: { display: false },
+        monthYearAxis: !!showMonthAxis,
+        monthMarkers: monthMarkers ? { lines: monthMarkers } : undefined,
+        isolatedStackSlices: true,
+        stackBandLabels: true,
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal(hoverId, 'above', idx => {
+            return shareHoverExtra(countsAt(labels[idx]), stack, denomLabel);
+          }),
+          itemSort: (a, b) => {
+            const order = stack.map(s => s.label);
+            return order.indexOf(b.dataset.label) - order.indexOf(a.dataset.label);
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { display: false }, grid: { display: false } },
+        y: {
+          stacked: true, min: 0, max: 100,
+          afterFit: lockYAxisWidth,
+          ticks: { callback: v => v + '%', maxTicksLimit: 4 },
+          grid: { color: '#f0f0f0' }
+        }
+      }
+    }
+  });
+  nestedCharts.push(chart);
+  return datasets;
+}
+function appendNestedCountChart(wrap, hoverId, titleText, labels, data, color, label, showMonthAxis) {
+  const recPlot = document.createElement('div');
+  recPlot.className = 'chart-plot nested-plot received-plot';
+  const recTitle = document.createElement('h4');
+  recTitle.className = 'chart-plot-title';
+  recTitle.textContent = titleText;
+  const recHover = document.createElement('div');
+  recHover.className = 'chart-hover';
+  recHover.id = hoverId;
+  recHover.setAttribute('aria-live', 'polite');
+  const recHold = document.createElement('div');
+  recHold.className = 'chart-holder nested-holder';
+  const recCanvas = document.createElement('canvas');
+  recCanvas.setAttribute('aria-hidden', 'true');
+  recHold.appendChild(recCanvas);
+  recPlot.appendChild(recTitle);
+  recPlot.appendChild(recHover);
+  recPlot.appendChild(recHold);
+  wrap.appendChild(recPlot);
+  const chart = new Chart(recCanvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: label,
+        data: data,
+        borderColor: color,
+        backgroundColor: hexAlpha(color, 0.28),
+        fill: true,
+        pointRadius: 0,
+        borderWidth: 2,
+        tension: 0.15,
+        spanGaps: false,
+        valueKind: 'count'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false, axis: 'x' },
+      layout: { padding: { top: 4, bottom: showMonthAxis ? 30 : 8 } },
+      plugins: {
+        legend: { display: false },
+        monthYearAxis: !!showMonthAxis,
+        stackBandLabels: false,
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal(hoverId, 'above')
+        }
+      },
+      scales: {
+        x: { ticks: { display: false }, grid: { display: false } },
+        y: {
+          beginAtZero: true, min: 0,
+          afterFit: lockYAxisWidth,
+          ticks: { callback: v => fmtCount(v), maxTicksLimit: 4 },
+          grid: { color: '#f0f0f0' }
+        }
+      }
+    }
+  });
+  nestedCharts.push(chart);
+}
+
+function syncBreakoutUi() {
+  if (!denialsRowAvailable() && openRows.denials) openRows.denials = false;
+}
+function appendEmptyOutcomeCell(holder) {
+  const cell = document.createElement('div');
+  cell.className = 'outcome-cell outcome-cell-empty';
+  holder.appendChild(cell);
+}
+function appendOutcomeMixChart(cell, hoverId, pane, labels, showMonthAxis) {
+  const mixPlot = document.createElement('div');
+  mixPlot.className = 'chart-plot';
+  const title = document.createElement('h3');
+  title.className = 'chart-plot-title';
+  const metric = document.createElement('span');
+  metric.className = 'chart-plot-metric';
+  metric.textContent = popLabel(pane.population);
+  const place = document.createElement('span');
+  place.className = 'chart-plot-place';
+  place.textContent = pane.geoTitle;
+  title.appendChild(metric);
+  title.appendChild(document.createTextNode('\n'));
+  title.appendChild(place);
+  const hover = document.createElement('div');
+  hover.className = 'chart-hover';
+  hover.id = hoverId;
+  hover.setAttribute('aria-live', 'polite');
+  const canvasHold = document.createElement('div');
+  canvasHold.className = 'chart-holder';
+  const canvas = document.createElement('canvas');
+  canvas.setAttribute('aria-hidden', 'true');
+  canvasHold.appendChild(canvas);
+  mixPlot.appendChild(title);
+  mixPlot.appendChild(hover);
+  mixPlot.appendChild(canvasHold);
+  cell.appendChild(mixPlot);
+  const datasets = stackDatasets(labels, pane, pane.population);
+  const mixChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false, axis: 'x' },
+      layout: { padding: { top: 8, bottom: showMonthAxis ? 30 : 8 } },
+      plugins: {
+        legend: { display: false },
+        monthYearAxis: !!showMonthAxis,
+        isolatedStackSlices: true,
+        stackBandLabels: true,
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal(hoverId, 'above', idx => {
+            const pop = pane.population;
+            const meta = POPULATION_META[pop] || POPULATION_META.all;
+            return shareHoverExtra(
+              countsForEntity(pane, labels[idx], pop),
+              pane.stack,
+              meta.mixDenom
+            );
+          }),
+          itemSort: (a, b) => {
+            const order = pane.stack.map(s => s.label);
+            return order.indexOf(b.dataset.label) - order.indexOf(a.dataset.label);
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { display: false }, grid: { display: false } },
+        y: {
+          stacked: true, min: 0, max: 100,
+          afterFit: lockYAxisWidth,
+          ticks: { callback: v => v + '%' },
+          grid: { color: '#f0f0f0' }
+        }
+      }
+    }
+  });
+  areaCharts.push(mixChart);
+  return datasets;
+}
+
 function buildAreaCharts() {
   updateRangeLabel();
   const { counties, regions, sizes } = currentSelection();
   updateFiltersSummary(counties, regions, sizes);
-  updateStatewideToggleState(counties);
   buildMovementCharts();
   const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
-  const panes = paneEntities(counties, regions, sizes);
+  const geos = paneEntities(counties, regions, sizes);
+  const columns = outcomeColumns(geos);
   const holder = document.getElementById('areaPanes');
   areaCharts.forEach(c => c.destroy());
   areaCharts.length = 0;
-  receivedCharts.forEach(c => c.destroy());
-  receivedCharts.length = 0;
+  nestedCharts.forEach(c => c.destroy());
+  nestedCharts.length = 0;
   holder.innerHTML = '';
+
+  const modes = visibleOutcomeModes();
+  syncBreakoutUi();
+
+  const gridRows = GRID_ROWS.filter(row => row.id !== 'denials' || denialsRowAvailable());
+  const nCols = Math.max(columns.length, 1);
+  holder.style.gridTemplateColumns = 'repeat(' + nCols + ', minmax(280px, 1fr))';
 
   const tableHeaders = ['Month'];
   const tableSeries = [];
+  const lastFilled = {};
+  columns.forEach((col, ci) => {
+    for (let i = gridRows.length - 1; i >= 0; i--) {
+      if (openRows[gridRows[i].id] && rowHasContent(gridRows[i].id, col.population)) {
+        lastFilled[ci] = gridRows[i].id;
+        break;
+      }
+    }
+  });
 
-  panes.forEach((pane, pi) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'area-pane';
-    const mixPlot = document.createElement('div');
-    mixPlot.className = 'chart-plot';
-    const title = document.createElement('h3');
-    title.className = 'chart-plot-title';
-    title.textContent = pane.title;
-    const hover = document.createElement('div');
-    hover.className = 'chart-hover';
-    hover.id = 'areaHover' + pi;
-    hover.setAttribute('aria-live', 'polite');
-    const canvasHold = document.createElement('div');
-    canvasHold.className = 'chart-holder';
-    const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-hidden', 'true');
-    canvasHold.appendChild(canvas);
-    mixPlot.appendChild(title);
-    mixPlot.appendChild(hover);
-    mixPlot.appendChild(canvasHold);
-    wrap.appendChild(mixPlot);
-    holder.appendChild(wrap);
+  gridRows.forEach(row => {
+    const expanded = !!openRows[row.id];
+    appendRowToggle(holder, row, expanded);
+    if (!expanded) return;
 
-    const datasets = stackDatasets(labels, pane);
-    STACK.forEach(s => tableHeaders.push(pane.title + ' — ' + s.label));
-    if (showReceived) tableHeaders.push(pane.title + ' — Applications received');
-    const receivedData = showReceived ? labels.map(m => receivedForEntity(pane, m)) : null;
-    tableSeries.push({ pane, datasets, receivedData });
-    const mixChart = new Chart(canvas, {
-      type: 'line',
-      data: { labels, datasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false, axis: 'x' },
-        layout: { padding: { top: 8, bottom: showReceived ? 8 : 30 } },
-        plugins: {
-          legend: { display: false },
-          monthYearAxis: !showReceived,
-          tooltip: {
-            enabled: false,
-            external: hoverTooltipExternal('areaHover' + pi, 'above', idx => {
-              return smallCellHoverNote(countsForEntity(pane, labels[idx]), STACK);
-            }),
-            itemSort: (a, b) => {
-              const order = STACK.map(s => s.label);
-              return order.indexOf(b.dataset.label) - order.indexOf(a.dataset.label);
-            }
-          }
-        },
-        scales: {
-          x: { ticks: { display: false }, grid: { display: false } },
-          y: {
-            stacked: true, min: 0, max: 100,
-            afterFit: lockYAxisWidth,
-            ticks: { callback: v => v + '%' },
-            grid: { color: '#f0f0f0' }
-          }
+    columns.forEach((col, ci) => {
+      const showAxis = lastFilled[ci] === row.id;
+      if (!rowHasContent(row.id, col.population)) {
+        appendEmptyOutcomeCell(holder);
+        return;
+      }
+      const cell = document.createElement('div');
+      cell.className = 'outcome-cell';
+      holder.appendChild(cell);
+
+      if (row.id === 'outcomes') {
+        const datasets = appendOutcomeMixChart(
+          cell, 'areaHover' + ci, col, labels, showAxis
+        );
+        col.stack.forEach(s => tableHeaders.push(col.title + ' — ' + s.label));
+        tableSeries.push({ pane: col, datasets });
+        return;
+      }
+
+      if (row.id === 'totals') {
+        if (col.population === 'all') {
+          const receivedData = labels.map(m => receivedForEntity(col, m));
+          appendNestedCountChart(
+            cell, 'receivedHover' + ci,
+            'Applications received',
+            labels, receivedData, RECEIVED_COLOR, 'Applications received',
+            showAxis
+          );
+          tableHeaders.push(col.title + ' — Applications received');
+          const ts = tableSeries.find(t => t.pane === col);
+          if (ts) ts.receivedData = receivedData;
+        } else if (col.population === 'students') {
+          const newAppsData = labels.map(m => studentNewAppsForEntity(col, m));
+          appendNestedCountChart(
+            cell, 'studentNewAppsHover' + ci,
+            'College student applications',
+            labels, newAppsData, RECEIVED_COLOR, 'College student applications',
+            showAxis
+          );
+          tableHeaders.push(col.title + ' — College student applications');
+          const ts = tableSeries.find(t => t.pane === col);
+          if (ts) ts.newAppsData = newAppsData;
+        } else {
+          const ssiAppsData = labels.map(m => ssiAppsForEntity(col, m));
+          appendNestedCountChart(
+            cell, 'ssiAppsHover' + ci,
+            'SSI applications',
+            labels, ssiAppsData, RECEIVED_COLOR, 'SSI applications',
+            showAxis
+          );
+          tableHeaders.push(col.title + ' — SSI applications');
+          const ts = tableSeries.find(t => t.pane === col);
+          if (ts) ts.ssiAppsData = ssiAppsData;
+        }
+        return;
+      }
+
+      if (row.id === 'channels') {
+        if (col.population === 'all') {
+          appendNestedShareChart(
+            cell, 'channelHover' + ci,
+            'Channels',
+            labels, DATA.channel_stack || CHANNEL_STACK,
+            m => allChannelFromRaw(channelRawForEntity(col, m), m),
+            showAxis,
+            gcfSunsetLines(),
+            'Applications received'
+          );
+        } else if (col.population === 'students') {
+          appendNestedShareChart(
+            cell, 'studentSourceHover' + ci,
+            'Channels',
+            labels, DATA.channel_stack || CHANNEL_STACK,
+            m => studentSourceCountsForEntity(col, m),
+            showAxis,
+            undefined,
+            'College student applications'
+          );
+        } else {
+          appendNestedShareChart(
+            cell, 'ssiChannelHover' + ci,
+            'Channels',
+            labels, DATA.ssi_channel_stack || SSI_CHANNEL_STACK,
+            m => ssiChannelCountsForEntity(col, m),
+            showAxis,
+            undefined,
+            'SSI household applications received'
+          );
+        }
+        return;
+      }
+
+      if (row.id === 'denials') {
+        if (col.population === 'students') {
+          appendNestedShareChart(
+            cell, 'studentDenialHover' + ci,
+            'Denial reasons',
+            labels, DATA.student_denial_stack || STUDENT_DENIAL_STACK,
+            m => studentDenialCountsForEntity(col, m),
+            showAxis,
+            undefined,
+            'College student applications denied',
+            true
+          );
+        } else if (col.population === 'ssi') {
+          appendNestedShareChart(
+            cell, 'ssiOnlyHover' + ci,
+            'Denial types for households that include only SSI recipients',
+            labels, DATA.ssi_only_stack || SSI_ONLY_DENIAL_STACK,
+            m => ssiOnlyCountsForEntity(col, m),
+            showAxis,
+            undefined,
+            'SSI-only applications denied',
+            true
+          );
         }
       }
     });
-    areaCharts.push(mixChart);
-
-    if (!showReceived) return;
-
-    const recPlot = document.createElement('div');
-    recPlot.className = 'chart-plot received-plot';
-    const recTitle = document.createElement('h4');
-    recTitle.className = 'chart-plot-title';
-    recTitle.textContent = 'Applications received';
-    const recHover = document.createElement('div');
-    recHover.className = 'chart-hover';
-    recHover.id = 'areaReceivedHover' + pi;
-    recHover.setAttribute('aria-live', 'polite');
-    const recHold = document.createElement('div');
-    recHold.className = 'chart-holder received-holder';
-    const recCanvas = document.createElement('canvas');
-    recCanvas.setAttribute('aria-hidden', 'true');
-    recHold.appendChild(recCanvas);
-    recPlot.appendChild(recTitle);
-    recPlot.appendChild(recHover);
-    recPlot.appendChild(recHold);
-    wrap.appendChild(recPlot);
-
-    const recChart = new Chart(recCanvas, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: 'Applications received',
-          data: receivedData,
-          borderColor: RECEIVED_COLOR,
-          backgroundColor: hexAlpha(RECEIVED_COLOR, 0.28),
-          fill: true,
-          pointRadius: 0,
-          borderWidth: 2,
-          tension: 0.15,
-          spanGaps: false,
-          valueKind: 'count'
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false, axis: 'x' },
-        layout: { padding: { top: 4, bottom: 30 } },
-        plugins: {
-          legend: { display: false },
-          monthYearAxis: true,
-          tooltip: {
-            enabled: false,
-            external: hoverTooltipExternal('areaReceivedHover' + pi, 'above')
-          }
-        },
-        scales: {
-          x: { ticks: { display: false }, grid: { display: false } },
-          y: {
-            beginAtZero: true, min: 0,
-            afterFit: lockYAxisWidth,
-            ticks: { callback: v => fmtCount(v), maxTicksLimit: 4 },
-            grid: { color: '#f0f0f0' }
-          }
-        }
-      }
-    });
-    receivedCharts.push(recChart);
   });
 
   const captionParts = selectionNames(counties, regions, sizes);
-  const addStatewide = statewideCompare && !counties.includes('Statewide');
-  if (addStatewide) captionParts.unshift('California');
-  document.getElementById('areaCaption').textContent = populationMode === 'students'
-    ? 'Share of student applications approved, denied, or still pended — ' + captionParts.filter(Boolean).join(', ')
-    : 'Share of applications disposed — ' + captionParts.filter(Boolean).join(', ');
-  document.querySelector('#areaChartTable caption').textContent = populationMode === 'students'
-    ? 'College student application outcomes as a share of approved, denied, or pended, by month'
-    : 'Application outcomes as a share of applications disposed, by month';
+  const place = captionParts.filter(Boolean).join(', ');
+  if (modes.length === 1) {
+    document.getElementById('areaCaption').textContent = POPULATION_META[modes[0]].caption + ' — ' + place;
+  } else {
+    document.getElementById('areaCaption').textContent = place;
+  }
+  document.querySelector('#areaChartTable caption').textContent =
+    'Application outcome trends as a share of each population’s own total, by month';
 
   const thead = document.querySelector('#areaChartTable thead tr');
   thead.innerHTML = tableHeaders.map(h => '<th scope="col">' + h + '</th>').join('');
   renderAccessibleTable(document.querySelector('#areaChartTable tbody'), labels.map((m, i) => {
     const row = [fmtMonth(m)];
     tableSeries.forEach(ts => {
-      STACK.forEach(s => {
+      ts.pane.stack.forEach(s => {
         const ds = ts.datasets.find(d => d.label === s.label);
         const v = ds && ds.data[i];
         row.push(v == null ? 'n/a' : v.toFixed(1) + '%');
       });
-      if (showReceived) {
-        const v = ts.receivedData && ts.receivedData[i];
-        row.push(v == null ? 'n/a' : fmtCount(v));
+      if (ts.receivedData) {
+        row.push(ts.receivedData[i] == null ? 'n/a' : fmtCount(ts.receivedData[i]));
+      }
+      if (ts.newAppsData) {
+        row.push(ts.newAppsData[i] == null ? 'n/a' : fmtCount(ts.newAppsData[i]));
+      }
+      if (ts.ssiAppsData) {
+        row.push(ts.ssiAppsData[i] == null ? 'n/a' : fmtCount(ts.ssiAppsData[i]));
       }
     });
     return row;
   }));
 }
 
-function handleRangeInput() {
-  let s = parseInt(rangeStartInput.value, 10);
-  let e = parseInt(rangeEndInput.value, 10);
+function syncGeoRangeUi() {
+  syncingFilters = true;
+  const pops = exploreMode === 'populations';
+  const rangeText = ' ' + fmtMonth(DATA.months[rangeStart]) + ' – ' + fmtMonth(DATA.months[rangeEnd]);
+  const max = Math.max(monthCount - 1, 1);
+  const fillLeft = (rangeStart / max * 100) + '%';
+  const fillWidth = ((rangeEnd - rangeStart) / max * 100) + '%';
+  const target = currentDrillTarget();
+  const drillText = drillLabel(target);
+  const drillUi = drillButtonCopy(target);
+  const { counties, regions, sizes } = currentSelection();
+  const summaryNames = countiesWithStateLast(counties).map(c => c === 'Statewide' ? 'California' : c)
+    .concat(regions)
+    .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
+  const summary = summaryNames.length ? summaryNames.join(' · ') : 'California';
+  geoRangeRoots.forEach(root => {
+    root.classList.toggle('populations-mode', pops);
+    writeSelectValues(root.querySelector('.filter-counties'), selectedCounties);
+    writeSelectValues(root.querySelector('.filter-regions'), selectedRegions);
+    writeSelectValues(root.querySelector('.filter-sizes'), selectedSizes);
+    const start = root.querySelector('.range-start');
+    const end = root.querySelector('.range-end');
+    start.value = rangeStart;
+    end.value = rangeEnd;
+    root.querySelector('.range-label-text').textContent = rangeText;
+    const fill = root.querySelector('.range-track-fill');
+    fill.style.left = fillLeft;
+    fill.style.width = fillWidth;
+    root.querySelectorAll('.range-preset').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-preset') === rangePreset);
+    });
+    const countyLabel = root.querySelector('.compare-select-label');
+    if (countyLabel) countyLabel.textContent = pops ? 'County' : 'Counties';
+    const hint = root.querySelector('.geo-filter-hint');
+    if (hint) {
+      hint.textContent = pops ? 'Click a county to view it.' : 'Click a name to add or remove it.';
+    }
+    const summaryEl = root.querySelector('.shared-filters-summary');
+    if (summaryEl) summaryEl.textContent = summary;
+    const drillBtn = root.querySelector('.drill-toggle');
+    drillBtn.disabled = drillUi.disabled;
+    drillBtn.setAttribute('aria-pressed', drillActive ? 'true' : 'false');
+    drillBtn.setAttribute('aria-label', drillActive ? drillText + ', on' : drillText + ', off');
+    drillBtn.title = drillUi.title;
+    const drillLabelEl = root.querySelector('.drill-toggle-label');
+    if (drillLabelEl) drillLabelEl.textContent = drillText;
+    const drillHint = root.querySelector('.drill-hint');
+    if (drillHint) drillHint.textContent = drillUi.hint;
+  });
+  syncingFilters = false;
+}
+function onRangeInput(root, which) {
+  if (syncingFilters) return;
+  let s = parseInt(root.querySelector('.range-start').value, 10);
+  let e = parseInt(root.querySelector('.range-end').value, 10);
   if (s > e) {
-    if (this === rangeStartInput) { e = s; rangeEndInput.value = e; }
-    else { s = e; rangeStartInput.value = s; }
+    if (which === 'start') e = s;
+    else s = e;
   }
   rangeStart = s;
   rangeEnd = e;
-  rangePresetBtns.forEach(b => b.classList.remove('active'));
+  rangePreset = null;
+  syncGeoRangeUi();
   buildAreaCharts();
 }
-rangeStartInput.addEventListener('input', handleRangeInput);
-rangeEndInput.addEventListener('input', handleRangeInput);
-
-const rangeLastTwoYearsBtn = document.getElementById('rangeLastTwoYears');
-const rangeSkipCovidBtn = document.getElementById('rangeSkipCovid');
-const rangeResetBtn = document.getElementById('rangeReset');
-const rangePresetBtns = [rangeLastTwoYearsBtn, rangeSkipCovidBtn, rangeResetBtn];
-function setActivePresetBtn(btn) {
-  rangePresetBtns.forEach(b => b.classList.toggle('active', b === btn));
-}
-function applyRange(start, end, activeBtn) {
-  rangeStart = start;
-  rangeEnd = end;
-  rangeStartInput.value = rangeStart;
-  rangeEndInput.value = rangeEnd;
-  setActivePresetBtn(activeBtn);
+function applyRangePreset(preset) {
+  if (preset === 'last2') {
+    rangeStart = lastNMonthsStart(DEFAULT_RANGE_MONTHS);
+    rangeEnd = monthCount - 1;
+  } else if (preset === 'since2021') {
+    const idx = DATA.months.indexOf('2021-01');
+    rangeStart = idx === -1 ? 0 : idx;
+    rangeEnd = monthCount - 1;
+  } else {
+    rangeStart = 0;
+    rangeEnd = monthCount - 1;
+  }
+  rangePreset = preset;
+  syncGeoRangeUi();
   buildAreaCharts();
 }
-rangeLastTwoYearsBtn.addEventListener('click', () => {
-  applyRange(lastNMonthsStart(DEFAULT_RANGE_MONTHS), monthCount - 1, rangeLastTwoYearsBtn);
-});
-rangeSkipCovidBtn.addEventListener('click', () => {
-  const idx = DATA.months.indexOf('2021-01');
-  applyRange(idx === -1 ? 0 : idx, monthCount - 1, rangeSkipCovidBtn);
-});
-rangeResetBtn.addEventListener('click', () => {
-  applyRange(0, monthCount - 1, rangeResetBtn);
-});
-setActivePresetBtn(rangeLastTwoYearsBtn);
 
-statewideCompareBtn.addEventListener('click', () => {
-  if (statewideCompareBtn.disabled) return;
-  statewideCompare = !statewideCompare;
-  syncStatewideToggleUi(statewideCompare);
-  buildAreaCharts();
+document.querySelectorAll('.explore-mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.getAttribute('data-mode');
+    if (mode === exploreMode) return;
+    exploreMode = mode;
+    if (mode === 'populations') {
+      collapseToOnePlace();
+      comparePopSet = ['all', 'students', 'ssi'];
+      drillActive = false;
+      lastPopulationCounties = currentCounties();
+    }
+    syncExploreModeUi();
+    syncPopulationUi();
+    buildAreaCharts();
+  });
 });
 
-const drillRegionBtn = document.getElementById('drillRegionBtn');
-let drillActive = false;
-function drillTargetFor(region) {
-  return new Set(regionMemberCounties(region, currentSizes()));
+// Prefer a single region (existing behavior, including when a size filter is
+// also on). If no region is selected, a single size group is also drillable.
+function currentDrillTarget() {
+  const regions = currentRegions();
+  const sizes = currentSizes();
+  if (regions.length === 1) return { kind: 'region', id: regions[0] };
+  if (regions.length === 0 && sizes.length === 1) return { kind: 'size', id: sizes[0] };
+  return null;
 }
-function countiesMatchDrill(region) {
-  const target = drillTargetFor(region);
+function drillTargetCounties(target) {
+  if (!target) return new Set();
+  if (target.kind === 'region') return new Set(regionMemberCounties(target.id, currentSizes()));
+  return new Set(sizeMemberCounties(target.id));
+}
+function countiesMatchDrill(target) {
+  const want = drillTargetCounties(target);
   const selected = new Set(currentCounties());
-  if (selected.size !== target.size) return false;
-  for (const v of target) if (!selected.has(v)) return false;
+  if (selected.size !== want.size) return false;
+  for (const v of want) if (!selected.has(v)) return false;
   return true;
+}
+function drillLabel(target) {
+  if (target && target.kind === 'size') return 'Drill into size group';
+  if (target && target.kind === 'region') return 'Drill into region';
+  return 'Drill into group';
+}
+function drillButtonCopy(target) {
+  const regions = currentRegions();
+  const sizes = currentSizes();
+  const disabled = !drillActive && !target;
+  if (drillActive) {
+    if (target && target.kind === 'size') {
+      return { disabled, hint: 'On: Counties follows the selected size group. Switching size groups keeps the drill-down on.', title: 'Drill into size group is on' };
+    }
+    if (target && target.kind === 'region') {
+      return { disabled, hint: 'On: Counties follows the selected region. Switching regions keeps the drill-down on.', title: 'Drill into region is on' };
+    }
+    return { disabled, hint: 'On: pick one region or one size group and Counties will follow it.', title: 'Drill into group is on' };
+  }
+  if (target && target.kind === 'region') {
+    return { disabled, hint: 'Available — turn on to break this region into its counties.', title: 'Turn on to drill into this region' };
+  }
+  if (target && target.kind === 'size') {
+    return { disabled, hint: 'Available — turn on to break this size group into its counties.', title: 'Turn on to drill into this size group' };
+  }
+  if (regions.length > 1) {
+    return { disabled, hint: 'Select only one region to turn this on — it can’t follow more than one at a time.', title: 'Select exactly one region or one size group to turn this on' };
+  }
+  if (sizes.length > 1) {
+    return { disabled, hint: 'Select only one size group to turn this on — it can’t follow more than one at a time.', title: 'Select exactly one region or one size group to turn this on' };
+  }
+  return { disabled, hint: 'Available when exactly one region or one size group is selected.', title: 'Select exactly one region or one size group to turn this on' };
 }
 function setDrillActive(on) {
   drillActive = !!on;
-  drillRegionBtn.setAttribute('aria-pressed', drillActive ? 'true' : 'false');
-  drillRegionBtn.setAttribute('aria-label', drillActive ? 'Drill into region, on' : 'Drill into region, off');
-  updateDrillButtonState();
-}
-function updateDrillButtonState() {
-  const n = currentRegions().length;
-  drillRegionBtn.disabled = !drillActive && n !== 1;
-  const hint = document.getElementById('drillRegionHint');
-  if (drillActive) {
-    hint.textContent = 'On: Counties follows the selected region. Switching regions keeps the drill-down on.';
-    drillRegionBtn.title = 'Drill into region is on';
-  } else if (n === 1) {
-    hint.textContent = 'Available — turn on to break this region into its counties.';
-    drillRegionBtn.title = 'Turn on to drill into this region';
-  } else if (n > 1) {
-    hint.textContent = 'Select only one region to turn this on — it can’t follow more than one at a time.';
-    drillRegionBtn.title = 'Select exactly one region to turn this on';
-  } else {
-    hint.textContent = 'Available when exactly one region is selected. When on, Counties follows that region.';
-    drillRegionBtn.title = 'Select exactly one region to turn this on';
-  }
+  syncGeoRangeUi();
 }
 function applyDrillIfActive() {
   if (!drillActive) return;
-  const regions = currentRegions();
-  if (regions.length !== 1) return;
-  const target = drillTargetFor(regions[0]);
-  Array.from(compareSelect.options).forEach(o => { o.selected = target.has(o.value); });
+  const target = currentDrillTarget();
+  if (!target) return;
+  selectedCounties = Array.from(drillTargetCounties(target));
 }
 function dropCountiesOutsideSizes() {
-  const sizes = currentSizes();
-  if (!sizes.length) return;
-  Array.from(compareSelect.options).forEach(o => {
-    if (o.selected && !countyMatchesSizes(o.value, sizes)) o.selected = false;
-  });
+  if (!selectedSizes.length) return;
+  selectedCounties = selectedCounties.filter(c => countyMatchesSizes(c, selectedSizes));
 }
 function includeSizesOfSelectedCounties() {
-  const sizes = currentSizes();
-  if (!sizes.length) return;
-  Array.from(compareSelect.selectedOptions).forEach(o => {
-    if (o.value === 'Statewide') return;
-    const s = DATA.county_meta[o.value] && DATA.county_meta[o.value].size;
-    if (!s) return;
-    Array.from(sizeCompareSelect.options).forEach(opt => {
-      if (opt.value === s) opt.selected = true;
-    });
+  if (!selectedSizes.length) return;
+  selectedCounties.forEach(c => {
+    if (c === 'Statewide') return;
+    const s = DATA.county_meta[c] && DATA.county_meta[c].size;
+    if (s && selectedSizes.indexOf(s) === -1) selectedSizes.push(s);
   });
 }
-
-compareSelect.addEventListener('change', () => {
-  includeSizesOfSelectedCounties();
-  if (drillActive) {
-    const regions = currentRegions();
-    if (regions.length !== 1 || !countiesMatchDrill(regions[0])) setDrillActive(false);
-  }
-  buildAreaCharts();
-});
-regionCompareSelect.addEventListener('change', () => {
-  updateDrillButtonState();
-  applyDrillIfActive();
-  buildAreaCharts();
-});
-sizeCompareSelect.addEventListener('change', () => {
-  dropCountiesOutsideSizes();
-  applyDrillIfActive();
-  buildAreaCharts();
-});
-sharedFiltersToggle.addEventListener('click', () => {
-  const open = !sharedControls.classList.contains('filters-open');
-  sharedControls.classList.toggle('filters-open', open);
-  sharedFiltersToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-});
-drillRegionBtn.addEventListener('click', () => {
-  if (drillActive) {
-    setDrillActive(false);
-    Array.from(compareSelect.options).forEach(o => { o.selected = false; });
-  } else {
-    if (currentRegions().length !== 1) return;
-    setDrillActive(true);
+function onPlaceFilterChange(root, which) {
+  if (syncingFilters) return;
+  selectedCounties = selectedFromSelect(root.querySelector('.filter-counties'));
+  selectedRegions = selectedFromSelect(root.querySelector('.filter-regions'));
+  selectedSizes = selectedFromSelect(root.querySelector('.filter-sizes'));
+  if (which === 'counties') {
+    if (exploreMode === 'populations') {
+      keepOnePopulationCounty();
+      syncGeoRangeUi();
+      buildAreaCharts();
+      return;
+    }
+    includeSizesOfSelectedCounties();
+    if (drillActive) {
+      const target = currentDrillTarget();
+      if (!target || !countiesMatchDrill(target)) drillActive = false;
+    }
+  } else if (which === 'sizes') {
+    dropCountiesOutsideSizes();
+    applyDrillIfActive();
+  } else if (which === 'regions') {
     applyDrillIfActive();
   }
+  maybeSwitchToPlaces();
+  syncGeoRangeUi();
   buildAreaCharts();
-});
-document.getElementById('clearCompareBtn').addEventListener('click', () => {
-  [compareSelect, regionCompareSelect, sizeCompareSelect].forEach(el => {
-    Array.from(el.options).forEach(o => { o.selected = false; });
-  });
-  setDrillActive(false);
-  updateDrillButtonState();
+}
+function onDrillToggle() {
+  if (syncingFilters) return;
+  if (drillActive) {
+    drillActive = false;
+    selectedCounties = [];
+  } else {
+    if (!currentDrillTarget()) return;
+    drillActive = true;
+    applyDrillIfActive();
+  }
+  syncGeoRangeUi();
   buildAreaCharts();
-});
+}
+function clearGeoFilters() {
+  selectedCounties = [DEFAULT_COUNTY];
+  selectedRegions = [];
+  selectedSizes = [];
+  exploreMode = 'populations';
+  populationMode = 'all';
+  STACK = stackFor(populationMode);
+  comparePopSet = ['all', 'students', 'ssi'];
+  drillActive = false;
+  lastPopulationCounties = [DEFAULT_COUNTY];
+  syncExploreModeUi();
+  syncPopulationUi();
+  buildAreaCharts();
+}
 
-[compareSelect, regionCompareSelect, sizeCompareSelect].forEach(enablePlainClickToggle);
-updateDrillButtonState();
-receivedCheckbox.addEventListener('change', () => {
-  showReceived = receivedCheckbox.checked;
-  areaLayersCaveatEl.classList.toggle('show', showReceived);
-  renderOutcomeLegend();
-  buildAreaCharts();
-});
+syncExploreModeUi();
+
 buildAreaCharts();
 
 let resizeRAF = null;
@@ -1688,7 +2655,7 @@ window.addEventListener('resize', () => {
   if (resizeRAF) cancelAnimationFrame(resizeRAF);
   resizeRAF = requestAnimationFrame(() => {
     areaCharts.forEach(c => c.resize());
-    receivedCharts.forEach(c => c.resize());
+    nestedCharts.forEach(c => c.resize());
     movementCharts.forEach(c => c.resize());
     if (bucketChart) bucketChart.resize();
   });
@@ -1860,11 +2827,14 @@ function buildBucketChart() {
   updateBucketFiltersSummary();
   document.getElementById('bucketSub').textContent = fmtMonth(selectedBucketMonth);
   const studentMix = populationMode === 'students';
-  document.getElementById('bucketTitle').textContent = studentMix
-    ? 'College student application outcomes by county'
-    : 'Application Outcomes by County';
+  const ssiMix = populationMode === 'ssi';
+  document.getElementById('bucketTitle').textContent =
+    'Application Outcomes Monthly Snapshot by County';
+  const snapshotPop = studentMix ? 'College student applications'
+    : (ssiMix ? 'SSI household applications' : null);
   document.getElementById('bucketPlotTitle').textContent =
-    (studentMix ? 'College student application outcomes by county' : 'Application Outcomes by County') +
+    document.getElementById('bucketTitle').textContent +
+    (snapshotPop ? ' — ' + snapshotPop : '') +
     ' — ' + fmtMonth(selectedBucketMonth);
   const selectedRegions = Array.from(regionFilterEl.selectedOptions).map(o => o.value);
   const selectedSizes = Array.from(sizeFilterEl.selectedOptions).map(o => o.value);
@@ -1919,6 +2889,7 @@ function buildBucketChart() {
     borderWidth: 0,
     order: 2,
     stack: 'outcomes',
+    hideZeroHover: ssiMix || studentMix,
     _groupRanges: s.key === 'approved' ? groupRanges : undefined
   }));
   const groupLineDatasets = [];
@@ -1970,7 +2941,12 @@ function buildBucketChart() {
         tooltip: {
           enabled: false,
           external: hoverTooltipExternal('bucketChartHover', 'above', idx => {
-            return smallCellHoverNote(mergedRows[idx] && mergedRows[idx].counts, STACK);
+            const meta = POPULATION_META[populationMode] || POPULATION_META.all;
+            return shareHoverExtra(
+              mergedRows[idx] && mergedRows[idx].counts,
+              STACK,
+              meta.mixDenom
+            );
           }),
           itemSort: (a, b) => {
             const order = STACK.map(s => s.label);
@@ -2006,9 +2982,10 @@ function buildBucketChart() {
   const sortCaption = sortByMode === 'procedural'
     ? 'sorted by procedural denial rate, highest first'
     : 'sorted by approval rate, highest first';
-  const popCaption = populationMode === 'students' ? 'college student applications, ' : '';
+  const popCaption = populationMode === 'students' ? 'college student applications, '
+    : (populationMode === 'ssi' ? 'SSI household applications, ' : '');
   document.querySelector('#bucketChartTable caption').textContent =
-    'Application outcomes by county, ' + popCaption + groupCaption + ', ' + sortCaption;
+    'Application outcomes monthly snapshot by county, ' + popCaption + groupCaption + ', ' + sortCaption;
 }
 
 const bucketFilters = document.getElementById('bucketFilters');
@@ -2029,67 +3006,83 @@ document.getElementById('clearFiltersBtn').addEventListener('click', () => {
 });
 buildBucketChart();
 
-const populationBtns = Array.from(document.querySelectorAll('.population-btn'));
+const areaPopulationBtns = Array.from(document.querySelectorAll('.area-population-btn'));
+const bucketPopulationBtns = Array.from(document.querySelectorAll('.bucket-population-btn'));
 const sortProceduralBtn = document.getElementById('sortProceduralBtn');
-const areaLayersControl = document.getElementById('areaLayersControl');
 function syncPopulationUi() {
-  populationBtns.forEach(btn => {
+  const areaModes = visibleOutcomeModes();
+  areaPopulationBtns.forEach(btn => {
+    const on = areaModes.indexOf(btn.getAttribute('data-population')) !== -1;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  bucketPopulationBtns.forEach(btn => {
     const on = btn.getAttribute('data-population') === populationMode;
     btn.classList.toggle('active', on);
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
-  const student = populationMode === 'students';
-  if (sortProceduralBtn) sortProceduralBtn.hidden = student;
-  if (areaLayersControl) areaLayersControl.hidden = student;
-  if (student) {
-    if (showReceived) {
-      showReceived = false;
-      if (receivedCheckbox) receivedCheckbox.checked = false;
-      if (areaLayersCaveatEl) areaLayersCaveatEl.classList.remove('show');
-    }
-    if (sortByMode === 'procedural') {
-      sortByMode = 'approved';
-      sortByBtns.forEach(b => {
-        const on = b.getAttribute('data-sort') === 'approved';
-        b.classList.toggle('active', on);
-        b.setAttribute('aria-pressed', on ? 'true' : 'false');
-      });
-    }
+  const hideProcedural = populationMode === 'ssi';
+  if (sortProceduralBtn) sortProceduralBtn.hidden = hideProcedural;
+  if (hideProcedural && sortByMode === 'procedural') {
+    sortByMode = 'approved';
+    sortByBtns.forEach(b => {
+      const on = b.getAttribute('data-sort') === 'approved';
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
   }
   updateGroupLineLegend();
-  renderOutcomeLegend();
 }
+syncPopulationUi();
 function setPopulation(mode) {
   if (mode === populationMode) return;
   populationMode = mode;
-  STACK = mode === 'students'
-    ? (DATA.student_stack || STUDENT_OUTCOME_STACK)
-    : (DATA.stack || OUTCOME_STACK);
+  STACK = stackFor(mode);
   syncPopulationUi();
   populateBucketMonthSelect();
   buildAreaCharts();
   buildBucketChart();
 }
-populationBtns.forEach(btn => {
-  btn.addEventListener('click', () => setPopulation(btn.getAttribute('data-population')));
+function toggleComparePopulation(mode) {
+  const idx = comparePopSet.indexOf(mode);
+  if (idx === -1) comparePopSet.push(mode);
+  else if (comparePopSet.length > 1) comparePopSet.splice(idx, 1);
+  syncPopulationUi();
+  buildAreaCharts();
+}
+areaPopulationBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.getAttribute('data-population');
+    if (exploreMode === 'populations') toggleComparePopulation(mode);
+    else setPopulation(mode);
+  });
+});
+bucketPopulationBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.getAttribute('data-population');
+    if (mode === populationMode) return;
+    populationMode = mode;
+    STACK = stackFor(mode);
+    syncPopulationUi();
+    populateBucketMonthSelect();
+    if (exploreMode === 'places') buildAreaCharts();
+    buildBucketChart();
+  });
 });
 }
 
-document.querySelectorAll('.info-tip').forEach(tip => {
-  const btn = tip.querySelector('.info-tip-btn');
-  if (!btn) return;
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.info-tip-btn');
+  if (btn) {
     const open = btn.getAttribute('aria-expanded') === 'true';
     document.querySelectorAll('.info-tip-btn').forEach(other => {
       if (other !== btn) other.setAttribute('aria-expanded', 'false');
     });
     btn.setAttribute('aria-expanded', open ? 'false' : 'true');
-  });
-});
-document.addEventListener('click', () => {
-  document.querySelectorAll('.info-tip-btn').forEach(btn => {
-    btn.setAttribute('aria-expanded', 'false');
+    return;
+  }
+  document.querySelectorAll('.info-tip-btn').forEach(b => {
+    b.setAttribute('aria-expanded', 'false');
   });
 });
 document.addEventListener('keydown', (e) => {

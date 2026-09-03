@@ -17,8 +17,7 @@
     --accent2: #FB7906;     /* Orange */
     --dark-blue: #2C5985;
     --gray-blue: #C4D6E4;
-    --purple: #BA5D81;
-    --light-purple: #E8C9D5;
+    --denied: #A89890;
     --light-gray: #C0C0C0;
     --grid: #ececec;
   }
@@ -141,9 +140,17 @@
      only "catches up" in jumps as resize events force Chart.js to redraw smaller. */
   .charts-row > .card, .chart-holder { min-width: 0; }
   .time-range-control { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px 16px; margin-bottom: 18px; }
-  .shared-controls { background: var(--card); }
+  .shared-controls {
+    background: var(--card);
+    position: sticky; top: 0; z-index: 20;
+    box-shadow: 0 2px 10px rgba(31,36,48,0.12);
+  }
   .shared-filters { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
   .shared-filters .card-filters { margin-bottom: 0; }
+  .shared-controls.filters-open .shared-filters {
+    max-height: min(50vh, 320px);
+    overflow-y: auto;
+  }
   .shared-filters-toggle {
     display: block;
     width: 100%; margin-top: 12px; padding: 8px 10px;
@@ -186,6 +193,8 @@
   .bucket-filters .shared-filters-toggle { margin-top: 0; }
   .bucket-filters.filters-open .bucket-filter-lists {
     margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line);
+    max-height: min(50vh, 320px);
+    overflow-y: auto;
   }
   .layers-control.is-locked .layers-list { opacity: 0.55; }
   .layers-control.is-locked .layer-toggle { cursor: not-allowed; }
@@ -195,20 +204,6 @@
     margin: 0 0 10px;
   }
   .layers-lock-note.show { display: block; }
-  @media (max-width: 860px) {
-    .shared-controls {
-      position: sticky; top: 0; z-index: 20;
-      box-shadow: 0 2px 10px rgba(31,36,48,0.12);
-    }
-    .shared-controls.filters-open .shared-filters {
-      max-height: min(50vh, 320px);
-      overflow-y: auto;
-    }
-    .bucket-filters.filters-open .bucket-filter-lists {
-      max-height: min(50vh, 320px);
-      overflow-y: auto;
-    }
-  }
   .time-range-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
   .time-range-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
   .time-range-label strong { color: var(--ink); font-weight: 700; text-transform: none; letter-spacing: 0; margin-left: 4px; }
@@ -290,11 +285,19 @@
   .card p.caption { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
   /* Plot title sits on the chart for screenshots. Hover values float in the
      title/caption band above the canvas — not a reserved strip (that clipped
-     the title, Steph/Jared 2026-08-29) and not on the plot (Diana, 2026-08-30). */
-  .chart-plot { position: relative; margin-top: 2px; overflow: visible; }
+     the title, Steph/Jared 2026-08-29) and not on the plot (Diana, 2026-08-30).
+     --plot-title-inset lines the title up with the data area, not the y-axis
+     ticks (Diana, 2026-09-02). */
+  .chart-plot { position: relative; margin-top: 2px; overflow: visible; --plot-title-inset: 0px; }
   .chart-plot-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .chart-plot > h2,
+  .chart-plot > h3,
+  .chart-plot > h4,
+  .chart-plot > .caption {
+    padding-left: var(--plot-title-inset);
+  }
   .chart-hover {
-    display: none; position: absolute; z-index: 12; left: 0; top: 0;
+    display: none; position: absolute; z-index: 30; left: 0; top: 0;
     pointer-events: none; width: max-content;
     max-width: min(260px, calc(100% - 16px));
     font-size: 12px; line-height: 1.35; padding: 8px 10px;
@@ -425,7 +428,7 @@
        drop them for print but keep the colored left borders, which print reliably
        and cheaply and still carry the filter-to-chart grouping cue. */
     .link-a, .link-b, .card.link-a, .card.link-b { background: #fff !important; }
-    .card, .filters, .time-range-control, .shared-controls { box-shadow: none; }
+    .card, .filters, .time-range-control, .shared-controls { box-shadow: none; position: static; }
     /* Range slider and multiselect boxes don't render usefully on paper --
        hide the interactive controls, the "Showing" text label already states
        the active date range as plain text. */
@@ -471,7 +474,7 @@
       aria-expanded="false" aria-controls="sharedFilters">
       <span class="shared-filters-toggle-text">
         <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
-        <span class="shared-filters-summary" id="sharedFiltersSummary">Alameda</span>
+        <span class="shared-filters-summary" id="sharedFiltersSummary">Sacramento</span>
       </span>
     </button>
     <div class="shared-filters" id="sharedFilters">
@@ -512,14 +515,20 @@
             <select id="regionCompareSelect" multiple></select>
           </div>
           <div class="filter-group drill-panel">
-            <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
+            <div class="filter-label-row">
+              <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
+              <span class="info-tip">
+                <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="drillGroupTip" aria-label="About drill into group">i</button>
+                <span id="drillGroupTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate (or size filter) stays on the chart. If both a region and a size are selected, Counties follows the region — still limited to the selected sizes. Turning the switch off clears Counties.</span>
+              </span>
+            </div>
             <button type="button" id="drillRegionBtn" class="drill-toggle" aria-pressed="false" disabled
-              aria-label="Drill into region, off"
-              title="Select exactly one region to turn this on">
-              <span>Drill into region</span>
+              aria-label="Drill into group, off"
+              title="Select exactly one region or one size group to turn this on">
+              <span id="drillRegionBtnLabel">Drill into group</span>
               <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
             </button>
-            <div class="filter-hint" id="drillRegionHint">Available when exactly one region is selected. When on, Counties follows that region.</div>
+            <div class="filter-hint" id="drillRegionHint">Available when exactly one region or one size group is selected.</div>
           </div>
         </div>
       </div>
@@ -530,7 +539,7 @@
     <div class="card link-a">
       <div class="chart-plot">
         <h2>Total CalFresh Participants</h2>
-        <p class="caption" id="totalCaption">Alameda County, monthly persons, 2014–2026</p>
+        <p class="caption" id="totalCaption">Sacramento County, monthly persons, 2014–2026</p>
         <div class="chart-hover" id="totalChartHover" aria-live="polite"></div>
         <div class="chart-holder"><canvas id="totalChart" aria-hidden="true"></canvas></div>
         <div class="ref-line-legend ref-line-legend-inline" id="totalRefLineLegend"></div>
@@ -817,6 +826,12 @@ function renderHoverTooltip(el, tooltip) {
     el.appendChild(p);
   });
 }
+function stickyControlsFloor() {
+  const el = document.getElementById('sharedControls');
+  if (!el) return 8;
+  const bottom = el.getBoundingClientRect().bottom;
+  return Math.max(8, bottom + 6);
+}
 function hoverTooltipExternal(elId, placement) {
   return function(context) {
     const el = document.getElementById(elId);
@@ -841,7 +856,8 @@ function hoverTooltipExternal(elId, placement) {
     if (placement === 'above') {
       // Follow the hovered month on x. Vertically, sit entirely above the
       // canvas (title/caption band). Overflow the plot if needed, but stay
-      // inside the card (Diana, 2026-08-30 / 2026-09-01).
+      // inside the card (Diana, 2026-08-30 / 2026-09-01) and below the sticky
+      // shared-controls bar.
       const canvasTop = canvasRect.top - plotRect.top;
       top = canvasTop - tipH - 8;
       const card = plot.closest('.card');
@@ -849,6 +865,8 @@ function hoverTooltipExternal(elId, placement) {
         const minTop = card.getBoundingClientRect().top - plotRect.top + 8;
         if (top < minTop) top = minTop;
       }
+      const floor = stickyControlsFloor() - plotRect.top;
+      if (top < floor) top = floor;
     } else {
       const gap = 14;
       left = caretX + gap;
@@ -1010,6 +1028,9 @@ function regionMemberCounties(region, sizes) {
     members = members.filter(c => sizes.includes(DATA.county_meta[c] && DATA.county_meta[c].size));
   }
   return members;
+}
+function sizeMemberCounties(size) {
+  return DATA.all_counties.filter(c => DATA.county_meta[c] && DATA.county_meta[c].size === size);
 }
 
 // Screen readers can't read canvas-rendered charts -- each chart pairs with a
@@ -1382,6 +1403,23 @@ Chart.register(groupDividerPlugin);
 const statewideLinePlugin = { id: 'statewideLine' };
 Chart.register(statewideLinePlugin);
 
+// Line HTML plot titles up with the data area (left edge of the plot, past
+// the y-axis ticks) so they don't hang out over the axis. Sets
+// --plot-title-inset on the enclosing .chart-plot.
+const plotTitleAlignPlugin = {
+  id: 'plotTitleAlign',
+  afterLayout(chart) {
+    const plot = chart.canvas && chart.canvas.closest('.chart-plot');
+    const area = chart.chartArea;
+    if (!plot || !area) return;
+    const next = Math.max(0, Math.round(area.left)) + 'px';
+    if (plot.style.getPropertyValue('--plot-title-inset') !== next) {
+      plot.style.setProperty('--plot-title-inset', next);
+    }
+  }
+};
+Chart.register(plotTitleAlignPlugin);
+
 function initDashboard() {
 // ---- Populate filter selects ----
 const compareSelect = document.getElementById('compareSelect');
@@ -1434,9 +1472,10 @@ const REGION_COLORS = ['#a05195', '#665191', '#2f4b7c', '#003f5c', '#d45087', '#
 const REGION_COLOR_BY_NAME = {};
 REGION_ORDER.forEach((r, i) => { REGION_COLOR_BY_NAME[r] = REGION_COLORS[i % REGION_COLORS.length]; });
 
-// Default: Alameda only. California on Annual % Change comes from that
+// Default: Sacramento only. California on Annual % Change comes from that
 // chart's "Add Statewide comparison" toggle (on by default), not from this list.
-Array.from(compareSelect.options).forEach(o => { o.selected = o.value === 'Alameda'; });
+const DEFAULT_COUNTY = 'Sacramento';
+Array.from(compareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_COUNTY; });
 
 // ---- Time-range scrub (dual-handle slider over the months array) ----
 const rangeStartInput = document.getElementById('rangeStart');
@@ -2214,47 +2253,85 @@ statewideCompareYoyBtn.addEventListener('click', () => {
 const drillRegionBtn = document.getElementById('drillRegionBtn');
 let drillActive = false;
 
-function drillTargetFor(region) {
-  return new Set(regionMemberCounties(region, currentSizes()));
+// Prefer a single region (existing behavior, including when a size filter is
+// also on). If no region is selected, a single size group is also drillable.
+function currentDrillTarget() {
+  const regions = currentRegions();
+  const sizes = currentSizes();
+  if (regions.length === 1) return { kind: 'region', id: regions[0] };
+  if (regions.length === 0 && sizes.length === 1) return { kind: 'size', id: sizes[0] };
+  return null;
 }
-function countiesMatchDrill(region) {
-  const target = drillTargetFor(region);
+function drillTargetCounties(target) {
+  if (!target) return new Set();
+  if (target.kind === 'region') return new Set(regionMemberCounties(target.id, currentSizes()));
+  return new Set(sizeMemberCounties(target.id));
+}
+function countiesMatchDrill(target) {
+  const want = drillTargetCounties(target);
   const selected = new Set(currentCounties());
-  if (selected.size !== target.size) return false;
-  for (const v of target) if (!selected.has(v)) return false;
+  if (selected.size !== want.size) return false;
+  for (const v of want) if (!selected.has(v)) return false;
   return true;
+}
+function drillLabel(target) {
+  if (target && target.kind === 'size') return 'Drill into size group';
+  if (target && target.kind === 'region') return 'Drill into region';
+  return 'Drill into group';
+}
+function syncDrillButtonLabel(target) {
+  const label = drillLabel(target);
+  const labelEl = document.getElementById('drillRegionBtnLabel');
+  if (labelEl) labelEl.textContent = label;
+  drillRegionBtn.setAttribute('aria-label', drillActive ? label + ', on' : label + ', off');
 }
 function setDrillActive(on) {
   drillActive = !!on;
   drillRegionBtn.setAttribute('aria-pressed', drillActive ? 'true' : 'false');
-  drillRegionBtn.setAttribute('aria-label', drillActive ? 'Drill into region, on' : 'Drill into region, off');
   updateDrillButtonState();
 }
 function updateDrillButtonState() {
-  const n = currentRegions().length;
-  // Can always turn the setting off; can only turn it on with exactly one region.
-  drillRegionBtn.disabled = !drillActive && n !== 1;
+  const target = currentDrillTarget();
+  const regions = currentRegions();
+  const sizes = currentSizes();
+  // Can always turn the setting off; can only turn it on with one clear group.
+  drillRegionBtn.disabled = !drillActive && !target;
+  syncDrillButtonLabel(target);
   const hint = document.getElementById('drillRegionHint');
   if (drillActive) {
-    hint.textContent = 'On: Counties follows the selected region. Switching regions keeps the drill-down on.';
-    drillRegionBtn.title = 'Drill into region is on';
-  } else if (n === 1) {
+    if (target && target.kind === 'size') {
+      hint.textContent = 'On: Counties follows the selected size group. Switching size groups keeps the drill-down on.';
+      drillRegionBtn.title = 'Drill into size group is on';
+    } else if (target && target.kind === 'region') {
+      hint.textContent = 'On: Counties follows the selected region. Switching regions keeps the drill-down on.';
+      drillRegionBtn.title = 'Drill into region is on';
+    } else {
+      hint.textContent = 'On: pick one region or one size group and Counties will follow it.';
+      drillRegionBtn.title = 'Drill into group is on';
+    }
+  } else if (target && target.kind === 'region') {
     hint.textContent = 'Available — turn on to break this region into its counties.';
     drillRegionBtn.title = 'Turn on to drill into this region';
-  } else if (n > 1) {
+  } else if (target && target.kind === 'size') {
+    hint.textContent = 'Available — turn on to break this size group into its counties.';
+    drillRegionBtn.title = 'Turn on to drill into this size group';
+  } else if (regions.length > 1) {
     hint.textContent = 'Select only one region to turn this on — it can’t follow more than one at a time.';
-    drillRegionBtn.title = 'Select exactly one region to turn this on';
+    drillRegionBtn.title = 'Select exactly one region or one size group to turn this on';
+  } else if (sizes.length > 1) {
+    hint.textContent = 'Select only one size group to turn this on — it can’t follow more than one at a time.';
+    drillRegionBtn.title = 'Select exactly one region or one size group to turn this on';
   } else {
-    hint.textContent = 'Available when exactly one region is selected. When on, Counties follows that region.';
-    drillRegionBtn.title = 'Select exactly one region to turn this on';
+    hint.textContent = 'Available when exactly one region or one size group is selected.';
+    drillRegionBtn.title = 'Select exactly one region or one size group to turn this on';
   }
 }
 function applyDrillIfActive() {
   if (!drillActive) return;
-  const regions = currentRegions();
-  if (regions.length !== 1) return;
-  const target = drillTargetFor(regions[0]);
-  Array.from(compareSelect.options).forEach(o => { o.selected = target.has(o.value); });
+  const target = currentDrillTarget();
+  if (!target) return;
+  const want = drillTargetCounties(target);
+  Array.from(compareSelect.options).forEach(o => { o.selected = want.has(o.value); });
 }
 
 function dropCountiesOutsideSizes() {
@@ -2281,8 +2358,8 @@ compareSelect.addEventListener('change', () => {
   // Manual county edits leave drill-down mode; the switch should match that.
   includeSizesOfSelectedCounties();
   if (drillActive) {
-    const regions = currentRegions();
-    if (regions.length !== 1 || !countiesMatchDrill(regions[0])) setDrillActive(false);
+    const target = currentDrillTarget();
+    if (!target || !countiesMatchDrill(target)) setDrillActive(false);
   }
   rebuildTimeSeriesCharts();
 });
@@ -2293,6 +2370,7 @@ regionCompareSelect.addEventListener('change', () => {
 });
 sizeCompareSelect.addEventListener('change', () => {
   dropCountiesOutsideSizes();
+  updateDrillButtonState();
   applyDrillIfActive();
   rebuildTimeSeriesCharts();
 });
@@ -2304,15 +2382,15 @@ sharedFiltersToggle.addEventListener('click', () => {
 });
 
 // Persistent on/off setting, not a one-shot. While on, Counties is kept in
-// sync with whichever single region is selected (that region's member
-// counties). California as a % reference comes from Add Statewide comparison
-// on the Annual % Change chart, not from stuffing Statewide into Counties.
+// sync with the current drill target (one region's members, or one size
+// group's members if no region is selected). California as a % reference
+// comes from Add Statewide comparison, not from stuffing Statewide into Counties.
 drillRegionBtn.addEventListener('click', () => {
   if (drillActive) {
     setDrillActive(false);
     Array.from(compareSelect.options).forEach(o => { o.selected = false; });
   } else {
-    if (currentRegions().length !== 1) return;
+    if (!currentDrillTarget()) return;
     setDrillActive(true);
     applyDrillIfActive();
   }
@@ -2323,6 +2401,7 @@ document.getElementById('clearCompareBtn').addEventListener('click', () => {
   [compareSelect, regionCompareSelect, sizeCompareSelect].forEach(el => {
     Array.from(el.options).forEach(o => { o.selected = false; });
   });
+  Array.from(compareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_COUNTY; });
   setDrillActive(false);
   updateDrillButtonState();
   rebuildTimeSeriesCharts();
