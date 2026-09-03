@@ -118,9 +118,40 @@ Headline application columns (households/applications, not persons):
 
 These are reported monthly from January 2023 onward (Statewide and counties). `New Applications Age Total` does **not** match approved + denied (or + pended); treat age totals as a different unit (likely persons), not a checksum for application counts.
 
-**Denial-reason identity (Statewide live check, through May 2026):** `Denial Reason - Ineligible` + `Denial Reason - Procedural` is only a subset of `Applications Denied Containing at Least One Student` (e.g. May 2026: 1,747 + 1,280 = 3,027 vs 9,026 denied). Missed interview, failed to complete determination, over income, and the other listed reasons sit alongside those two. The nine `Denial Reason - …` columns together nearly equal total denials (Statewide median residual ~13; May 2026 residual 82). There is no withdrawn column. Residual is not labeled. Application Outcomes uses the three headline columns only; denial-reason drill-down is deferred.
+**Application sources (Statewide live check, through May 2026):** `Applications Submitted via BenefitsCal` + `Applications Submitted via Code for America` + `Applications Submitted via Other Online Source` + `Applications Submitted via Other Source` equals approved + denied + pended in every statewide month (residual 0). They do **not** equal `New Applications Age Total`. Do not mix `Applications Submitted via Code for America` with `CfA_GCF_apps_submit`. Code for America on the student series continues after June 2025, at a small volume, as BenefitsCal becomes the main channel. The `explore/outcomes-drilldowns` Channels row groups those four into GetCalFresh / BenefitsCal / Other Online / Other.
+
+**Denial-reason identity (Statewide live check, through May 2026):** `Denial Reason - Ineligible` + `Denial Reason - Procedural` is only a subset of `Applications Denied Containing at Least One Student` (e.g. May 2026: 1,747 + 1,280 = 3,027 vs 9,026 denied). Missed interview, failed to complete determination, over income, and the other listed reasons sit alongside those two. The nine `Denial Reason - …` columns together nearly equal total denials after October 2023 (Statewide median residual ~0.1% of denied; May 2026 residual 82). January–June 2023 under-counts (residual 5–13%). There is no withdrawn column. Application Outcomes uses approved + denied as the disposed mix. When the nine reasons are close to denied, the headline is Approved / Ineligible / Procedurally Denied / Other (Ineligible = ineligible + ineligible CF student + over income; Procedurally Denied = procedural + missed interview + FTP income + failed determination; Other = unavailable + out of the home + residual). Otherwise Approved + Denied. Denial details ungroups the six large types; Other is unavailable, out of the home, ineligible CF student (always 0 statewide), and residual. Pended is still in process and is not in the mix (hover only). Channels still sum to approved + denied + pended.
 
 The full column list (verbatim CDSS names, including source quirks like `Langugage` / `New Application Asian`) lives in `pipeline/CaseloadStudents.gs` (`STUDENT_TABLE_COLUMNS`) and is copied to `Student_Table_Computed`.
+
+### SSI application outcomes (Master_Monthly)
+
+Households with at least some SSI (not persons, not SSI-only unless labeled):
+
+- `New Apps with at Least Some SSI - Approved`
+- `New Apps with at Least Some SSI - Denied`
+- `Ineligible Denials - SSI`
+- `Procedural Denials - SSI`
+
+Ineligible + Procedural is close to Denied in recent years (~2% leftover). The frontend uses that split (plus **Other** for leftover ≤5% of Denied, never when leftover is negative). When the split is not close — CalWIN counties ~2020–May 2022, where ineligible and procedural are 0 while approved and denied are filled, and some statewide months including a bad November 2025 ineligible reading — the mix falls back to **Approved / Denied** of those two columns rather than staying blank. The dashboard draws that lumped Denied in warm grey (`#A89890`), not the procedural orange, so those months do not look like a procedural surge.
+
+SSI-only is a **subset of denials**, not a full third stack (no SSI-only approved column):
+
+- `SSI Only - Ineligible Denials`
+- `SSI Only Procedural Denials`
+
+The Denial details mix on Application Outcome Trends is those two columns (households that include only SSI recipients). Hover shows their sum — the SSI-only denied count for that month.
+
+Volume under the SSI mix (explore `explore/outcomes-drilldowns`) is `Online Apps - SSI` + `Non-Online Apps - SSI` (households with at least some SSI). That pair is not `SSI Only Online Apps` / `SSI Only Non Online Apps`. Reporting starts June 2019. Statewide, the sum nearly equals approved + denied; do not treat it as a required checksum, and do not impute 5 for starred cells.
+
+There is **no CfA/CBO SSI GetCalFresh column**. `SSA_GCF_apps_submit` is applications submitted by Social Security Administration offices via a GetCalFresh-built channel on behalf of SSI recipients — a type of online SSI app. Statewide it is ≤ `Online Apps - SSI` in overlapping months. Last nonzero count is September 2024 (SSA GCF tool sunset 2024-09-30); the column is 0 through June 2025, then missing. SSI Channels: GetCalFresh (SSA) = `SSA_GCF_apps_submit`; BenefitsCal / Other Online = `Online Apps - SSI` − that; Other = `Non-Online Apps - SSI`. Missing SSA GCF is treated as 0 so the mix continues after the tool ends. If SSA GCF exceeds Online SSI, the month stays blank (cannot subtract). That happens in about 10% of county-months, almost all CalWIN counties December 2019–May 2022 where both SSI online and non-online volume are reported as 0 while SSA GCF is still positive — a missing online/not-online split, not evidence that SSA GCF sits outside SSI. Statewide never overshoots. Non-online SSI may include SSA paper/in-person referrals, but that is not separately published.
+
+### Application channels (Master_Monthly)
+
+- `Applications Received` ≥ `Online Applications Received` ≥ `All_GCF_apps_submit`
+- All-application Channels (explore): GetCalFresh = `All_GCF_apps_submit`, BenefitsCal / Other Online = `Online Applications Received` − GetCalFresh, Other = `Applications Received` − `Online Applications Received`. Before January 2019 and after June 2025, GetCalFresh is 0 so the mix is still 100% of received.
+- `All_GCF_apps_submit` ≈ `CfA_GCF_apps_submit` + `CBO_GCF_apps_submit` + `SSA_GCF_apps_submit` (small Other when close; skip Other when the sum overshoots, e.g. March 2024). The explore Channels row does not plot that CfA/CBO/SSA split.
+- GetCalFresh submit columns stop after **June 2025**. CDSS’s GetCalFresh application assister (including the CBO portal) ended June 30, 2025; from July 2025 new applications go through BenefitsCal. Do not mix student `Applications Submitted via Code for America` with `CfA_GCF_apps_submit`.
 
 ## CF296 and CF18 (per-cell dictionaries)
 

@@ -11,24 +11,123 @@ const PUBLISHED_SHEET = {
   cf296LegacyGid: '1152285266'  // CF296_Legacy (FY2016-17 through FY2024-25)
 };
 
+// Brand colors, used for meaning on outcome stacks. Orange is procedural
+// denials only — lumped Denied (students, SSI months without a type split)
+// is a warm grey so it cannot read as a procedural surge and does not pop.
+const COLOR_APPROVED = '#4BA5BA';
+const COLOR_PROCEDURAL = '#FB7906';
+const COLOR_INELIGIBLE = '#6A6A6A';
+const COLOR_WITHDRAWN = '#C0C0C0';
+const COLOR_PENDED = '#C4D6E4';
+const COLOR_DENIED = '#A89890';
+const OTHER_COLOR = '#C4B8A8';
+
 // 100% stacked composition of applications disposed. Order is bottom-to-top
 // (approved at the base), matching the original Tableau Application Outcomes tab.
 const OUTCOME_STACK = [
-  { key: 'approved', label: 'Approved', color: '#4BA5BA' },
-  { key: 'withdrawn', label: 'Withdrawn', color: '#C0C0C0' },
-  { key: 'ineligible', label: 'Denied — ineligible', color: '#6A6A6A' },
-  { key: 'procedural', label: 'Denied — procedural', color: '#FB7906' }
+  { key: 'approved', label: 'Approved', shortLabel: 'Approved', color: COLOR_APPROVED },
+  { key: 'withdrawn', label: 'Withdrawn', shortLabel: 'Withdrawn', color: COLOR_WITHDRAWN },
+  { key: 'ineligible', label: 'Denied — ineligible', shortLabel: 'Ineligible', color: COLOR_INELIGIBLE },
+  { key: 'procedural', label: 'Procedurally Denied', shortLabel: 'Procedurally Denied', color: COLOR_PROCEDURAL }
 ];
 
+// Best available student mix. Denominator is approved + denied (disposed),
+// not pended. When the nine denial-reason columns are close to denied, Other /
+// Ineligible / Procedural are non-zero and lumped denied is 0. Otherwise
+// Approved + Denied, and the split slices are 0 (hidden in hover).
 const STUDENT_OUTCOME_STACK = [
-  { key: 'approved', label: 'Approved', color: '#4BA5BA' },
-  { key: 'pended', label: 'Pended', color: '#C4D6E4' },
-  { key: 'denied', label: 'Denied', color: '#FB7906' }
+  { key: 'approved', label: 'Approved', shortLabel: 'Approved', color: COLOR_APPROVED },
+  { key: 'denied', label: 'Denied', shortLabel: 'Denied', color: COLOR_DENIED },
+  { key: 'other', label: 'Other', shortLabel: 'Other', color: OTHER_COLOR },
+  { key: 'ineligible', label: 'Denied — ineligible', shortLabel: 'Ineligible', color: COLOR_INELIGIBLE },
+  { key: 'procedural', label: 'Procedurally Denied', shortLabel: 'Procedurally Denied', color: COLOR_PROCEDURAL }
 ];
+// Headline denial split (share of denied). Ineligible CF Student is always 0
+// statewide and is grouped with Ineligible. Other is unavailable + out of
+// the home, plus residual when the nine reasons are close to denied.
+const STUDENT_OUTCOME_DENIAL_GROUPS = [
+  { key: 'ineligible', parts: ['ineligible', 'ineligibleStudent', 'overIncome'] },
+  { key: 'other', parts: ['unavailable', 'outOfHome'] },
+  { key: 'procedural', parts: ['procedural', 'missedInterview', 'ftpIncome', 'failedDetermination'] }
+];
+
+// Leftover is "Other" only when it is a small residual of the parent total.
+const CLOSE_RESIDUAL_MAX_SHARE = 0.05;
+// GetCalFresh application-assister (incl. CBO portal) ended 2025-06-30.
+// Master_Monthly All_GCF_apps_submit is first reported 2019-01 and stops after
+// 2025-06. Marker is the first BenefitsCal-only month.
+const GCF_FIRST_MONTH = '2019-01';
+const GCF_LAST_MONTH = '2025-06';
+const GCF_SUNSET_MONTH = '2025-07';
+
+// Best available SSI mix. When ineligible + procedural is close to denied,
+// those slices are non-zero and denied is 0. Otherwise Approved + Denied,
+// and the split slices are 0 (hidden in hover, not drawn as bands).
+const SSI_OUTCOME_STACK = [
+  { key: 'approved', label: 'Approved', shortLabel: 'Approved', color: COLOR_APPROVED },
+  { key: 'denied', label: 'Denied', shortLabel: 'Denied', color: COLOR_DENIED },
+  { key: 'other', label: 'Other', shortLabel: 'Other', color: OTHER_COLOR },
+  { key: 'ineligible', label: 'Denied — ineligible', shortLabel: 'Ineligible', color: COLOR_INELIGIBLE },
+  { key: 'procedural', label: 'Procedurally Denied', shortLabel: 'Procedurally Denied', color: COLOR_PROCEDURAL }
+];
+const SSI_ONLY_DENIAL_STACK = [
+  { key: 'ineligible', label: 'Ineligible', shortLabel: 'Ineligible', color: COLOR_INELIGIBLE },
+  { key: 'procedural', label: 'Procedurally Denied', shortLabel: 'Procedurally Denied', color: COLOR_PROCEDURAL }
+];
+// Filing-source mix. All applications, college students, and SSI households
+// share the same three names. SSI GetCalFresh is SSA_GCF_apps_submit (SSA
+// office filings via GetCalFresh on behalf of SSI recipients).
+const CHANNEL_STACK = [
+  { key: 'getCalFresh', label: 'GetCalFresh', shortLabel: 'GetCalFresh', color: COLOR_APPROVED },
+  { key: 'benefitsCalOnline', label: 'BenefitsCal / Other Online', shortLabel: 'BenefitsCal / other online', color: '#2a6ebb' },
+  { key: 'other', label: 'Other', shortLabel: 'Other', color: OTHER_COLOR }
+];
+const SSI_CHANNEL_STACK = [
+  { key: 'getCalFresh', label: 'GetCalFresh (SSA)', shortLabel: 'GetCalFresh (SSA)', color: COLOR_APPROVED },
+  { key: 'benefitsCalOnline', label: 'BenefitsCal / Other Online', shortLabel: 'BenefitsCal / other online', color: '#2a6ebb' },
+  { key: 'other', label: 'Other', shortLabel: 'Other', color: OTHER_COLOR }
+];
+// Denial details: the six types that are typically ≥5% of student denials,
+// plus Other for the tiny remainder (unavailable, out of the home, ineligible
+// CF student) and residual. Orange family = procedural-ish; greys = ineligible.
+const STUDENT_DENIAL_STACK = [
+  { key: 'ineligible', label: 'Ineligible', shortLabel: 'Ineligible', color: COLOR_INELIGIBLE },
+  { key: 'overIncome', label: 'Over income', shortLabel: 'Over income', color: '#8B8B8B' },
+  {
+    key: 'other', label: 'Other', shortLabel: 'Other', color: OTHER_COLOR,
+    parts: ['unavailable', 'outOfHome', 'ineligibleStudent']
+  },
+  { key: 'ftpIncome', label: 'Failed to provide income', shortLabel: 'FTP income', color: '#F4A261' },
+  { key: 'failedDetermination', label: 'Failed to complete determination', shortLabel: 'Failed determination', color: '#E07A2F' },
+  { key: 'missedInterview', label: 'Missed interview', shortLabel: 'Missed interview', color: '#D45A00' },
+  { key: 'procedural', label: 'Procedurally Denied', shortLabel: 'Procedurally Denied', color: COLOR_PROCEDURAL }
+];
+const STUDENT_DENIAL_REASON_COLS = [
+  { key: 'missedInterview', header: 'Denial reason - CF Missed Interview' },
+  { key: 'ftpIncome', header: 'Denial Reason - FTP Income' },
+  { key: 'failedDetermination', header: 'Denial Reason - Failed to Complete Determination' },
+  { key: 'ineligible', header: 'Denial Reason - Ineligible' },
+  { key: 'ineligibleStudent', header: 'Denial Reason - Ineligible CF Student' },
+  { key: 'unavailable', header: 'Denial Reason - Unavailable' },
+  { key: 'outOfHome', header: 'Denial Reason - Out of the Home' },
+  { key: 'overIncome', header: 'Denial Reason - Over Income' },
+  { key: 'procedural', header: 'Denial Reason - Procedural' }
+];
+const STUDENT_SOURCE_COLS = [
+  { key: 'benefitsCal', header: 'Applications Submitted via BenefitsCal' },
+  { key: 'codeForAmerica', header: 'Applications Submitted via Code for America' },
+  { key: 'otherOnline', header: 'Applications Submitted via Other Online Source' },
+  { key: 'otherSource', header: 'Applications Submitted via Other Source' }
+];
+const STUDENT_SOURCE_KEYS = STUDENT_SOURCE_COLS.map(d => d.key);
 
 const OUTCOME_COUNT_KEYS = ['disposed', 'approved', 'ineligible', 'procedural', 'withdrawn'];
 const OUTCOME_PART_KEYS = ['approved', 'ineligible', 'procedural', 'withdrawn'];
 const STUDENT_OUTCOME_PART_KEYS = ['approved', 'denied', 'pended'];
+const SSI_RAW_KEYS = ['approved', 'denied', 'ineligible', 'procedural', 'ssiOnlyIneligible', 'ssiOnlyProcedural'];
+const SSI_VOLUME_KEYS = ['onlineApps', 'nonOnlineApps'];
+const SSI_SERIES_KEYS = SSI_RAW_KEYS.concat(SSI_VOLUME_KEYS);
+const CHANNEL_RAW_KEYS = ['received', 'online', 'gcfAll', 'gcfCfa', 'gcfCbo', 'gcfSsa'];
 const MOVEMENT_KEYS = ['caseApproved', 'reinstated', 'discontinued'];
 // CDSS stars both true 1–10 cells and complementary totals ≥11. Identity
 // reconstruction fills the latter; leftover 1–10 cells are plotted as 5.
@@ -699,17 +798,19 @@ function fmtMonthShort(period) {
   return names[parseInt(m, 10) - 1] + ' ' + y;
 }
 
-function isCf296TotalHeader(header) {
+function isCf296RoleHeader(header, role) {
   const last = normalizeHeader(header).split('|').pop().trim();
+  if (role === 'pacf') return last === 'pacf (a)' || last === 'a. pacf';
+  if (role === 'nacf') return last === 'nacf (b)' || last === 'b. nacf';
   return last === 'total' || last === 'total (c)' || last === 'c. total';
 }
 
-function findCf296Field(fields, includeAll, excludeAny) {
+function findCf296Field(fields, includeAll, excludeAny, role) {
   const matches = (fields || []).filter(f => {
     const n = normalizeHeader(f);
     if (!includeAll.every(s => n.indexOf(normalizeHeader(s)) !== -1)) return false;
     if ((excludeAny || []).some(s => n.indexOf(normalizeHeader(s)) !== -1)) return false;
-    return isCf296TotalHeader(f);
+    return isCf296RoleHeader(f, role || 'total');
   });
   if (!matches.length) return null;
   if (matches.length === 1) return matches[0];
@@ -791,12 +892,207 @@ function smallCellHoverNote(counts, stack) {
   return names.slice(0, -1).join(', ') + ' and ' + last + ': fewer than 11; plotted as 5.';
 }
 
+function maskedShareHover(counts, stack) {
+  if (!smallCellHoverNote(counts, stack)) return null;
+  return {
+    footer: 'Some data has been masked for this report month; %s are estimates.',
+    approx: true
+  };
+}
+
+// Part C identity: TOTAL = PACF + NACF. CDSS often stars a large TOTAL
+// while both parts are reported; summing the parts is exact. If TOTAL and
+// one part are starred, the missing part is 1–10 and is plotted as 5.
+function resolvePartCTotal(pacfRaw, nacfRaw, totalRaw) {
+  const total = parseNumber(totalRaw);
+  if (total != null) return { value: total, estimated: false };
+  const pacf = parseNumber(pacfRaw);
+  const nacf = parseNumber(nacfRaw);
+  if (pacf == null && nacf == null) return { value: null, estimated: false };
+  const p = pacf == null ? SMALL_CELL_PLACEHOLDER : pacf;
+  const n = nacf == null ? SMALL_CELL_PLACEHOLDER : nacf;
+  return { value: p + n, estimated: pacf == null || nacf == null };
+}
+
+function smallCellMovementNote(row) {
+  if (!row || !row.estimated) return null;
+  const names = [];
+  if (row.estimated.caseApproved) names.push('Applications approved');
+  if (row.estimated.reinstated) names.push('Reinstated (prorated)');
+  if (row.estimated.discontinued) names.push('Discontinuances');
+  if (!names.length) return null;
+  if (names.length === 1) return names[0] + ': a starred PACF or NACF part is plotted as 5.';
+  const last = names[names.length - 1];
+  return names.slice(0, -1).join(', ') + ' and ' + last + ': a starred PACF or NACF part is plotted as 5.';
+}
+
 function parseStarredNumber(v) {
   if (v == null) return { value: null, estimated: false };
   const s = String(v).trim();
   if (s === '*') return { value: SMALL_CELL_PLACEHOLDER, estimated: true };
   const n = parseNumber(s);
   return { value: n, estimated: false };
+}
+
+function closeResidual(total, parts, maxShare) {
+  const cap = maxShare == null ? CLOSE_RESIDUAL_MAX_SHARE : maxShare;
+  if (total == null) return null;
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i] == null) return null;
+  }
+  const sum = parts.reduce((s, v) => s + v, 0);
+  const other = total - sum;
+  if (other < 0) return null;
+  if (total === 0) return other === 0 ? 0 : null;
+  if (other / total > cap) return null;
+  return other;
+}
+
+function populationStack(mode) {
+  if (mode === 'students') return STUDENT_OUTCOME_STACK;
+  if (mode === 'ssi') return SSI_OUTCOME_STACK;
+  return OUTCOME_STACK;
+}
+
+function padCountyPeriodSeries(series, keys, months, all_counties) {
+  const entities = ['Statewide'].concat(all_counties || []);
+  entities.forEach(county => {
+    if (!series[county]) {
+      series[county] = { estimated: {} };
+      keys.forEach(k => {
+        series[county][k] = {};
+        series[county].estimated[k] = {};
+      });
+    }
+    const s = series[county];
+    (months || []).forEach(m => {
+      keys.forEach(k => {
+        if (s[k][m] === undefined) s[k][m] = null;
+      });
+    });
+  });
+  return series;
+}
+
+function ingestMasterExplore(parsed, months, all_counties) {
+  const fields = parsed.meta.fields || [];
+  const map = headerMap(fields);
+  const countyCol = findCol(map, ['County']);
+  const monthCol = findCol(map, ['Month']);
+  const yearCol = findCol(map, ['Calendar Year']);
+  const ssiCols = {
+    approved: findCol(map, ['New Apps with at Least Some SSI - Approved']),
+    denied: findCol(map, ['New Apps with at Least Some SSI - Denied']),
+    ineligible: findCol(map, ['Ineligible Denials - SSI']),
+    procedural: findCol(map, ['Procedural Denials - SSI']),
+    ssiOnlyIneligible: findCol(map, ['SSI Only - Ineligible Denials']),
+    ssiOnlyProcedural: findCol(map, ['SSI Only Procedural Denials'])
+  };
+  const ssiVolumeCols = {
+    onlineApps: findCol(map, ['Online Apps - SSI']),
+    nonOnlineApps: findCol(map, ['Non-Online Apps - SSI'])
+  };
+  const channelCols = {
+    received: findCol(map, ['Applications Received']),
+    online: findCol(map, ['Online Applications Received']),
+    gcfAll: findCol(map, ['All_GCF_apps_submit']),
+    gcfCfa: findCol(map, ['CfA_GCF_apps_submit']),
+    gcfCbo: findCol(map, ['CBO_GCF_apps_submit']),
+    gcfSsa: findCol(map, ['SSA_GCF_apps_submit'])
+  };
+  const denialCols = {};
+  STUDENT_DENIAL_REASON_COLS.forEach(d => {
+    denialCols[d.key] = findCol(map, [d.header]);
+  });
+  const sourceCols = {};
+  STUDENT_SOURCE_COLS.forEach(d => {
+    sourceCols[d.key] = findCol(map, [d.header]);
+  });
+
+  const missing = [];
+  if (!countyCol || !monthCol || !yearCol) missing.push('County / Month / Calendar Year');
+  Object.keys(ssiCols).forEach(k => { if (!ssiCols[k]) missing.push('SSI ' + k); });
+  Object.keys(ssiVolumeCols).forEach(k => { if (!ssiVolumeCols[k]) missing.push('SSI volume ' + k); });
+  Object.keys(channelCols).forEach(k => { if (!channelCols[k]) missing.push('channel ' + k); });
+  Object.keys(denialCols).forEach(k => { if (!denialCols[k]) missing.push('student denial ' + k); });
+  Object.keys(sourceCols).forEach(k => { if (!sourceCols[k]) missing.push('student source ' + k); });
+  if (missing.length) {
+    throw new Error('Master_Monthly is missing explore columns: ' + missing.join(', '));
+  }
+
+  const ssi_series = {};
+  const student_denial_series = {};
+  const student_source_series = {};
+  const channel_series = {};
+  function ensure(store, county, keys) {
+    if (!store[county]) {
+      store[county] = { estimated: {} };
+      keys.forEach(k => {
+        store[county][k] = {};
+        store[county].estimated[k] = {};
+      });
+    }
+    return store[county];
+  }
+
+  parsed.data.forEach(row => {
+    const county = normalizeCountyName(row[countyCol]);
+    const period = buildPeriod(row[monthCol], row[yearCol]);
+    if (!county || !period) return;
+
+    const ssiRow = ensure(ssi_series, county, SSI_SERIES_KEYS);
+    SSI_RAW_KEYS.forEach(k => {
+      const parsedVal = parseStarredNumber(row[ssiCols[k]]);
+      if (parsedVal.value == null) return;
+      ssiRow[k][period] = parsedVal.value;
+      if (parsedVal.estimated) ssiRow.estimated[k][period] = true;
+    });
+    SSI_VOLUME_KEYS.forEach(k => {
+      const n = parseNumber(row[ssiVolumeCols[k]]);
+      if (n == null) return;
+      ssiRow[k][period] = n;
+    });
+
+    const chRow = ensure(channel_series, county, CHANNEL_RAW_KEYS);
+    CHANNEL_RAW_KEYS.forEach(k => {
+      const n = parseNumber(row[channelCols[k]]);
+      if (n == null) return;
+      chRow[k][period] = n;
+    });
+
+    const denRow = ensure(student_denial_series, county, STUDENT_DENIAL_REASON_COLS.map(d => d.key));
+    STUDENT_DENIAL_REASON_COLS.forEach(d => {
+      const parsedVal = parseStarredNumber(row[denialCols[d.key]]);
+      if (parsedVal.value == null) return;
+      denRow[d.key][period] = parsedVal.value;
+      if (parsedVal.estimated) denRow.estimated[d.key][period] = true;
+    });
+
+    const srcRow = ensure(student_source_series, county, STUDENT_SOURCE_KEYS);
+    STUDENT_SOURCE_COLS.forEach(d => {
+      const parsedVal = parseStarredNumber(row[sourceCols[d.key]]);
+      if (parsedVal.value == null) return;
+      srcRow[d.key][period] = parsedVal.value;
+      if (parsedVal.estimated) srcRow.estimated[d.key][period] = true;
+    });
+  });
+
+  return {
+    ssi_series: padCountyPeriodSeries(ssi_series, SSI_SERIES_KEYS, months, all_counties),
+    student_denial_series: padCountyPeriodSeries(
+      student_denial_series,
+      STUDENT_DENIAL_REASON_COLS.map(d => d.key),
+      months,
+      all_counties
+    ),
+    student_source_series: padCountyPeriodSeries(
+      student_source_series,
+      STUDENT_SOURCE_KEYS,
+      months,
+      all_counties
+    ),
+    channel_series: padCountyPeriodSeries(channel_series, CHANNEL_RAW_KEYS, months, all_counties)
+  };
 }
 
 function csvToStudentOutcomeRows(parsed) {
@@ -808,10 +1104,14 @@ function csvToStudentOutcomeRows(parsed) {
   const cols = {
     approved: findCol(map, ['Applications Approved Containing at Least One Student']),
     denied: findCol(map, ['Applications Denied Containing at Least One Student']),
-    pended: findCol(map, ['Applications Pended Containing at Least One Student'])
+    pended: findCol(map, ['Applications Pended Containing at Least One Student']),
+    newApps: findCol(map, ['New Applications Age Total'])
   };
   if (!countyCol || !monthCol || !yearCol || !cols.approved || !cols.denied || !cols.pended) {
     throw new Error('Master_Monthly is missing student application outcome columns.');
+  }
+  if (!cols.newApps) {
+    throw new Error('Master_Monthly is missing New Applications Age Total.');
   }
 
   return parsed.data.map(row => {
@@ -821,6 +1121,7 @@ function csvToStudentOutcomeRows(parsed) {
     const approved = parseStarredNumber(row[cols.approved]);
     const denied = parseStarredNumber(row[cols.denied]);
     const pended = parseStarredNumber(row[cols.pended]);
+    const newApps = parseNumber(row[cols.newApps]);
     if (approved.value == null && denied.value == null && pended.value == null) return null;
     if (approved.value == null || denied.value == null || pended.value == null) return null;
     const estimated = {};
@@ -833,7 +1134,8 @@ function csvToStudentOutcomeRows(parsed) {
       approved: approved.value,
       denied: denied.value,
       pended: pended.value,
-      disposed: approved.value + denied.value + pended.value,
+      newApps: newApps,
+      disposed: approved.value + denied.value,
       estimated: estimated
     };
   }).filter(Boolean);
@@ -844,7 +1146,7 @@ function buildStudentSeries(studentRows, months, all_counties) {
   function ensure(county) {
     if (!series[county]) {
       series[county] = {
-        approved: {}, denied: {}, pended: {}, disposed: {},
+        approved: {}, denied: {}, pended: {}, disposed: {}, newApps: {},
         estimated: { approved: {}, denied: {}, pended: {} }
       };
     }
@@ -854,6 +1156,7 @@ function buildStudentSeries(studentRows, months, all_counties) {
     const s = ensure(r.county);
     STUDENT_OUTCOME_PART_KEYS.forEach(k => { s[k][r.period] = r[k]; });
     s.disposed[r.period] = r.disposed;
+    s.newApps[r.period] = r.newApps == null ? null : r.newApps;
     STUDENT_OUTCOME_PART_KEYS.forEach(k => {
       if (r.estimated && r.estimated[k]) s.estimated[k][r.period] = true;
     });
@@ -866,6 +1169,7 @@ function buildStudentSeries(studentRows, months, all_counties) {
         if (s[k][m] === undefined) s[k][m] = null;
       });
       if (s.disposed[m] === undefined) s.disposed[m] = null;
+      if (s.newApps[m] === undefined) s.newApps[m] = null;
     });
   });
   return series;
@@ -878,7 +1182,9 @@ function csvToOutcomeRows(parsed, label) {
   const reportMonthCol = findCol(map, ['Report Month']);
   const dateCol = findCol(map, ['Date']);
   const cols = {
-    disposed: findCf296Field(fields, ['applications disposed of during the month'], ['recertification']),
+    disposed: findCf296Field(fields, ['applications disposed of during the month'], [
+      'recertification', 'expedited', 'under es'
+    ]),
     approved: findCf296Field(fields, ['applications approved'], [
       'over 30', 'overdue', 'certified caseload', '5.a', '5a.', 'item 5'
     ]),
@@ -893,6 +1199,60 @@ function csvToOutcomeRows(parsed, label) {
     discontinued: findCf296Field(fields, ['cases discontinued during the month'], [
       'failure to complete', 'expedited'
     ])
+  };
+  const outcomeParts = {
+    disposed: {
+      // Item 2 only. Item 3 (“disposed … under expedited/ES”) repeats that
+      // phrase and has PACF/NACF; summing those is not the Item 2 total.
+      pacf: findCf296Field(fields, ['applications disposed of during the month'], [
+        'recertification', 'expedited', 'under es'
+      ], 'pacf'),
+      nacf: findCf296Field(fields, ['applications disposed of during the month'], [
+        'recertification', 'expedited', 'under es'
+      ], 'nacf')
+    },
+    approved: {
+      pacf: findCf296Field(fields, ['applications approved'], [
+        'over 30', 'overdue', 'certified caseload', '5.a', '5a.', 'item 5'
+      ], 'pacf'),
+      nacf: findCf296Field(fields, ['applications approved'], [
+        'over 30', 'overdue', 'certified caseload', '5.a', '5a.', 'item 5'
+      ], 'nacf')
+    },
+    ineligible: {
+      pacf: findCf296Field(fields, ['denied because determined ineligible'], ['recertification'], 'pacf'),
+      nacf: findCf296Field(fields, ['denied because determined ineligible'], ['recertification'], 'nacf')
+    },
+    procedural: {
+      pacf: findCf296Field(fields, ['denied for procedural reasons'], [], 'pacf'),
+      nacf: findCf296Field(fields, ['denied for procedural reasons'], [], 'nacf')
+    },
+    withdrawn: {
+      pacf: findCf296Field(fields, ['applications withdrawn'], ['recertification'], 'pacf'),
+      nacf: findCf296Field(fields, ['applications withdrawn'], ['recertification'], 'nacf')
+    }
+  };
+  const moveParts = {
+    caseApproved: {
+      pacf: findCf296Field(fields, ['certified caseload', 'applications approved'], [
+        '5.a.1', '5a.1', 'overdue', 'over 30'
+      ], 'pacf'),
+      nacf: findCf296Field(fields, ['certified caseload', 'applications approved'], [
+        '5.a.1', '5a.1', 'overdue', 'over 30'
+      ], 'nacf')
+    },
+    reinstated: {
+      pacf: findCf296Field(fields, ['eligibility reinstated'], [], 'pacf'),
+      nacf: findCf296Field(fields, ['eligibility reinstated'], [], 'nacf')
+    },
+    discontinued: {
+      pacf: findCf296Field(fields, ['cases discontinued during the month'], [
+        'failure to complete', 'expedited'
+      ], 'pacf'),
+      nacf: findCf296Field(fields, ['cases discontinued during the month'], [
+        'failure to complete', 'expedited'
+      ], 'nacf')
+    }
   };
   const missing = Object.keys(cols).filter(k => k !== 'received' && !cols[k]);
   if (!countyCol || missing.length) {
@@ -910,16 +1270,29 @@ function csvToOutcomeRows(parsed, label) {
     const rec = {
       county: county,
       period: period,
-      disposed: parseNumber(row[cols.disposed]),
-      approved: parseNumber(row[cols.approved]),
-      ineligible: parseNumber(row[cols.ineligible]),
-      procedural: parseNumber(row[cols.procedural]),
-      withdrawn: parseNumber(row[cols.withdrawn]),
-      received: cols.received ? parseNumber(row[cols.received]) : null,
-      caseApproved: parseNumber(row[cols.caseApproved]),
-      reinstated: parseNumber(row[cols.reinstated]),
-      discontinued: parseNumber(row[cols.discontinued])
+      received: cols.received ? parseNumber(row[cols.received]) : null
     };
+    rec.estimated = {};
+    OUTCOME_COUNT_KEYS.forEach(k => {
+      const parts = outcomeParts[k] || {};
+      const resolved = resolvePartCTotal(
+        parts.pacf ? row[parts.pacf] : null,
+        parts.nacf ? row[parts.nacf] : null,
+        row[cols[k]]
+      );
+      rec[k] = resolved.value;
+      if (resolved.estimated) rec.estimated[k] = true;
+    });
+    MOVEMENT_KEYS.forEach(k => {
+      const parts = moveParts[k] || {};
+      const resolved = resolvePartCTotal(
+        parts.pacf ? row[parts.pacf] : null,
+        parts.nacf ? row[parts.nacf] : null,
+        row[cols[k]]
+      );
+      rec[k] = resolved.value;
+      if (resolved.estimated) rec.estimated[k] = true;
+    });
     const hasOut = rec.disposed != null || rec.approved != null || rec.ineligible != null ||
       rec.procedural != null || rec.withdrawn != null;
     const hasMove = rec.caseApproved != null || rec.reinstated != null || rec.discontinued != null;
@@ -927,9 +1300,7 @@ function csvToOutcomeRows(parsed, label) {
     if (hasOut) {
       const resolved = resolveOutcomeCounts(rec);
       OUTCOME_COUNT_KEYS.forEach(k => { rec[k] = resolved.counts[k]; });
-      rec.estimated = resolved.estimated;
-    } else {
-      rec.estimated = {};
+      Object.assign(rec.estimated, resolved.estimated);
     }
     return rec;
   }).filter(Boolean);
@@ -981,7 +1352,10 @@ function buildOutcomesData(outcomeRows, county_meta) {
         disposed: {}, approved: {}, ineligible: {}, procedural: {}, withdrawn: {},
         received: {},
         caseApproved: {}, reinstated: {}, discontinued: {},
-        estimated: { approved: {}, ineligible: {}, procedural: {}, withdrawn: {} }
+        estimated: {
+          approved: {}, ineligible: {}, procedural: {}, withdrawn: {},
+          caseApproved: {}, reinstated: {}, discontinued: {}
+        }
       };
     }
     return series[county];
@@ -998,7 +1372,7 @@ function buildOutcomesData(outcomeRows, county_meta) {
     MOVEMENT_KEYS.forEach(k => {
       if (r[k] != null) s[k][r.period] = r[k];
     });
-    OUTCOME_PART_KEYS.forEach(k => {
+    OUTCOME_PART_KEYS.concat(MOVEMENT_KEYS).forEach(k => {
       if (r.estimated && r.estimated[k]) s.estimated[k][r.period] = true;
     });
   });
@@ -1041,7 +1415,194 @@ function buildOutcomesData(outcomeRows, county_meta) {
     county_meta: meta,
     all_counties: all_counties,
     stack: OUTCOME_STACK,
-    student_stack: STUDENT_OUTCOME_STACK
+    student_stack: STUDENT_OUTCOME_STACK,
+    ssi_stack: SSI_OUTCOME_STACK,
+    ssi_only_stack: SSI_ONLY_DENIAL_STACK,
+    student_denial_stack: STUDENT_DENIAL_STACK,
+    channel_stack: CHANNEL_STACK,
+    ssi_channel_stack: SSI_CHANNEL_STACK
+  };
+}
+
+function sumSeriesKeys(memberCounties, period, series, keys) {
+  const sums = {};
+  const estimated = {};
+  keys.forEach(k => { sums[k] = 0; });
+  let any = false;
+  for (let i = 0; i < memberCounties.length; i++) {
+    const s = series[memberCounties[i]];
+    if (!s) continue;
+    let complete = true;
+    for (let j = 0; j < keys.length; j++) {
+      if (s[keys[j]][period] == null) { complete = false; break; }
+    }
+    if (!complete) continue;
+    any = true;
+    keys.forEach(k => { sums[k] += s[k][period]; });
+    const flags = estimatedFlagsFor(s, period, keys);
+    keys.forEach(k => { if (flags[k]) estimated[k] = true; });
+  }
+  if (!any) return null;
+  sums.estimated = estimated;
+  return sums;
+}
+
+function ssiHeadlineFromRaw(raw) {
+  if (!raw || raw.approved == null || raw.denied == null) return null;
+  const srcEst = raw.estimated || {};
+  const other = closeResidual(raw.denied, [raw.ineligible, raw.procedural]);
+  if (other != null) {
+    return {
+      approved: raw.approved,
+      denied: 0,
+      ineligible: raw.ineligible,
+      procedural: raw.procedural,
+      other: other,
+      disposed: raw.approved + raw.ineligible + raw.procedural + other,
+      estimated: {
+        approved: !!srcEst.approved,
+        ineligible: !!srcEst.ineligible,
+        procedural: !!srcEst.procedural
+      }
+    };
+  }
+  return {
+    approved: raw.approved,
+    denied: raw.denied,
+    ineligible: 0,
+    procedural: 0,
+    other: 0,
+    disposed: raw.approved + raw.denied,
+    estimated: {
+      approved: !!srcEst.approved,
+      denied: !!srcEst.denied
+    }
+  };
+}
+
+function ssiOnlyFromRaw(raw) {
+  if (!raw || raw.ssiOnlyIneligible == null || raw.ssiOnlyProcedural == null) return null;
+  return {
+    ineligible: raw.ssiOnlyIneligible,
+    procedural: raw.ssiOnlyProcedural,
+    disposed: raw.ssiOnlyIneligible + raw.ssiOnlyProcedural,
+    estimated: raw.estimated || {}
+  };
+}
+
+function ssiChannelFromRaw(raw) {
+  if (!raw || raw.onlineApps == null || raw.nonOnlineApps == null) return null;
+  const gcf = raw.gcfSsa == null ? 0 : raw.gcfSsa;
+  const benefitsCalOnline = raw.onlineApps - gcf;
+  if (benefitsCalOnline < 0) return null;
+  return {
+    getCalFresh: gcf,
+    benefitsCalOnline: benefitsCalOnline,
+    other: raw.nonOnlineApps,
+    disposed: raw.onlineApps + raw.nonOnlineApps,
+    estimated: raw.estimated || {}
+  };
+}
+
+function studentDenialFromParts(denied, parts, estimated, stack) {
+  const keys = STUDENT_DENIAL_REASON_COLS.map(d => d.key);
+  if (!parts) return null;
+  const values = keys.map(k => parts[k]);
+  const residual = closeResidual(denied, values);
+  if (residual == null) return null;
+  const flags = estimated || {};
+  const counts = { disposed: denied, estimated: {} };
+  (stack || STUDENT_DENIAL_STACK).forEach(group => {
+    const partKeys = group.parts || [group.key];
+    let sum = group.key === 'other' ? residual : 0;
+    let est = false;
+    partKeys.forEach(k => {
+      if (parts[k] != null) sum += parts[k];
+      if (flags[k]) est = true;
+    });
+    counts[group.key] = sum;
+    if (est) counts.estimated[group.key] = true;
+  });
+  return counts;
+}
+
+function studentHeadlineFromRaw(raw) {
+  if (!raw || raw.approved == null || raw.denied == null) return null;
+  const srcEst = raw.estimated || {};
+  const split = studentDenialFromParts(raw.denied, raw, srcEst, STUDENT_OUTCOME_DENIAL_GROUPS);
+  const pended = raw.pended == null ? null : raw.pended;
+  if (split) {
+    return {
+      approved: raw.approved,
+      denied: 0,
+      ineligible: split.ineligible,
+      procedural: split.procedural,
+      other: split.other,
+      disposed: raw.approved + raw.denied,
+      pended: pended,
+      estimated: {
+        approved: !!srcEst.approved,
+        ineligible: !!split.estimated.ineligible,
+        procedural: !!split.estimated.procedural,
+        other: !!split.estimated.other
+      }
+    };
+  }
+  return {
+    approved: raw.approved,
+    denied: raw.denied,
+    ineligible: 0,
+    procedural: 0,
+    other: 0,
+    disposed: raw.approved + raw.denied,
+    pended: pended,
+    estimated: {
+      approved: !!srcEst.approved,
+      denied: !!srcEst.denied
+    }
+  };
+}
+
+function studentChannelFromRaw(raw) {
+  if (!raw) return null;
+  const cfa = raw.codeForAmerica;
+  const benefitsCal = raw.benefitsCal;
+  const otherOnline = raw.otherOnline;
+  const otherSource = raw.otherSource;
+  if (cfa == null || benefitsCal == null || otherOnline == null || otherSource == null) return null;
+  const flags = raw.estimated || {};
+  return {
+    getCalFresh: cfa,
+    benefitsCalOnline: benefitsCal + otherOnline,
+    other: otherSource,
+    disposed: cfa + benefitsCal + otherOnline + otherSource,
+    estimated: {
+      getCalFresh: !!flags.codeForAmerica,
+      benefitsCalOnline: !!(flags.benefitsCal || flags.otherOnline),
+      other: !!flags.otherSource
+    }
+  };
+}
+
+function allChannelFromRaw(raw, period) {
+  if (!raw || raw.received == null || raw.online == null) return null;
+  let gcf;
+  if (!period || period < GCF_FIRST_MONTH || period > GCF_LAST_MONTH) {
+    gcf = raw.gcfAll == null ? 0 : raw.gcfAll;
+  } else if (raw.gcfAll == null) {
+    return null;
+  } else {
+    gcf = raw.gcfAll;
+  }
+  const benefitsCalOnline = raw.online - gcf;
+  const other = raw.received - raw.online;
+  if (benefitsCalOnline < 0 || other < 0) return null;
+  return {
+    getCalFresh: gcf,
+    benefitsCalOnline: benefitsCalOnline,
+    other: other,
+    disposed: raw.received,
+    estimated: {}
   };
 }
 
@@ -1108,7 +1669,7 @@ function sumOutcomeCounts(memberCounties, period, series, stack) {
   return sums;
 }
 
-function deriveMovement(caseApproved, reinstated, discontinued) {
+function deriveMovement(caseApproved, reinstated, discontinued, estimated) {
   const additions = (caseApproved == null || reinstated == null) ? null : caseApproved + reinstated;
   const exits = discontinued == null ? null : discontinued;
   const net = (additions == null || exits == null) ? null : additions - exits;
@@ -1118,19 +1679,26 @@ function deriveMovement(caseApproved, reinstated, discontinued) {
     discontinued: discontinued,
     additions: additions,
     exits: exits,
-    net: net
+    net: net,
+    estimated: estimated || {}
   };
 }
 
 function movementForCounty(county, period, series) {
   const s = series && series[county];
   if (!s) return null;
-  return deriveMovement(s.caseApproved[period], s.reinstated[period], s.discontinued[period]);
+  return deriveMovement(
+    s.caseApproved[period],
+    s.reinstated[period],
+    s.discontinued[period],
+    estimatedFlagsFor(s, period, MOVEMENT_KEYS)
+  );
 }
 
 function sumMovementCounts(memberCounties, period, series) {
   let caseApproved = 0, reinstated = 0, discontinued = 0;
   let any = false;
+  const estimated = {};
   for (let i = 0; i < memberCounties.length; i++) {
     const s = series[memberCounties[i]];
     if (!s) continue;
@@ -1142,8 +1710,10 @@ function sumMovementCounts(memberCounties, period, series) {
     caseApproved += a;
     reinstated += r;
     discontinued += d;
+    const flags = estimatedFlagsFor(s, period, MOVEMENT_KEYS);
+    MOVEMENT_KEYS.forEach(k => { if (flags[k]) estimated[k] = true; });
   }
-  return any ? deriveMovement(caseApproved, reinstated, discontinued) : null;
+  return any ? deriveMovement(caseApproved, reinstated, discontinued, estimated) : null;
 }
 
 async function startLiveOutcomesDashboard(initDashboard) {
@@ -1176,6 +1746,16 @@ async function startLiveOutcomesDashboard(initDashboard) {
       DATA.months,
       DATA.all_counties
     );
+    const extra = ingestMasterExplore(monthlyLoaded.parsed, DATA.months, DATA.all_counties);
+    DATA.ssi_series = extra.ssi_series;
+    DATA.student_denial_series = extra.student_denial_series;
+    DATA.student_source_series = extra.student_source_series;
+    DATA.channel_series = extra.channel_series;
+    DATA.ssi_stack = SSI_OUTCOME_STACK;
+    DATA.ssi_only_stack = SSI_ONLY_DENIAL_STACK;
+    DATA.ssi_channel_stack = SSI_CHANNEL_STACK;
+    DATA.student_denial_stack = STUDENT_DENIAL_STACK;
+    DATA.channel_stack = CHANNEL_STACK;
     const through = DATA.latest_complete_month ? fmtMonthShort(DATA.latest_complete_month) : null;
     setFeedStatus(statusEl, {
       through: through,
