@@ -11,19 +11,49 @@ Add new visual preferences here **and** as a standing rule in `TODO.md` plus a b
 
 - Disable Chart.js canvas tooltips (`tooltip.enabled: false`).
 - Render values in the HTML `.chart-hover` box via `hoverTooltipExternal(..., 'above')`.
-- Follow the hovered month on x. Sit **entirely above the canvas** (title/caption band), never on the lines, stacks, or bars. County bar charts use `'above'` too — not beside-the-caret.
-- Nested volume strips (applications received) stay inside their own `.received-plot` so they don’t cover the mix chart above.
+- Follow the hovered month on x. Sit **entirely above the canvas** (title/caption band), never on the lines, stacks, or bars. County bar charts use `'above'` too — not beside-the-caret. Use `position: fixed` so the outcomes grid’s `overflow-x` and row titles cannot clip the box. On Participation, keep the box below the sticky shared-controls bar (`stickyControlsFloor`); hover `z-index` is 30 vs the bar’s 20.
+- Nested volume strips stay inside their own `.received-plot` so they don’t cover the mix chart above. All-application received (Master_Monthly `Applications Received`) lives on the **Total applications** row. College student stacks use `New Applications Age Total` (not CF296 Item 1). SSI stacks use `Online Apps - SSI` + `Non-Online Apps - SSI` (not the SSI-only online/non-online pair, and not CF296 Item 1).
+- When a mix share uses a starred 1–10 cell plotted as 5, prefix hover percents with `~` and put this footer under the rows: “Some data has been masked for this report month; %s are estimates.” Do not interpolate through months with two or more large hidden cells; still draw a complete month that sits between those gaps (`isolatedStackSlices`).
+- Stacked mix hover includes the count those percents are of: **Applications disposed** (all), **College student applications disposed** — not `New Applications Age Total` — **SSI household applications disposed**. Student mix hover also notes applications still pended, which are not in the mix. Channels hover is Applications received (all / SSI) or the student source total. Denial details hover is applications denied.
+
+## Channels
+
+- All applications and college students share **GetCalFresh**, **BenefitsCal / Other Online**, and **Other**. SSI uses the same last two names plus **GetCalFresh (SSA)**.
+- All applications: GetCalFresh = `All_GCF_apps_submit`, BenefitsCal / Other Online = `Online Applications Received` − GetCalFresh, Other = `Applications Received` − Online. After June 2025 GetCalFresh is 0; dashed marker at July 2025. Do not mix student sources with `CfA_GCF_apps_submit`.
+- Students: GetCalFresh = `Applications Submitted via Code for America`, BenefitsCal / Other Online = Other Online Source + BenefitsCal, Other = Other Source.
+- SSI: **GetCalFresh (SSA)** = `SSA_GCF_apps_submit` (SSA office filings via GetCalFresh on behalf of SSI recipients). BenefitsCal / Other Online = `Online Apps - SSI` − GetCalFresh (SSA). Other = `Non-Online Apps - SSI`. Last nonzero SSA GCF is September 2024; after that GetCalFresh (SSA) is 0. If SSA GCF exceeds Online SSI, leave the month blank — CalWIN counties often reported 0 SSI online/non-online December 2019–May 2022 while SSA GCF was still filled.
+
+## Layout
+
+- Application Outcomes grid rows expand from full-width section labels (Outcomes open by default; Total applications / Channels / Denial details start closed). Do not use a left-hand label column — it steals plot width — or a Break out checklist under the grid.
+- Date range and place filters (Counties / Regions / County size) live **on each time-series section** of Application Outcomes (Application Outcome Trends and Caseload movement). Matching controls stay in sync — changing one updates the other. Do not use a sticky page-level bar on this view. Snapshot / county-bar charts keep their own independent lists (empty = all counties). Participation Trends still uses a sticky `#sharedControls` bar for its two top charts.
+- Application Outcomes Compare **Populations** shows only **County** in those section filters (hide Regions, County size, and Drill). Clicking a county replaces the current place and stays in Populations. Places mode keeps the full lists.
+- Stacked mix charts label bands on the canvas (`stackBandLabels`). Skip HTML color legends above those plots. The procedural slice is **Procedurally Denied**, not Procedural (parallel with Approved / Withdrawn / Denied). The county line-up group-aggregate stays **Procedural**. Student Denial details ungroups the large reason types; Other is the tiny remainder.
+- Plot titles (and captions in the same `.chart-plot`) start at the left edge of the data area, not over the y-axis ticks. `--plot-title-inset` is set from Chart.js `chartArea.left` (`plotTitleAlign`).
+- Application Outcomes mix titles stack **metric then place** (All applications / Sacramento), not `County — Title`. That keeps every column’s header the same height so the plots line up. Place is the smaller muted line under the metric. Nested row titles (Total applications / Channels / Denial details) stay the short row name only.
+- Application Outcomes section order: Application Outcome Trends, then the county snapshot, then **Caseload movement** last (before Sources). Do not put Caseload movement above the outcomes grid.
 
 ## Axes and color
 
 - Every vertical axis starts at zero (`min: 0`, or `beginAtZero: true` if the series can go negative).
-- Application outcomes (all applications, CF296): approved `#4BA5BA`, denied procedural `#FB7906`, denied ineligible `#6A6A6A`, withdrawn `#C0C0C0`. Stack bottom→top: approved, withdrawn, ineligible, procedural.
-- Application outcomes (college students, Master_Monthly): approved `#4BA5BA`, denied `#6A6A6A` (aggregate denials — not procedural orange), pended `#C4D6E4`. Stack bottom→top: approved, denied, pended. Denominator is those three columns, not CF296 disposed. Hide applications-received and procedural-denial sort in this mode.
-- County-bar group-aggregate lines are dashed. Participation uses dark grey `#555` (bars are not grey). Application Outcomes uses black `#111` so the line stays visible across withdrawn (`#C0C0C0`) and ineligible (`#6A6A6A`) stack segments. On Application Outcomes, show the line that matches **Sort by** (approval vs procedural denial) — not both at once. Left-align the on-canvas label at the start of the group; put the approval label **below** the line (on the blue) and the procedural label **above** the line (on the orange).
+- Caseload movement: left (stacks) and right (net) share min/max (`movementScaleExtents`). Hide the right-axis tick labels; Net still uses a hidden `y1` so it is not stacked with additions/exits. Hover and the accessible table still show net with a `+` via `fmtNet`.
+- Application outcomes colors (brand, same meaning on every mix): approved `#4BA5BA` (teal), denied procedural `#FB7906` (orange), denied ineligible `#6A6A6A` (muted grey). Withdrawn `#C0C0C0`, pended `#C4D6E4`. Lumped Denied — student headline Denied, and SSI months with no ineligible/procedural split — is `#A89890` (warm grey), never the procedural orange. That is what made SSI “spikes” look like a procedural surge when the month was only Approved + Denied. Stacked 100% mixes use `tension: 0` so a one-month lumped Denied does not cubic-overshoot into neighboring months. Fill each band to the previous slice (`stackFill`), not origin — origin fills paint every SSI extra layer over Approved and grey the teal.
+- Application outcomes (all applications, CF296): stack bottom→top: approved, withdrawn, ineligible, procedural.
+- Application outcomes (college students, Master_Monthly): share of applications disposed (approved + denied). Pended is still in process — hover only, not in the mix. When the nine denial-reason columns are close to denied, stack bottom→top: approved, denied (lumped months only), other, ineligible, procedural — same shape as SSI. Otherwise Approved + Denied of those two columns (early 2023). Ineligible groups ineligible + ineligible CF student + over income; Procedurally Denied = procedural + missed interview + FTP income + failed determination. Denial details ungroups the six large types. Procedural-denial sort is available in this mode.
+- Application outcomes (SSI households, Master_Monthly): when ineligible + procedural is close to denied, 4-way Approved / Ineligible / Procedurally Denied / Other. Otherwise Approved + Denied of that two-part total (CalWIN ~2020–May 2022). Stack bottom→top: approved, denied (lumped months only), other, ineligible, procedural. Unused slices are 0 and omitted from hover. Do not blank months that have approved and denied.
+- County-bar group-aggregate lines are dashed. Participation uses dark grey `#555` (bars are not grey). Application Outcomes uses black `#111` so the line stays visible across withdrawn (`#C0C0C0`) and ineligible (`#6A6A6A`) stack segments. On Application Outcomes, show the line that matches **Sort by** (approval vs procedural denial) — not both at once. Left-align the on-canvas label at the start of the group; put the approval label **below** the line (on the blue) and the procedural label **above** the line (on the orange). The county line-up aggregate stays **Procedural** (short); stacked mixes keep **Procedurally Denied**.
 
 ## Defaults
 
-- Default county Alameda; **Add Statewide comparison** on.
+- Default **Compare populations**, Sacramento. Places is the other mode (counties, regions, or size groups side by side for one population). California stays in the Counties list; selecting it there is how you compare to the state. Participation Trends defaults to Sacramento only (California on Annual % Change is the Add Statewide comparison toggle).
 - Default date range: last 24 months.
 - Consortia is obsolete; size buckets are XL / L / M / S.
-- Do not impute 5 on Part C or applications-received. Small-cell `*` treatment lives in `data.js`.
+- Do not impute 5 on a starred Part C **Total** or on applications-received — those stars are often complementary large cells. Recover Part C as PACF + NACF; only use 5 for a starred PACF or NACF **part** when Total is also missing. Small-cell `*` treatment lives in `data.js`.
+
+## Drill-down
+
+- **Drill into group** is enabled when exactly one region **or** exactly one county size group is selected (not 0, not 2+ of the same type). Clicking it sets Counties to that group’s member counties and leaves the grouping selected so its aggregate (or size filter) stays on the chart. Do not stuff California/Statewide into Counties — Participation uses Add Statewide comparison for that. If both one region and one size are selected, Counties follows the **region** (members still limited by the size filter). Put the recipe in the drill `.info-tip`, not a caption.
+
+## Copy
+
+- Keep on-page captions and chart titles short. Put recipes, small-cell `*` treatment, source column names, and cannot-overlay caveats in `.info-tip` bubbles and footer Sources / Data notes — not in paragraphs above the charts.
