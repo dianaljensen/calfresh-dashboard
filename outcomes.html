@@ -660,15 +660,6 @@
 
   <div class="card link-b">
     <h2>Caseload movement</h2>
-    <div class="groupby-control" role="group" aria-label="Compare">
-      <span class="groupby-label">Compare</span>
-      <button type="button" class="range-btn groupby-btn explore-mode-btn" data-mode="places" aria-pressed="false">Places</button>
-      <button type="button" class="range-btn groupby-btn explore-mode-btn active" data-mode="populations" aria-pressed="true">Populations</button>
-      <span class="info-tip">
-        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementExploreModeTip" aria-label="About compare modes">i</button>
-        <span id="movementExploreModeTip" class="info-tip-bubble" role="tooltip">Places sits selected counties, regions, or size groups side by side. Populations shows one place. Changing this also updates Application Outcome Trends.</span>
-      </span>
-    </div>
     <div id="movementGeoRange"></div>
     <p class="caption" id="movementCaption">Certified cases added and discontinued</p>
     <div id="movementPanes" class="area-panes"></div>
@@ -1427,6 +1418,8 @@ function mountGeoRange(hostId, prefix) {
   uniquifyIds(frag, prefix);
   host.appendChild(frag);
   const root = host.querySelector('.section-controls');
+  root.dataset.section = prefix;
+  if (prefix === 'movement') root.classList.remove('populations-mode');
   fillPlaceOptions(root);
   const start = root.querySelector('.range-start');
   const end = root.querySelector('.range-end');
@@ -2433,7 +2426,8 @@ function syncGeoRangeUi() {
     .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
   const summary = summaryNames.length ? summaryNames.join(' · ') : 'California';
   geoRangeRoots.forEach(root => {
-    root.classList.toggle('populations-mode', pops);
+    const hidePlaces = pops && root.dataset.section !== 'movement';
+    root.classList.toggle('populations-mode', hidePlaces);
     writeSelectValues(root.querySelector('.filter-counties'), selectedCounties);
     writeSelectValues(root.querySelector('.filter-regions'), selectedRegions);
     writeSelectValues(root.querySelector('.filter-sizes'), selectedSizes);
@@ -2449,10 +2443,10 @@ function syncGeoRangeUi() {
       btn.classList.toggle('active', btn.getAttribute('data-preset') === rangePreset);
     });
     const countyLabel = root.querySelector('.compare-select-label');
-    if (countyLabel) countyLabel.textContent = pops ? 'County' : 'Counties';
+    if (countyLabel) countyLabel.textContent = hidePlaces ? 'County' : 'Counties';
     const hint = root.querySelector('.geo-filter-hint');
     if (hint) {
-      hint.textContent = pops ? 'Click a county to view it.' : 'Click a name to add or remove it.';
+      hint.textContent = hidePlaces ? 'Click a county to view it.' : 'Click a name to add or remove it.';
     }
     const summaryEl = root.querySelector('.shared-filters-summary');
     if (summaryEl) summaryEl.textContent = summary;
@@ -2597,7 +2591,7 @@ function onPlaceFilterChange(root, which) {
   selectedRegions = selectedFromSelect(root.querySelector('.filter-regions'));
   selectedSizes = selectedFromSelect(root.querySelector('.filter-sizes'));
   if (which === 'counties') {
-    if (exploreMode === 'populations') {
+    if (exploreMode === 'populations' && root.dataset.section !== 'movement') {
       keepOnePopulationCounty();
       syncGeoRangeUi();
       buildAreaCharts();
