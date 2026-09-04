@@ -6,6 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
 <script src="data.js"></script>
+<link rel="stylesheet" href="quirk.css">
 <style>
   :root {
     --ink: #1f2430;
@@ -479,7 +480,7 @@
     body { background: #fff; }
     .link-a, .link-b, .card.link-a, .card.link-b { background: #fff !important; }
     .card, .time-range-control, .section-controls { box-shadow: none; position: static; }
-    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover { display: none; }
+    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover, .quirk-doodle, .quirk-dialog { display: none; }
     .shared-filters, .bucket-filter-lists { display: flex !important; border-top: 0; padding-top: 0; }
     .filter-group.multi select { min-height: auto; }
   }
@@ -3003,5 +3004,6 @@ window.addEventListener('hashchange', () => {
 
 startLiveOutcomesDashboard(initDashboard);
 </script>
+<script src="quirk.js"></script>
 </body>
 </html>
