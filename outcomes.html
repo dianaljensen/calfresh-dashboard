@@ -30,11 +30,28 @@
   }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
   header.page-head { margin-bottom: 6px; }
+  a.brand {
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 0 16px; width: fit-content; max-width: 100%;
+    text-decoration: none; color: inherit;
+  }
+  a.brand img { width: 36px; height: auto; display: block; flex-shrink: 0; }
+  a.brand .brand-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  a.brand .brand-name {
+    font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--dark-blue); line-height: 1.2;
+  }
+  a.brand .brand-meta {
+    font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); line-height: 1.2;
+  }
+  a.brand:hover .brand-name { color: var(--accent); }
+  a.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
   header.page-head h1 { font-size: 26px; margin: 0 0 4px; font-weight: 700; }
   header.page-head h1 .h1-info-tip {
     margin: 0 0.28em 0 0.18em; vertical-align: middle; top: -0.12em;
   }
-  header.page-head p.sub { margin: 0; color: var(--muted); font-size: 14px; }
+  header.page-head p.sub { margin: 0; color: var(--muted); font-size: 12px; max-width: 46em; line-height: 1.45; }
   header.page-head p.sub a { color: var(--accent); }
   nav.site-nav {
     display: flex; gap: 2px; flex-wrap: wrap; margin: 0 0 14px;
@@ -419,6 +436,32 @@
   footer.source-note .footer-notes { margin: 0; padding-left: 1.2em; }
   footer.source-note .footer-notes li { margin: 0 0 0.55em; }
   footer.source-note .footer-notes li:last-child { margin-bottom: 0; }
+  footer.source-note .footer-notes ul {
+    margin: 0.35em 0 0;
+    padding-left: 1.2em;
+  }
+  footer.source-note .footer-methods { margin-top: 14px; }
+  footer.source-note .footer-methods > summary {
+    list-style: none; cursor: pointer;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--ink); font-size: 10.5px; margin: 0 0 4px;
+  }
+  footer.source-note .footer-methods > summary::-webkit-details-marker { display: none; }
+  footer.source-note .footer-methods > summary .filters-toggle-mark {
+    margin: 0 0 0 5px; color: var(--muted);
+  }
+  footer.source-note .footer-methods[open] > summary .filters-toggle-mark::after { display: none; }
+  footer.source-note .footer-methods > summary:hover .filters-toggle-mark,
+  footer.source-note .footer-methods > summary:focus-visible .filters-toggle-mark { color: var(--ink); }
+  footer.source-note .footer-methods > summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  footer.source-note .footer-wonk-h {
+    font-size: 11.5px; font-weight: 700; color: var(--ink);
+    margin: 12px 0 4px; letter-spacing: 0; text-transform: none;
+  }
+  footer.source-note .footer-wonk-h:first-of-type { margin-top: 8px; }
+  footer.source-note .footer-methods .footer-notes { margin-bottom: 2px; }
   .live-note {
     background: #eef6f4; border: 1px solid #c5ddd6; color: #1f4d43;
     font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
@@ -444,6 +487,13 @@
 <body>
 <div class="wrap">
   <header class="page-head">
+    <a class="brand" href="https://www.djconsults.com" target="_blank" rel="noopener noreferrer" aria-label="Diana Jensen Consulting, djconsults.com">
+      <img src="assets/dj-logo.png" alt="" width="36" height="41">
+      <span class="brand-text">
+        <span class="brand-name">Diana Jensen</span>
+        <span class="brand-meta">Consulting · djconsults.com</span>
+      </span>
+    </a>
     <nav class="site-nav" aria-label="Dashboard views">
       <a href="index.html">Participation Trends</a>
       <a href="outcomes.html" aria-current="page">Applications</a>
@@ -452,7 +502,7 @@
       <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="calfreshNameTip" aria-label="What CalFresh means">i</button>
       <span id="calfreshNameTip" class="info-tip-bubble" role="tooltip">CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California.</span>
     </span> Applications</h1>
-    <p class="sub">Working Prototype! Contact Diana Jensen at <a href="mailto:diana@djconsults.com">diana@djconsults.com</a> for questions or suggestions.</p>
+    <p class="sub">This is a working prototype developed by Diana Jensen for the love of the data visualization game. All data is from public sources, hopefully a little easier to explore now. Send suggestions or corrections to <a href="mailto:diana@djconsults.com">diana@djconsults.com</a>.</p>
   </header>
 
   <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
@@ -558,7 +608,7 @@
       <button type="button" class="range-btn groupby-btn explore-mode-btn active" data-mode="populations" aria-pressed="true">Populations</button>
       <span class="info-tip">
         <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="exploreModeTip" aria-label="About compare modes">i</button>
-        <span id="exploreModeTip" class="info-tip-bubble" role="tooltip">Places sits selected counties, regions, or size groups side by side for one population. Populations sits All / college student / SSI household applications side by side for one place. Mixes cannot overlay. Date range and place filters stay in sync with Caseload movement.</span>
+        <span id="exploreModeTip" class="info-tip-bubble" role="tooltip">Places sits selected counties, regions, or size groups side by side for one population. Populations sits All / college student / SSI household applications side by side for one place. Mixes cannot overlay.</span>
       </span>
     </div>
     <div class="groupby-control" role="group" aria-label="Population">
@@ -658,39 +708,80 @@
     </table>
   </div>
 
-  <div class="card link-b">
-    <h2>Caseload movement</h2>
-    <div id="movementGeoRange"></div>
-    <p class="caption" id="movementCaption">Certified cases added and discontinued</p>
-    <div id="movementPanes" class="area-panes"></div>
-    <table class="sr-only" id="movementChartTable">
-      <caption>Caseload movement: additions, discontinuances, and net, by month</caption>
-      <thead><tr><th scope="col">Month</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
   <footer class="source-note">
     <span class="footer-section-label">Sources</span>
-    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296 — Applications, Expedited Service, and Recertifications</a> and Master_Monthly, via the live <strong>CalFresh Data – Consolidated</strong> spreadsheet. All-application outcome percentages are of applications disposed that month (approved + denied ineligible + denied procedural + withdrawn). College student outcomes are applications containing at least one student that were approved or denied that month (pended applications are still in process and are not in that mix). Total applications is Master_Monthly <code>Applications Received</code> (all), <code>New Applications Age Total</code> (students), or <code>Online Apps - SSI</code> + <code>Non-Online Apps - SSI</code> (SSI). Channels is a 100% mix of GetCalFresh, BenefitsCal / Other Online, and Other (SSI GetCalFresh is SSA office filings, labeled GetCalFresh (SSA)). SSI household outcomes are applications from households with at least some SSI. Caseload movement numbers are certified cases from Part C.
+    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296: Applications, Expedited Service, and Recertifications</a> and the <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard">CalFresh Data Dashboard</a>.
 
     <span class="footer-section-label">Definitions</span>
-    County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000 — computed from the latest available month of Master_Monthly.
+    County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000, computed from the latest available month of the CDSS Data Dashboard Monthly tab.
 
     <span class="footer-section-label">Data notes</span>
     <ul class="footer-notes">
-      <li>CF296 current-era (FY2025-26+) and CF296_Legacy (FY2016-17 through FY2024-25) are combined by item meaning.</li>
-      <li>CDSS uses “*” both for counts under 11 and for some larger complementary totals. When exactly one of the five outcome cells is starred, the missing value is recovered from the identity (disposed = approved + ineligible + procedural + withdrawn) if that recovered number is over 10. Remaining under-11 cells are plotted as 5; hover percents then start with ~ and the tooltip notes that some data was masked. They are never shown as a count. Months with two or more large hidden cells, and counties CDSS listed as not reporting, stay blank (a complete month next to those gaps still draws as its own slice).</li>
-      <li>Caseload movement uses CF296 Part C Item 5.a Applications approved, Item 5.d Cases with eligibility reinstated and benefits pro-rated, and Item 7 Cases discontinued during the month. When the TOTAL cell is starred, PACF + NACF is used (that is the identity). If PACF or NACF is also starred, that part is plotted as 5. Net is additions minus discontinuances. Item 5’s other add reasons (status change, ICT, other approvals) are not included.</li>
-      <li>Total applications (expandable row) is Master_Monthly <code>Applications Received</code> for All applications, <code>New Applications Age Total</code> for college students, and <code>Online Apps - SSI</code> + <code>Non-Online Apps - SSI</code> for SSI households. Do not impute 5 on those volume series. They are not CF296 Item 1.</li>
-      <li>Channels (expandable row) use the same three names where the columns exist. All applications: GetCalFresh = <code>All_GCF_apps_submit</code>, BenefitsCal / Other Online = <code>Online Applications Received</code> − GetCalFresh, Other = <code>Applications Received</code> − Online (100% of received; after June 2025 GetCalFresh is 0 and a dashed marker sits at July 2025). College students: GetCalFresh = <code>Applications Submitted via Code for America</code>, BenefitsCal / Other Online = Other Online Source + BenefitsCal, Other = Other Source. Student Code for America is not <code>CfA_GCF_apps_submit</code> and continues after June 2025 at a small volume. SSI: GetCalFresh (SSA) = <code>SSA_GCF_apps_submit</code> (SSA office filings via GetCalFresh on behalf of SSI recipients), BenefitsCal / Other Online = <code>Online Apps - SSI</code> − GetCalFresh (SSA), Other = <code>Non-Online Apps - SSI</code>. SSA GCF last has a nonzero statewide count in September 2024. Some CalWIN counties reported 0 SSI online and non-online from December 2019 through May 2022 while still reporting SSA GCF; those months stay blank rather than drawing a negative online remainder.</li>
-      <li>College student applications (volume) is Master_Monthly <code>New Applications Age Total</code>. It is not CF296 applications received, and it is not a checksum of approved + denied + pended.</li>
-      <li>Student Channels groups those four <code>Applications Submitted via …</code> columns into GetCalFresh, BenefitsCal / Other Online, and Other. The four still sum to the student approved + denied + pended mix. Code for America continues after June 2025 at a small volume as BenefitsCal takes over.</li>
-      <li>College student application columns on Master_Monthly (including unlabeled <code>New Applications …</code> / <code>Denial Reason …</code> / caseload slices in that block) are student-scoped, not the general applicant pool. The student stacked mix starts January 2023 and is share of applications disposed (approved + denied). Pended applications are still in process — hover shows the count, excluded from the mix. When the nine denial-reason columns are close to total denials, the mix is Approved / Ineligible / Procedurally Denied / Other (Ineligible = ineligible + ineligible CF student + over income; Procedurally Denied = procedural + missed interview + failed to provide income + failed determination; Other = unavailable + out of the home + residual). Otherwise it is Approved / Denied of that two-part total (early 2023, when the reasons under-count). Denial details ungroups the large types; Other there is unavailable, out of the home, ineligible CF student, and residual. Named Ineligible + Procedural alone are only a subset of denials.</li>
-      <li>SSI applications (volume) is Master_Monthly <code>Online Apps - SSI</code> + <code>Non-Online Apps - SSI</code>. Reporting starts June 2019. That sum is nearly approved + denied from mid-2022 on; it is not CF296 applications received, and it is not the SSI-only online/non-online pair. Starred cells stay blank rather than plotted as 5. Several CalWIN counties reported 0 for both volume columns December 2019–May 2022 (SSI outcomes still exist those months).</li>
-      <li>SSI household outcomes are Master_Monthly applications from households with at least some SSI. When ineligible + procedural is close to denied, the mix is approved / ineligible / procedural / Other. Otherwise it is approved / denied of that two-part total (CalWIN counties ~2020–May 2022, and months where the split overshoots, including a bad November 2025 statewide ineligible reading). That lumped Denied is drawn in warm grey, not the procedural orange. There is no pended or withdrawn column. SSI Denial details is households with only SSI recipients: ineligible vs procedural, a subset of some-SSI denials.</li>
-      <li>Stacked mix hover includes the count those percents are of: applications disposed (all), college student applications disposed (approved or denied — not <code>New Applications Age Total</code>), SSI household applications disposed. Student mix hover also notes applications still pended, which are not in the mix. Channels hover is applications received (all / SSI) or the student source total. Denial details hover is applications denied.</li>
+      <li>CDSS hides small numbers to protect privacy. When that happens, we still show the mix, but those percents are estimates (they start with ~). If too much of a month is hidden, we leave it blank rather than guess.</li>
+      <li>Total applications is how many came in that month, from the CDSS Data Dashboard Monthly tab, not from CF296. The stacked percents are how that month’s decisions broke down; not the same count.</li>
+      <li>Channels (expandable row) use the same three names, but are calculated based on available variables for each population. <a href="#methods">See wonky &amp; math-y details</a>.</li>
+      <li>Some CalWIN counties reported 0 SSI applications received from December 2019 through May 2022. SSI outcomes still exist those months.</li>
+      <li>SSI household outcomes are displayed according to best available data from the CDSS Data Dashboard Monthly tab. When ineligible + procedural is close to denied, the mix is shown as approved / ineligible / procedural / other. CalWIN counties ~2020–May 2022 show total denials, but not a break-out of ineligible vs. procedural, and are shown as a single lumped Denied in warm grey. Months where the ineligible / procedural split overshoots total denials are also shown this way.</li>
+      <li>SSI Denial details is households with only SSI recipients: ineligible vs procedural, a subset of some-SSI denials.</li>
     </ul>
+    <details class="footer-methods" id="methods">
+      <summary>
+        Wonky &amp; math-y details
+        <span class="filters-toggle-mark" aria-hidden="true"></span>
+      </summary>
+      <h3 class="footer-wonk-h">CF296 files</h3>
+      <ul class="footer-notes">
+        <li>Current-era CF296 (FY2025-26+) and CF296_Legacy (FY2016-17 through FY2024-25) are combined by item meaning, not by cell number.</li>
+      </ul>
+      <h3 class="footer-wonk-h">Small cells (*)</h3>
+      <ul class="footer-notes">
+        <li>CDSS uses “*” for counts under 11, and sometimes for a larger complementary total.</li>
+        <li>If exactly one of the five outcome cells is starred, the missing value is recovered from disposed = approved + ineligible + procedural + withdrawn, when that number is over 10.</li>
+        <li>Remaining under-11 cells are plotted as 5, never shown as a count. Hover percents then start with ~.</li>
+        <li>Two or more large hidden cells, or a county listed as not reporting, stay blank. A complete month next to those gaps still draws.</li>
+        <li>Applications received and other volume cells are not plotted as 5.</li>
+      </ul>
+      <h3 class="footer-wonk-h">Applications received</h3>
+      <ul class="footer-notes">
+        <li>All applications: <code>Applications Received</code> on the CDSS Data Dashboard Monthly tab.</li>
+        <li>College students: <code>New Applications Age Total</code>. Not CF296 applications received, and not a checksum of approved + denied + pended.</li>
+        <li>SSI households: <code>Online Apps - SSI</code> + <code>Non-Online Apps - SSI</code> (at least some SSI, not the SSI-only pair). Reporting starts June 2019. Starred volume cells stay blank. CF296 has no SSI-specific application cells.</li>
+      </ul>
+      <h3 class="footer-wonk-h">Channels</h3>
+      <ul class="footer-notes">
+        <li>A 100% mix of GetCalFresh, BenefitsCal / Other Online, and Other, from Monthly-tab columns.</li>
+        <li>All applications: GetCalFresh = <code>All_GCF_apps_submit</code>; BenefitsCal / Other Online = <code>Online Applications Received</code> minus GetCalFresh; Other = <code>Applications Received</code> minus Online. After June 2025 GetCalFresh is 0; a dashed marker sits at July 2025 (the assister ended June 30, 2025).</li>
+        <li>College students: GetCalFresh = <code>Applications Submitted via Code for America</code>; BenefitsCal / Other Online = Other Online Source + BenefitsCal; Other = Other Source. Not <code>CfA_GCF_apps_submit</code>. Code for America continues after June 2025 at a small volume. The four source columns still sum to student approved + denied + pended.</li>
+        <li>SSI: GetCalFresh (SSA) = <code>SSA_GCF_apps_submit</code> (SSA office filings via GetCalFresh on behalf of SSI recipients). BenefitsCal / Other Online = <code>Online Apps - SSI</code> minus GetCalFresh (SSA). Other = <code>Non-Online Apps - SSI</code>. Last nonzero statewide SSA GCF is September 2024. If SSA GCF exceeds Online SSI, the month is left blank (CalWIN counties often reported 0 SSI online/non-online December 2019–May 2022 while SSA GCF was still filled).</li>
+      </ul>
+      <h3 class="footer-wonk-h">College student outcomes</h3>
+      <ul class="footer-notes">
+        <li>Share of applications disposed (approved + denied), starting January 2023. Pended is still in process: hover only, not in the mix.</li>
+        <li>When the nine Denial Reason columns are close to total denials, the mix is Approved / Ineligible / Procedurally Denied / Other.
+          <ul>
+            <li>Ineligible: ineligible + ineligible CF student + over income</li>
+            <li>Procedurally Denied: procedural + missed interview + failed to provide income + failed determination</li>
+            <li>Other: unavailable + out of the home + residual</li>
+          </ul>
+        </li>
+        <li>Otherwise Approved / Denied of that two-part total (early 2023, when the reasons under-count).</li>
+        <li>Denial details ungroups the six large types. Other there is unavailable, out of the home, ineligible CF student, and residual. Named Ineligible + Procedural columns alone are only a subset of denials.</li>
+      </ul>
+      <h3 class="footer-wonk-h">SSI household outcomes</h3>
+      <ul class="footer-notes">
+        <li>Households with at least some SSI. No pended or withdrawn column.</li>
+        <li>When ineligible + procedural is close to denied: Approved / Ineligible / Procedurally Denied / Other.</li>
+        <li>Otherwise Approved / lumped Denied (warm grey): CalWIN ~2020–May 2022, and months where the split overshoots (including a bad November 2025 statewide ineligible reading).</li>
+        <li>Months that have approved and denied are still shown.</li>
+        <li>SSI Denial details is <code>SSI Only - Ineligible Denials</code> vs <code>SSI Only Procedural Denials</code>: only-SSI households, a subset of some-SSI denials.</li>
+      </ul>
+      <h3 class="footer-wonk-h">Hover</h3>
+      <ul class="footer-notes">
+        <li>Stacked mix: the count those percents are of. All applications = applications disposed. College students = applications disposed (approved or denied, not <code>New Applications Age Total</code>), plus still pended. SSI = household applications disposed.</li>
+        <li>Channels: applications received (all / SSI) or the student source total.</li>
+        <li>Denial details: applications denied.</li>
+      </ul>
+    </details>
   </footer>
   </div>
 </div>
@@ -1287,38 +1378,6 @@ const groupDividerPlugin = {
 };
 Chart.register(groupDividerPlugin);
 
-function niceOutward(v) {
-  if (v === 0) return 0;
-  const sign = v < 0 ? -1 : 1;
-  const a = Math.abs(v);
-  const exp = Math.floor(Math.log10(a));
-  const mag = Math.pow(10, exp);
-  const n = a / mag;
-  let nice;
-  if (n <= 1) nice = 1;
-  else if (n <= 2) nice = 2;
-  else if (n <= 2.5) nice = 2.5;
-  else if (n <= 5) nice = 5;
-  else nice = 10;
-  return sign * nice * mag;
-}
-function movementScaleExtents(monthly) {
-  let min = 0, max = 0;
-  monthly.forEach(row => {
-    if (!row) return;
-    if (row.additions != null) max = Math.max(max, row.additions);
-    if (row.exits != null) min = Math.min(min, -row.exits);
-    if (row.net != null) {
-      min = Math.min(min, row.net);
-      max = Math.max(max, row.net);
-    }
-  });
-  min = niceOutward(min);
-  max = niceOutward(max);
-  if (min === max) max = min + 1;
-  return { min: min, max: max };
-}
-
 function initDashboard() {
 let STACK = DATA.stack || OUTCOME_STACK;
 let populationMode = 'all';
@@ -1334,12 +1393,6 @@ let rangePreset = 'last2';
 let drillActive = false;
 const areaCharts = [];
 const nestedCharts = [];
-const movementCharts = [];
-const MOVEMENT_SERIES = [
-  { key: 'caseApproved', label: 'Applications approved', shortLabel: 'Approved', color: '#4BA5BA', sign: 1 },
-  { key: 'reinstated', label: 'Reinstated (prorated)', shortLabel: 'Reinstated', color: '#2C5985', sign: 1 },
-  { key: 'discontinued', label: 'Discontinuances', shortLabel: 'Discontinuances', color: '#FB7906', sign: -1 }
-];
 const RECEIVED_COLOR = '#2a6ebb';
 const GRID_ROWS = [
   { id: 'outcomes', label: 'Outcomes' },
@@ -1419,7 +1472,6 @@ function mountGeoRange(hostId, prefix) {
   host.appendChild(frag);
   const root = host.querySelector('.section-controls');
   root.dataset.section = prefix;
-  if (prefix === 'movement') root.classList.remove('populations-mode');
   fillPlaceOptions(root);
   const start = root.querySelector('.range-start');
   const end = root.querySelector('.range-end');
@@ -1456,7 +1508,6 @@ let rangeStart = lastNMonthsStart(DEFAULT_RANGE_MONTHS);
 let rangeEnd = monthCount - 1;
 
 mountGeoRange('trendsGeoRange', 'trends');
-mountGeoRange('movementGeoRange', 'movement');
 
 function updateRangeLabel() {
   syncGeoRangeUi();
@@ -1769,15 +1820,6 @@ function ssiChannelCountsForEntity(entity, month) {
     gcfSsa: ch && ch.gcfSsa
   });
 }
-function movementForEntity(entity, month) {
-  if (entity.kind === 'region') {
-    return sumMovementCounts(regionMemberCounties(entity.id, currentSizes()), month, DATA.series);
-  }
-  if (entity.kind === 'size') {
-    return sumMovementCounts(sizeMemberCounties(entity.id), month, DATA.series);
-  }
-  return movementForCounty(entity.id, month, DATA.series);
-}
 function lockYAxisWidth(axis) {
   axis.width = 72;
 }
@@ -1823,145 +1865,6 @@ function selectionNames(counties, regions, sizes) {
   return countiesWithStateLast(counties).map(c => c === 'Statewide' ? 'California' : c)
     .concat(regions.map(r => r + ' (region)'))
     .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
-}
-
-function buildMovementCharts() {
-  const { counties, regions, sizes } = currentSelection();
-  const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
-  const panes = paneEntities(counties, regions, sizes);
-  const holder = document.getElementById('movementPanes');
-  movementCharts.forEach(c => c.destroy());
-  movementCharts.length = 0;
-  holder.innerHTML = '';
-
-  const captionParts = selectionNames(counties, regions, sizes);
-  document.getElementById('movementCaption').textContent =
-    'Certified cases added and discontinued — ' +
-    fmtMonth(labels[0]) + ' – ' + fmtMonth(labels[labels.length - 1]) +
-    ' — ' + captionParts.filter(Boolean).join(', ');
-
-  const tableHeaders = ['Month'];
-  const tableSeries = [];
-
-  panes.forEach((pane, pi) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'area-pane chart-plot';
-    const title = document.createElement('h3');
-    title.className = 'chart-plot-title';
-    title.textContent = pane.title;
-    const hover = document.createElement('div');
-    hover.className = 'chart-hover';
-    hover.id = 'movementHover' + pi;
-    hover.setAttribute('aria-live', 'polite');
-    const canvasHold = document.createElement('div');
-    canvasHold.className = 'chart-holder';
-    const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-hidden', 'true');
-    canvasHold.appendChild(canvas);
-    wrap.appendChild(title);
-    wrap.appendChild(hover);
-    wrap.appendChild(canvasHold);
-    holder.appendChild(wrap);
-
-    const monthly = labels.map(m => movementForEntity(pane, m));
-    const stackDatasets = MOVEMENT_SERIES.map((s, i) => ({
-      type: 'line',
-      label: s.label,
-      data: monthly.map(row => {
-        if (!row || row[s.key] == null) return null;
-        return s.sign * row[s.key];
-      }),
-      backgroundColor: hexAlpha(s.color, 0.85),
-      borderColor: s.color,
-      borderWidth: 1,
-      pointRadius: 0,
-      fill: stackFill(i),
-      tension: 0.15,
-      spanGaps: false,
-      stack: 'caseload',
-      yAxisID: 'y',
-      valueKind: 'count',
-      bandLabel: s.shortLabel || s.label,
-      order: 2
-    }));
-    const netDataset = {
-      type: 'line',
-      label: 'Net',
-      data: monthly.map(row => row ? row.net : null),
-      borderColor: '#1f2430',
-      backgroundColor: '#1f2430',
-      pointRadius: 0,
-      borderWidth: 2,
-      fill: false,
-      tension: 0.15,
-      spanGaps: false,
-      yAxisID: 'y1',
-      valueKind: 'net',
-      lineLabel: 'Net',
-      order: 1
-    };
-    tableHeaders.push(pane.title + ' — Additions', pane.title + ' — Exits', pane.title + ' — Net');
-    tableSeries.push({ pane, monthly });
-
-    const scaleExt = movementScaleExtents(monthly);
-
-    const chart = new Chart(canvas, {
-      type: 'line',
-      data: { labels, datasets: stackDatasets.concat([netDataset]) },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false, axis: 'x' },
-        layout: { padding: { top: 8, bottom: 30 } },
-        plugins: {
-          legend: { display: false },
-          monthYearAxis: true,
-          isolatedStackSlices: true,
-          stackBandLabels: true,
-          tooltip: {
-            enabled: false,
-            external: hoverTooltipExternal('movementHover' + pi, 'above', idx => {
-              return smallCellMovementNote(monthly[idx]);
-            }),
-            itemSort: (a, b) => {
-              const order = ['Applications approved', 'Reinstated (prorated)', 'Discontinuances', 'Net'];
-              return order.indexOf(a.dataset.label) - order.indexOf(b.dataset.label);
-            }
-          }
-        },
-        scales: {
-          x: { ticks: { display: false }, grid: { display: false } },
-          y: {
-            stacked: true, beginAtZero: true, position: 'left',
-            bounds: 'data', min: scaleExt.min, max: scaleExt.max,
-            ticks: { callback: v => fmtCount(v) },
-            grid: {
-              color: ctx => ctx.tick.value === 0 ? '#c5c9d2' : '#f0f0f0'
-            }
-          },
-          y1: {
-            stacked: false, beginAtZero: true, position: 'right',
-            display: false,
-            bounds: 'data', min: scaleExt.min, max: scaleExt.max,
-            grid: { drawOnChartArea: false }
-          }
-        }
-      }
-    });
-    movementCharts.push(chart);
-  });
-
-  const thead = document.querySelector('#movementChartTable thead tr');
-  thead.innerHTML = tableHeaders.map(h => '<th scope="col">' + h + '</th>').join('');
-  renderAccessibleTable(document.querySelector('#movementChartTable tbody'), labels.map((m, i) => {
-    const row = [fmtMonth(m)];
-    tableSeries.forEach(ts => {
-      const rec = ts.monthly[i];
-      row.push(rec && rec.additions != null ? fmtCount(rec.additions) : 'n/a');
-      row.push(rec && rec.exits != null ? fmtCount(rec.exits) : 'n/a');
-      row.push(rec && rec.net != null ? fmtNet(rec.net) : 'n/a');
-    });
-    return row;
-  }));
 }
 
 function outcomeColumns(geos) {
@@ -2221,7 +2124,6 @@ function buildAreaCharts() {
   updateRangeLabel();
   const { counties, regions, sizes } = currentSelection();
   updateFiltersSummary(counties, regions, sizes);
-  buildMovementCharts();
   const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
   const geos = paneEntities(counties, regions, sizes);
   const columns = outcomeColumns(geos);
@@ -2426,7 +2328,7 @@ function syncGeoRangeUi() {
     .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
   const summary = summaryNames.length ? summaryNames.join(' · ') : 'California';
   geoRangeRoots.forEach(root => {
-    const hidePlaces = pops && root.dataset.section !== 'movement';
+    const hidePlaces = pops;
     root.classList.toggle('populations-mode', hidePlaces);
     writeSelectValues(root.querySelector('.filter-counties'), selectedCounties);
     writeSelectValues(root.querySelector('.filter-regions'), selectedRegions);
@@ -2591,7 +2493,7 @@ function onPlaceFilterChange(root, which) {
   selectedRegions = selectedFromSelect(root.querySelector('.filter-regions'));
   selectedSizes = selectedFromSelect(root.querySelector('.filter-sizes'));
   if (which === 'counties') {
-    if (exploreMode === 'populations' && root.dataset.section !== 'movement') {
+    if (exploreMode === 'populations') {
       keepOnePopulationCounty();
       syncGeoRangeUi();
       buildAreaCharts();
@@ -2650,7 +2552,6 @@ window.addEventListener('resize', () => {
   resizeRAF = requestAnimationFrame(() => {
     areaCharts.forEach(c => c.resize());
     nestedCharts.forEach(c => c.resize());
-    movementCharts.forEach(c => c.resize());
     if (bucketChart) bucketChart.resize();
   });
 });
@@ -3084,6 +2985,18 @@ document.addEventListener('keydown', (e) => {
   document.querySelectorAll('.info-tip-btn').forEach(btn => {
     btn.setAttribute('aria-expanded', 'false');
   });
+});
+
+function openFooterMethods() {
+  const methods = document.getElementById('methods');
+  if (methods) methods.open = true;
+}
+document.querySelectorAll('a[href="#methods"]').forEach(a => {
+  a.addEventListener('click', openFooterMethods);
+});
+if (location.hash === '#methods') openFooterMethods();
+window.addEventListener('hashchange', () => {
+  if (location.hash === '#methods') openFooterMethods();
 });
 
 startLiveOutcomesDashboard(initDashboard);

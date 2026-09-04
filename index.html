@@ -43,11 +43,29 @@
   }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
   header.page-head { margin-bottom: 6px; }
+  a.brand {
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 0 16px; width: fit-content; max-width: 100%;
+    text-decoration: none; color: inherit;
+  }
+  a.brand img { width: 36px; height: auto; display: block; flex-shrink: 0; }
+  a.brand .brand-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  a.brand .brand-name {
+    font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--dark-blue); line-height: 1.2;
+  }
+  a.brand .brand-meta {
+    font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); line-height: 1.2;
+  }
+  a.brand:hover .brand-name { color: var(--accent); }
+  a.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
   header.page-head h1 { font-size: 26px; margin: 0 0 4px; font-weight: 700; }
   header.page-head h1 .h1-info-tip {
     margin: 0 0.28em 0 0.18em; vertical-align: middle; top: -0.12em;
   }
-  header.page-head p.sub { margin: 0; color: var(--muted); font-size: 14px; }
+  header.page-head p.sub { margin: 0; color: var(--muted); font-size: 12px; max-width: 46em; line-height: 1.45; }
+  header.page-head p.sub a { color: var(--accent); }
   .prototype-note {
     background: #fff7e8; border: 1px solid #f0d9a8; color: #6b4b12;
     font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
@@ -270,6 +288,18 @@
   .range-slider:active .range-input::-moz-range-thumb { cursor: grabbing; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 10px; }
   .card h2 { font-size: 15px; margin: 0 0 12px; }
+  .card-title-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px;
+  }
+  .card-title-row h2 { margin: 0; }
+  .card-title-row .info-tip-bubble { width: 320px; }
+  .caseload-card { margin-top: 26px; }
+  .area-panes {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px; margin-bottom: 8px; overflow: visible;
+  }
+  .area-pane { min-width: 0; overflow: visible; }
+  .area-pane .chart-holder { height: 280px; }
   .bucket-title-row {
     display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px;
   }
@@ -297,15 +327,16 @@
     padding-left: var(--plot-title-inset);
   }
   .chart-hover {
-    display: none; position: absolute; z-index: 30; left: 0; top: 0;
+    display: none; position: fixed; z-index: 30; left: 0; top: 0;
     pointer-events: none; width: max-content;
-    max-width: min(260px, calc(100% - 16px));
+    max-width: min(260px, calc(100vw - 16px));
     font-size: 12px; line-height: 1.35; padding: 8px 10px;
     border-radius: 6px; background: rgba(24, 27, 36, 0.97); color: #fff;
   }
   .chart-hover.is-active { display: block; }
   .chart-hover-title { font-weight: 700; margin-bottom: 2px; }
   .chart-hover-note { opacity: 0.92; margin-bottom: 4px; }
+  .chart-hover-row + .chart-hover-note { margin-top: 6px; margin-bottom: 0; }
   .chart-hover-row { display: flex; align-items: flex-start; gap: 6px; }
   .chart-hover-swatch {
     width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; margin-top: 3px;
@@ -334,19 +365,19 @@
   .section-head h2 { font-size: 16px; margin: 0; }
   .section-head p { margin: 0; font-size: 12px; color: var(--muted); }
   .layers-control {
-    display: flex; flex-direction: column; align-items: stretch; gap: 6px;
-    margin: 12px 0 8px; padding: 10px 12px;
+    display: flex; flex-direction: column; align-items: stretch; gap: 4px;
+    margin: 12px 0 8px; padding: 8px 10px;
     border: 1px solid var(--line); border-radius: 8px; background: #fff;
   }
   .layers-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
-  .layers-hint { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .layers-hint { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.3; }
   .layers-control.is-locked .layers-hint { display: none; }
   .layers-control .layers-lock-note { margin: 0; }
-  .layers-list { display: flex; flex-direction: column; gap: 2px; }
+  .layers-list { display: flex; flex-direction: column; gap: 1px; }
   .layer-toggle {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 13px; color: var(--ink); cursor: pointer;
-    padding: 6px 8px; border-radius: 6px; --layer-color: var(--accent2);
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; line-height: 1.25; color: var(--ink); cursor: pointer;
+    padding: 3px 6px; border-radius: 5px; --layer-color: var(--accent2);
   }
   .layer-toggle:hover { background: #f4f4f6; }
   .layer-toggle:has(input:checked) {
@@ -358,13 +389,13 @@
   .layer-toggle-secondary { margin-left: auto; padding-left: 12px; border-left: 1px solid var(--line); color: var(--muted); }
   .layer-toggle input[type="checkbox"] {
     appearance: none; -webkit-appearance: none;
-    width: 18px; height: 18px; margin: 0; flex-shrink: 0;
-    border: 2px solid #8b9099; border-radius: 4px; background: #fff; cursor: pointer;
+    width: 15px; height: 15px; margin: 0; flex-shrink: 0;
+    border: 2px solid #8b9099; border-radius: 3px; background: #fff; cursor: pointer;
   }
   .layer-toggle input[type="checkbox"]:checked {
     background-color: var(--layer-color); border-color: var(--layer-color);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 6.5l2.5 2.5L10 3.5'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: center; background-size: 12px 12px;
+    background-repeat: no-repeat; background-position: center; background-size: 10px 10px;
   }
   .layer-toggle input[type="checkbox"]:focus-visible {
     outline: 2px solid var(--layer-color); outline-offset: 2px;
@@ -378,11 +409,8 @@
   .layer-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
   .layer-swatch-stack { display: inline-flex; align-items: center; flex-shrink: 0; }
   .layer-swatch-stack .layer-swatch + .layer-swatch { margin-left: -2px; }
-  .layer-toggle-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .layer-toggle-sub { font-size: 11px; color: var(--muted); font-weight: 400; line-height: 1.35; }
-  .layer-toggle:has(.layer-toggle-sub) { align-items: flex-start; }
-  .layer-toggle:has(.layer-toggle-sub) input[type="checkbox"] { margin-top: 2px; }
-  .layer-toggle:has(.layer-toggle-sub) .layer-swatch-stack { margin-top: 4px; }
+  .layer-toggle-copy { min-width: 0; }
+  .layer-toggle-sub { font-size: 10px; color: var(--muted); font-weight: 400; }
   .layers-caveat {
     display: none; font-size: 11px; color: var(--muted); line-height: 1.5;
     background: #f7f5f0; border-left: 3px solid #b5895a; padding: 6px 10px; margin: 0 0 10px;
@@ -409,6 +437,28 @@
   }
   footer.source-note .footer-notes li { margin: 0 0 0.55em; }
   footer.source-note .footer-notes li:last-child { margin-bottom: 0; }
+  footer.source-note .footer-methods { margin-top: 14px; }
+  footer.source-note .footer-methods > summary {
+    list-style: none; cursor: pointer;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--ink); font-size: 10.5px; margin: 0 0 4px;
+  }
+  footer.source-note .footer-methods > summary::-webkit-details-marker { display: none; }
+  footer.source-note .footer-methods > summary .filters-toggle-mark {
+    margin: 0 0 0 5px; color: var(--muted);
+  }
+  footer.source-note .footer-methods[open] > summary .filters-toggle-mark::after { display: none; }
+  footer.source-note .footer-methods > summary:hover .filters-toggle-mark,
+  footer.source-note .footer-methods > summary:focus-visible .filters-toggle-mark { color: var(--ink); }
+  footer.source-note .footer-methods > summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  footer.source-note .footer-wonk-h {
+    font-size: 11.5px; font-weight: 700; color: var(--ink);
+    margin: 12px 0 4px; letter-spacing: 0; text-transform: none;
+  }
+  footer.source-note .footer-wonk-h:first-of-type { margin-top: 8px; }
+  footer.source-note .footer-methods .footer-notes { margin-bottom: 2px; }
   .live-note {
     background: #eef6f4; border: 1px solid #c5ddd6; color: #1f4d43;
     font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
@@ -441,6 +491,13 @@
 <body>
 <div class="wrap">
   <header class="page-head">
+    <a class="brand" href="https://www.djconsults.com" target="_blank" rel="noopener noreferrer" aria-label="Diana Jensen Consulting, djconsults.com">
+      <img src="assets/dj-logo.png" alt="" width="36" height="41">
+      <span class="brand-text">
+        <span class="brand-name">Diana Jensen</span>
+        <span class="brand-meta">Consulting · djconsults.com</span>
+      </span>
+    </a>
     <nav class="site-nav" aria-label="Dashboard views">
       <a href="index.html" aria-current="page">Participation Trends</a>
       <a href="outcomes.html">Applications</a>
@@ -449,7 +506,7 @@
       <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="calfreshNameTip" aria-label="What CalFresh means">i</button>
       <span id="calfreshNameTip" class="info-tip-bubble" role="tooltip">CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California.</span>
     </span> Participation Trends</h1>
-    <p class="sub">Working Prototype! Contact Diana Jensen at diana@djconsults.com for questions or suggestions.</p>
+    <p class="sub">This is a working prototype developed by Diana Jensen for the love of the data visualization game. All data is from public sources, hopefully a little easier to explore now. Send suggestions or corrections to <a href="mailto:diana@djconsults.com">diana@djconsults.com</a>.</p>
   </header>
 
   <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
@@ -458,6 +515,7 @@
   <div class="shared-controls time-range-control link-a" id="sharedControls">
     <div class="time-range-header">
       <span class="time-range-label">Showing<strong id="rangeLabel"></strong></span>
+      <button type="button" id="rangeLast2" class="range-btn">Last 2 years</button>
       <button type="button" id="rangeSkipCovid" class="range-btn">Since 2021 (post COVID spike)</button>
       <button type="button" id="rangeReset" class="range-btn">Full range</button>
     </div>
@@ -557,13 +615,11 @@
           <label class="layer-toggle" id="allParticipantsToggle" style="--layer-color:#FB7906"><input type="checkbox" id="allParticipantsCheckbox" checked><span class="layer-swatch" id="allParticipantsSwatch" style="background:#FB7906"></span>All Participants</label>
           <label class="layer-toggle" style="--layer-color:#c9a227"><input type="checkbox" id="ageBandCheckbox">
             <span class="layer-swatch-stack" aria-hidden="true"><span class="layer-swatch" style="background:#c9a227"></span><span class="layer-swatch" style="background:#5b3a8e"></span><span class="layer-swatch" style="background:#1f2430"></span></span>
-            <span class="layer-toggle-copy">By Age Group (Children / 18–59 / 60+)
-              <span class="layer-toggle-sub">Updates annually in July.</span>
-            </span></label>
+            <span class="layer-toggle-copy">By Age Group <span class="layer-toggle-sub">(updates annually in July)</span></span></label>
           <label class="layer-toggle" style="--layer-color:#6c8a3b"><input type="checkbox" id="layerDualMedical"><span class="layer-swatch" style="background:#6c8a3b"></span>Also enrolled in Medi-Cal</label>
           <label class="layer-toggle" style="--layer-color:#8a3b6c"><input type="checkbox" id="layerChildOnly"><span class="layer-swatch" style="background:#8a3b6c"></span>People in Child-Only Households</label>
           <label class="layer-toggle" style="--layer-color:#b03a3a"><input type="checkbox" id="layerStudents"><span class="layer-swatch" style="background:#b03a3a"></span>College students</label>
-          <label class="layer-toggle" style="--layer-color:#2a6ebb"><input type="checkbox" id="layerDollarsIssued"><span class="layer-swatch" style="background:#2a6ebb"></span>$ Issued (right axis)</label>
+          <label class="layer-toggle" style="--layer-color:#2a6ebb"><input type="checkbox" id="layerDollarsIssued"><span class="layer-swatch" style="background:#2a6ebb"></span>$ Issued <span class="layer-toggle-sub">(right axis)</span></label>
         </div>
       </div>
       <p class="layers-caveat" id="layersCaveat"></p>
@@ -662,9 +718,26 @@
     </table>
   </div>
 
+  <div class="card link-b caseload-card">
+    <div class="card-title-row">
+      <h2>Caseload movement</h2>
+      <span class="info-tip">
+        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementTip" aria-label="About caseload movement">i</button>
+        <span id="movementTip" class="info-tip-bubble" role="tooltip">Net is additions minus discontinuances.</span>
+      </span>
+    </div>
+    <p class="caption" id="movementCaption">Certified cases added and discontinued</p>
+    <div id="movementPanes" class="area-panes"></div>
+    <table class="sr-only" id="movementChartTable">
+      <caption>Caseload movement: additions, discontinuances, and net, by month</caption>
+      <thead><tr><th scope="col">Month</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
   <footer class="source-note">
     <span class="footer-section-label">Sources</span>
-    Data: CDSS CalFresh Data Dashboard, via the live <strong>CalFresh Data – Consolidated</strong> spreadsheet. See <code>DATA_DICTIONARY.md</code> for full source notes.
+    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard">CalFresh Data Dashboard</a> and <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296: Applications, Expedited Service, and Recertifications</a>.
 
     <span class="footer-section-label">Definitions</span>
     County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000 — computed from the latest available month, provisional pending final confirmation. EAs = Emergency Allotments.
@@ -674,8 +747,32 @@
       <li>Data reports less frequently than monthly are shown as step functions.</li>
       <li>$ Issued (CalFresh benefits issued) only has county breakdowns in the CalFresh Data Dashboard from Sep 2023 onward — shown as a gap before that date for any county other than California. Historical data will be included from the DFA/CF256 report in a future build.</li>
       <li>If a county's participant count jumps or drops by 40% or more for exactly one month and then returns to the surrounding trend, we treat that month as a CDSS reporting error and leave a gap in the line rather than interpolating. The newest month cannot be checked this way until the following month is published.</li>
+      <li>Caseload movement is certified cases from CF296, not the same as Total Participants (households and persons who participated that month, from the CDSS Data Dashboard Monthly tab). Each figure is in the month CDSS reported it. Other approvals and reinstated cases typically offset discontinuances from the prior month.</li>
+      <li>ICT in is an inter-county transfer into this county. Transfers out are already inside discontinuances. CDSS does not publish a separate ICT-out count.</li>
       <li id="reportingGapsNote" hidden></li>
     </ul>
+    <details class="footer-methods" id="methods">
+      <summary>
+        Wonky &amp; math-y details
+        <span class="filters-toggle-mark" aria-hidden="true"></span>
+      </summary>
+      <h3 class="footer-wonk-h">CF296 files</h3>
+      <ul class="footer-notes">
+        <li>Current-era CF296 (FY2025-26+) and CF296_Legacy (FY2016-17 through FY2024-25) are combined by item meaning, not by cell number.</li>
+      </ul>
+      <h3 class="footer-wonk-h">Caseload movement</h3>
+      <ul class="footer-notes">
+        <li>Figures are CF296 Part C, in the month CDSS reported them.</li>
+        <li>Adds: Item 5.a applications approved, Item 5.e Other approvals, Item 5.d reinstated prorated, Item 5.c ICT in.</li>
+        <li>Exits: Item 7 full discontinuances. Item 5.b is omitted (Total is 0). Item 9.b recert ineligible is not subtracted from Item 7.</li>
+        <li>When Part C Total is starred, it is recovered from PACF + NACF. A starred PACF or NACF part is plotted as 5.</li>
+        <li>Other approvals are typically rescinded discontinuances. They offset prior-month Item 7, and they stay in the report month.</li>
+      </ul>
+      <h3 class="footer-wonk-h">ICT</h3>
+      <ul class="footer-notes">
+        <li>ICT in is Item 5.c (incoming only). ICT outs are inside Item 7; CF296 has no ICT-out cell. Statewide, ICT in and those outs should cancel in the net.</li>
+      </ul>
+    </details>
   </footer>
   </div>
 </div>
@@ -751,6 +848,56 @@ function fmtMonth(m) {
   const [y, mo] = m.split('-');
   const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return names[parseInt(mo,10)-1] + ' ' + y;
+}
+function fmtCount(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  return Math.round(v).toLocaleString('en-US');
+}
+function fmtNet(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  const n = Math.round(v);
+  return (n > 0 ? '+' : '') + n.toLocaleString('en-US');
+}
+function hexAlpha(hex, a) {
+  const h = hex.replace('#','');
+  const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
+function stackFill(i) {
+  return i === 0 ? 'origin' : '-1';
+}
+function niceOutward(v) {
+  if (v === 0) return 0;
+  const sign = v < 0 ? -1 : 1;
+  const a = Math.abs(v);
+  const exp = Math.floor(Math.log10(a));
+  const mag = Math.pow(10, exp);
+  const n = a / mag;
+  let nice;
+  if (n <= 1) nice = 1;
+  else if (n <= 2) nice = 2;
+  else if (n <= 2.5) nice = 2.5;
+  else if (n <= 5) nice = 5;
+  else nice = 10;
+  return sign * nice * mag;
+}
+function movementScaleExtents(monthly) {
+  let min = 0, max = 0;
+  monthly.forEach(row => {
+    if (!row) return;
+    if (row.shownAdds != null) max = Math.max(max, row.shownAdds);
+    if (row.additions != null) max = Math.max(max, row.additions);
+    if (row.exits != null) min = Math.min(min, -row.exits);
+    if (row.net != null) {
+      min = Math.min(min, row.net);
+      max = Math.max(max, row.net);
+    }
+  });
+  min = niceOutward(min);
+  max = niceOutward(max);
+  if (min === max) max = min + 1;
+  return { min: min, max: max };
 }
 
 // Chart.js tooltips don't auto-wrap long strings -- returning an array of lines
@@ -847,38 +994,38 @@ function hoverTooltipExternal(elId, placement) {
     if (!plot) return;
     const plotRect = plot.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
-    const caretX = canvasRect.left - plotRect.left + tooltip.caretX;
-    const caretY = canvasRect.top - plotRect.top + tooltip.caretY;
+    const caretX = canvasRect.left + tooltip.caretX;
+    const caretY = canvasRect.top + tooltip.caretY;
     const tipW = el.offsetWidth;
     const tipH = el.offsetHeight;
-    let left = Math.max(8, Math.min(caretX - tipW / 2, plot.clientWidth - tipW - 8));
+    // Viewport coords (position:fixed) so overflow cannot clip the box, and
+    // so a tall hover (caseload movement) can sit in the title band without
+    // covering the plot. z-index 30 vs the sticky bar's 20.
+    let left = Math.max(plotRect.left + 8, Math.min(caretX - tipW / 2, plotRect.right - tipW - 8));
     let top;
     if (placement === 'above') {
       // Follow the hovered month on x. Vertically, sit entirely above the
-      // canvas (title/caption band). Overflow the plot if needed, but stay
-      // inside the card (Diana, 2026-08-30 / 2026-09-01) and below the sticky
-      // shared-controls bar.
-      const canvasTop = canvasRect.top - plotRect.top;
-      top = canvasTop - tipH - 8;
-      const card = plot.closest('.card');
-      if (card) {
-        const minTop = card.getBoundingClientRect().top - plotRect.top + 8;
-        if (top < minTop) top = minTop;
+      // canvas (title/caption band). Stay below the sticky shared-controls
+      // bar when there is room; never slide onto the lines, stacks, or bars.
+      top = canvasRect.top - tipH - 8;
+      const floor = stickyControlsFloor();
+      if (floor + tipH + 8 <= canvasRect.top) {
+        if (top < floor) top = floor;
+      } else if (top < 8) {
+        top = 8;
       }
-      const floor = stickyControlsFloor() - plotRect.top;
-      if (top < floor) top = floor;
     } else {
       const gap = 14;
       left = caretX + gap;
       top = caretY - tipH / 2;
-      if (left + tipW > plot.clientWidth - 8) left = caretX - tipW - gap;
-      if (left < 8) {
-        left = Math.max(8, Math.min(caretX - tipW / 2, plot.clientWidth - tipW - 8));
+      if (left + tipW > plotRect.right - 8) left = caretX - tipW - gap;
+      if (left < plotRect.left + 8) {
+        left = Math.max(plotRect.left + 8, Math.min(caretX - tipW / 2, plotRect.right - tipW - 8));
         top = caretY - tipH - gap;
-        if (top < 8) top = caretY + gap;
+        if (top < plotRect.top + 8) top = caretY + gap;
       }
-      top = Math.max(8, Math.min(top, plot.clientHeight - tipH - 8));
-      left = Math.max(8, Math.min(left, plot.clientWidth - tipW - 8));
+      top = Math.max(plotRect.top + 8, Math.min(top, plotRect.bottom - tipH - 8));
+      left = Math.max(plotRect.left + 8, Math.min(left, plotRect.right - tipW - 8));
     }
     el.style.left = left + 'px';
     el.style.top = top + 'px';
@@ -1420,6 +1567,177 @@ const plotTitleAlignPlugin = {
 };
 Chart.register(plotTitleAlignPlugin);
 
+const isolatedStackSlicePlugin = {
+  id: 'isolatedStackSlices',
+  beforeDatasetsDraw(chart) {
+    const cfg = chart.options.plugins && chart.options.plugins.isolatedStackSlices;
+    if (!cfg) return;
+    const x = chart.scales.x;
+    const y = chart.scales.y;
+    const { ctx, chartArea, data } = chart;
+    if (!x || !y || !chartArea) return;
+    const stacked = data.datasets.filter((d, i) => {
+      if (!chart.isDatasetVisible(i)) return false;
+      if (d.yAxisID && d.yAxisID !== 'y') return false;
+      return d.fill;
+    });
+    if (!stacked.length) return;
+    const n = data.labels.length;
+    for (let i = 0; i < n; i++) {
+      if (stacked.every(d => d.data[i] == null)) continue;
+      const prevMissing = i === 0 || stacked.every(d => d.data[i - 1] == null);
+      const nextMissing = i === n - 1 || stacked.every(d => d.data[i + 1] == null);
+      if (!(prevMissing && nextMissing)) continue;
+      let half;
+      if (n === 1) half = (chartArea.right - chartArea.left) / 2;
+      else if (i < n - 1) half = Math.abs(x.getPixelForValue(i + 1) - x.getPixelForValue(i)) / 2;
+      else half = Math.abs(x.getPixelForValue(i) - x.getPixelForValue(i - 1)) / 2;
+      const cx = x.getPixelForValue(i);
+      const left = Math.max(chartArea.left, cx - half);
+      const right = Math.min(chartArea.right, cx + half);
+      let pos = 0;
+      let neg = 0;
+      stacked.forEach(d => {
+        const v = d.data[i];
+        if (v == null) return;
+        const from = v >= 0 ? pos : neg;
+        const to = from + v;
+        if (v >= 0) pos = to;
+        else neg = to;
+        const y0 = y.getPixelForValue(from);
+        const y1 = y.getPixelForValue(to);
+        ctx.save();
+        ctx.fillStyle = d.backgroundColor || d.borderColor;
+        ctx.fillRect(left, Math.min(y0, y1), Math.max(1, right - left), Math.abs(y1 - y0));
+        ctx.restore();
+      });
+    }
+  }
+};
+Chart.register(isolatedStackSlicePlugin);
+
+function contrastInk(color) {
+  let r = 0, g = 0, b = 0;
+  const hex = String(color || '').replace('#', '');
+  const rgb = String(color || '').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (rgb) {
+    r = +rgb[1]; g = +rgb[2]; b = +rgb[3];
+  } else if (hex.length === 3) {
+    r = parseInt(hex[0] + hex[0], 16);
+    g = parseInt(hex[1] + hex[1], 16);
+    b = parseInt(hex[2] + hex[2], 16);
+  } else if (hex.length >= 6) {
+    r = parseInt(hex.slice(0, 2), 16);
+    g = parseInt(hex.slice(2, 4), 16);
+    b = parseInt(hex.slice(4, 6), 16);
+  }
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return lum > 0.58 ? '#1f2430' : '#fff';
+}
+const stackBandLabelPlugin = {
+  id: 'stackBandLabels',
+  afterDatasetsDraw(chart) {
+    const cfg = chart.options.plugins && chart.options.plugins.stackBandLabels;
+    if (!cfg) return;
+    const minH = cfg.minHeight || 13;
+    const x = chart.scales.x;
+    const y = chart.scales.y;
+    const { ctx, chartArea, data } = chart;
+    if (!x || !y || !chartArea) return;
+    const stacked = data.datasets.filter((d, i) => {
+      if (!chart.isDatasetVisible(i)) return false;
+      if (d.yAxisID && d.yAxisID !== 'y') return false;
+      return d.fill;
+    });
+    const n = data.labels.length;
+    ctx.save();
+    ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+    if (stacked.length && n) {
+      function monthComplete(i) {
+        if (stacked.some(d => d.data[i] == null)) return false;
+        const prevMissing = i === 0 || stacked.every(d => d.data[i - 1] == null);
+        const nextMissing = i === n - 1 || stacked.every(d => d.data[i + 1] == null);
+        return !(prevMissing && nextMissing);
+      }
+      function labelableCount(i) {
+        let pos = 0, neg = 0, nLabel = 0;
+        stacked.forEach(d => {
+          const v = d.data[i];
+          if (v == null || v === 0) return;
+          const from = v >= 0 ? pos : neg;
+          const to = from + v;
+          if (v >= 0) pos = to;
+          else neg = to;
+          if (Math.abs(y.getPixelForValue(from) - y.getPixelForValue(to)) >= minH) nLabel++;
+        });
+        return nLabel;
+      }
+      let bestIdx = -1;
+      let bestScore = -1;
+      const start = Math.floor(n * 0.42);
+      for (let i = start; i < n; i++) {
+        if (!monthComplete(i)) continue;
+        const score = labelableCount(i);
+        if (score >= bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+      if (bestIdx === -1) {
+        for (let i = n - 1; i >= 0; i--) {
+          if (stacked.every(d => d.data[i] != null)) { bestIdx = i; break; }
+        }
+      }
+      if (bestIdx !== -1 && stacked.length >= 2) {
+        let pos = 0;
+        let neg = 0;
+        stacked.forEach(d => {
+          const v = d.data[bestIdx];
+          if (v == null) return;
+          const from = v >= 0 ? pos : neg;
+          const to = from + v;
+          if (v >= 0) pos = to;
+          else neg = to;
+          const label = d.bandLabel || d.label;
+          if (!label || v === 0) return;
+          const y0 = y.getPixelForValue(from);
+          const y1 = y.getPixelForValue(to);
+          if (Math.abs(y1 - y0) < minH) return;
+          const midY = (y0 + y1) / 2;
+          const px = x.getPixelForValue(bestIdx);
+          const textW = ctx.measureText(label).width;
+          ctx.textAlign = 'right';
+          let tx = px - 4;
+          if (tx - textW < chartArea.left + 4) {
+            ctx.textAlign = 'left';
+            tx = Math.min(px + 4, chartArea.right - textW - 4);
+          }
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = contrastInk(d.borderColor || d.backgroundColor);
+          ctx.fillText(label, tx, midY);
+        });
+      }
+    }
+    data.datasets.forEach((d, i) => {
+      if (!d.lineLabel || !chart.isDatasetVisible(i)) return;
+      const scale = chart.scales[d.yAxisID || 'y'];
+      if (!scale) return;
+      let idx = -1;
+      for (let j = n - 1; j >= 0; j--) {
+        if (d.data[j] != null) { idx = j; break; }
+      }
+      if (idx === -1) return;
+      ctx.fillStyle = d.borderColor || '#1f2430';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      const lx = Math.min(x.getPixelForValue(idx), chartArea.right - 4);
+      ctx.fillText(d.lineLabel, lx, scale.getPixelForValue(d.data[idx]) - 3);
+    });
+    ctx.restore();
+  }
+};
+Chart.register(stackBandLabelPlugin);
+
 function initDashboard() {
 // ---- Populate filter selects ----
 const compareSelect = document.getElementById('compareSelect');
@@ -1483,12 +1801,16 @@ const rangeEndInput = document.getElementById('rangeEnd');
 const rangeLabelEl = document.getElementById('rangeLabel');
 const rangeTrackFill = document.getElementById('rangeTrackFill');
 const monthCount = DATA.months.length;
+const DEFAULT_RANGE_MONTHS = 24;
+function lastNMonthsStart(n) {
+  return Math.max(0, monthCount - n);
+}
 rangeStartInput.max = monthCount - 1;
 rangeEndInput.max = monthCount - 1;
-rangeStartInput.value = 0;
-rangeEndInput.value = monthCount - 1;
-let rangeStart = 0;
+let rangeStart = lastNMonthsStart(DEFAULT_RANGE_MONTHS);
 let rangeEnd = monthCount - 1;
+rangeStartInput.value = rangeStart;
+rangeEndInput.value = rangeEnd;
 
 function updateRangeLabel() {
   rangeLabelEl.textContent = ' ' + fmtMonth(DATA.months[rangeStart]) + ' – ' + fmtMonth(DATA.months[rangeEnd]);
@@ -1522,6 +1844,31 @@ function currentSelection() {
   const regions = currentRegions().filter(r => regionMemberCounties(r, sizes).length > 0);
   if (!counties.length && !regions.length) return { counties: ['Statewide'], regions: [], sizes };
   return { counties, regions, sizes };
+}
+function countiesWithStateLast(counties) {
+  return counties.filter(c => c !== 'Statewide').concat(counties.filter(c => c === 'Statewide'));
+}
+function paneEntities(counties, regions, sizes) {
+  const panes = [];
+  countiesWithStateLast(counties).forEach(c => {
+    panes.push({
+      id: c,
+      kind: 'county',
+      title: c === 'Statewide' ? 'California' : c
+    });
+  });
+  regions.forEach(r => panes.push({ id: r, kind: 'region', title: r + ' region' }));
+  (sizes || []).forEach(s => panes.push({
+    id: s,
+    kind: 'size',
+    title: SIZE_DISPLAY[s] || s
+  }));
+  return panes;
+}
+function selectionNames(counties, regions, sizes) {
+  return countiesWithStateLast(counties).map(c => c === 'Statewide' ? 'California' : c)
+    .concat(regions.map(r => r + ' (region)'))
+    .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
 }
 function isSingleFocusEntity(counties, regions) {
   return (counties.length === 1 && regions.length === 0) ||
@@ -1576,6 +1923,183 @@ function applyOverlayLock(counties, regions) {
   layersLockNoteEl.classList.add('show');
 }
 
+const MOVEMENT_SERIES = [
+  { key: 'caseApproved', label: 'Applications approved', shortLabel: 'Approved', color: '#4BA5BA', sign: 1 },
+  { key: 'rescinded', label: 'Other approvals', shortLabel: 'Other approvals', color: '#2E6F62', sign: 1 },
+  { key: 'reinstated', label: 'Reinstated (prorated)', shortLabel: 'Reinstated', color: '#6BA3C4', sign: 1 },
+  { key: 'ict', label: 'ICT in', shortLabel: 'ICT in', color: '#8B9AAB', sign: 1 },
+  { key: 'discontinued', label: 'Discontinuances', shortLabel: 'Discontinuances', color: '#FB7906', sign: -1, fill: 'origin' }
+];
+const movementCharts = [];
+const MOVEMENT_HOVER_ORDER = [
+  'ICT in',
+  'Reinstated (prorated)',
+  'Other approvals',
+  'Applications approved',
+  'Discontinuances',
+  'Net'
+];
+function movementForEntity(entity, month) {
+  const series = DATA.movement_series;
+  if (!series) return null;
+  if (entity.kind === 'region') {
+    return sumMovementCounts(regionMemberCounties(entity.id, currentSizes()), month, series);
+  }
+  if (entity.kind === 'size') {
+    return sumMovementCounts(sizeMemberCounties(entity.id), month, series);
+  }
+  return movementForCounty(entity.id, month, series);
+}
+function buildMovementCharts() {
+  const { counties, regions, sizes } = currentSelection();
+  const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
+  const panes = paneEntities(counties, regions, sizes);
+  const holder = document.getElementById('movementPanes');
+  movementCharts.forEach(c => c.destroy());
+  movementCharts.length = 0;
+  holder.innerHTML = '';
+
+  const captionParts = selectionNames(counties, regions, sizes);
+  document.getElementById('movementCaption').textContent =
+    'Certified cases added and discontinued — ' +
+    fmtMonth(labels[0]) + ' – ' + fmtMonth(labels[labels.length - 1]) +
+    ' — ' + captionParts.filter(Boolean).join(', ');
+
+  const tableHeaders = ['Month'];
+  const tableSeries = [];
+
+  panes.forEach((pane, pi) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'area-pane chart-plot';
+    const title = document.createElement('h3');
+    title.className = 'chart-plot-title';
+    title.textContent = pane.title;
+    const hover = document.createElement('div');
+    hover.className = 'chart-hover';
+    hover.id = 'movementHover' + pi;
+    hover.setAttribute('aria-live', 'polite');
+    const canvasHold = document.createElement('div');
+    canvasHold.className = 'chart-holder';
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute('aria-hidden', 'true');
+    canvasHold.appendChild(canvas);
+    wrap.appendChild(title);
+    wrap.appendChild(hover);
+    wrap.appendChild(canvasHold);
+    holder.appendChild(wrap);
+
+    const monthly = labels.map(m => movementForEntity(pane, m));
+    const stackDatasets = MOVEMENT_SERIES.map((s, i) => ({
+      type: 'line',
+      label: s.label,
+      data: monthly.map(row => {
+        if (!row || row[s.key] == null) return null;
+        return s.sign * row[s.key];
+      }),
+      backgroundColor: hexAlpha(s.color, 0.85),
+      borderColor: s.color,
+      borderWidth: 1,
+      pointRadius: 0,
+      fill: s.fill || stackFill(i),
+      tension: 0,
+      spanGaps: false,
+      stack: 'caseload',
+      yAxisID: 'y',
+      valueKind: 'count',
+      bandLabel: s.shortLabel || s.label,
+      order: 2
+    }));
+    const netDataset = {
+      type: 'line',
+      label: 'Net',
+      data: monthly.map(row => row ? row.net : null),
+      borderColor: '#1f2430',
+      backgroundColor: '#1f2430',
+      pointRadius: 0,
+      borderWidth: 2,
+      fill: false,
+      tension: 0,
+      spanGaps: false,
+      yAxisID: 'y1',
+      valueKind: 'net',
+      lineLabel: 'Net',
+      order: 1
+    };
+    tableHeaders.push(pane.title + ' — Additions', pane.title + ' — Exits', pane.title + ' — Net');
+    tableSeries.push({ pane, monthly });
+
+    const scaleExt = movementScaleExtents(monthly);
+
+    const chart = new Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets: stackDatasets.concat([netDataset]) },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false, axis: 'x' },
+        layout: { padding: { top: 8, bottom: 30 } },
+        plugins: {
+          legend: { display: false },
+          monthYearAxis: true,
+          isolatedStackSlices: true,
+          stackBandLabels: true,
+          tooltip: {
+            enabled: false,
+            external: hoverTooltipExternal('movementHover' + pi, 'above'),
+            itemSort: (a, b) => {
+              return MOVEMENT_HOVER_ORDER.indexOf(a.dataset.label) -
+                MOVEMENT_HOVER_ORDER.indexOf(b.dataset.label);
+            },
+            callbacks: {
+              title: (items) => fmtMonth(items[0].label),
+              label: (item) => {
+                if (item.raw == null) return null;
+                const text = item.dataset.valueKind === 'net' ? fmtNet(item.raw) : fmtCount(item.raw);
+                return item.dataset.label + ': ' + text;
+              },
+              footer: (items) => {
+                if (!items.length) return [];
+                const extra = movementHoverExtra(monthly[items[0].dataIndex]);
+                return extra && extra.footer ? extra.footer : [];
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { display: false }, grid: { display: false } },
+          y: {
+            stacked: true, beginAtZero: true, position: 'left',
+            bounds: 'data', min: scaleExt.min, max: scaleExt.max,
+            ticks: { callback: v => fmtCount(v) },
+            grid: {
+              color: ctx => ctx.tick.value === 0 ? '#c5c9d2' : '#f0f0f0'
+            }
+          },
+          y1: {
+            stacked: false, beginAtZero: true, position: 'right',
+            display: false,
+            bounds: 'data', min: scaleExt.min, max: scaleExt.max,
+            grid: { drawOnChartArea: false }
+          }
+        }
+      }
+    });
+    movementCharts.push(chart);
+  });
+
+  const thead = document.querySelector('#movementChartTable thead tr');
+  thead.innerHTML = tableHeaders.map(h => '<th scope="col">' + h + '</th>').join('');
+  renderAccessibleTable(document.querySelector('#movementChartTable tbody'), labels.map((m, i) => {
+    const row = [fmtMonth(m)];
+    tableSeries.forEach(ts => {
+      const rec = ts.monthly[i];
+      row.push(rec && rec.additions != null ? fmtCount(rec.additions) : 'n/a');
+      row.push(rec && rec.exits != null ? fmtCount(rec.exits) : 'n/a');
+      row.push(rec && rec.net != null ? fmtNet(rec.net) : 'n/a');
+    });
+    return row;
+  }));
+}
+
 function rebuildTimeSeriesCharts() {
   updateRangeLabel();
   const { counties, regions, sizes } = currentSelection();
@@ -1584,6 +2108,7 @@ function rebuildTimeSeriesCharts() {
   updateStatewideToggleState(counties);
   buildTotalChart(counties, regions);
   buildYoyChart(counties, regions);
+  buildMovementCharts();
 }
 
 function handleRangeInput() {
@@ -1602,32 +2127,36 @@ function handleRangeInput() {
 rangeStartInput.addEventListener('input', handleRangeInput);
 rangeEndInput.addEventListener('input', handleRangeInput);
 
+const rangeLast2Btn = document.getElementById('rangeLast2');
 const rangeSkipCovidBtn = document.getElementById('rangeSkipCovid');
 const rangeResetBtn = document.getElementById('rangeReset');
-const rangePresetBtns = [rangeSkipCovidBtn, rangeResetBtn];
+const rangePresetBtns = [rangeLast2Btn, rangeSkipCovidBtn, rangeResetBtn];
 
 function setActivePresetBtn(btn) {
   rangePresetBtns.forEach(b => b.classList.toggle('active', b === btn));
 }
+function applyRangePreset(preset, btn) {
+  if (preset === 'last2') {
+    rangeStart = lastNMonthsStart(DEFAULT_RANGE_MONTHS);
+    rangeEnd = monthCount - 1;
+  } else if (preset === 'since2021') {
+    const idx = DATA.months.indexOf('2021-01');
+    rangeStart = idx === -1 ? 0 : idx;
+    rangeEnd = monthCount - 1;
+  } else {
+    rangeStart = 0;
+    rangeEnd = monthCount - 1;
+  }
+  rangeStartInput.value = rangeStart;
+  rangeEndInput.value = rangeEnd;
+  setActivePresetBtn(btn);
+  rebuildTimeSeriesCharts();
+}
 
-rangeSkipCovidBtn.addEventListener('click', () => {
-  const idx = DATA.months.indexOf('2021-01');
-  rangeStart = idx === -1 ? 0 : idx;
-  rangeEnd = monthCount - 1;
-  rangeStartInput.value = rangeStart;
-  rangeEndInput.value = rangeEnd;
-  setActivePresetBtn(rangeSkipCovidBtn);
-  rebuildTimeSeriesCharts();
-});
-rangeResetBtn.addEventListener('click', () => {
-  rangeStart = 0;
-  rangeEnd = monthCount - 1;
-  rangeStartInput.value = rangeStart;
-  rangeEndInput.value = rangeEnd;
-  setActivePresetBtn(rangeResetBtn);
-  rebuildTimeSeriesCharts();
-});
-setActivePresetBtn(rangeResetBtn);
+rangeLast2Btn.addEventListener('click', () => applyRangePreset('last2', rangeLast2Btn));
+rangeSkipCovidBtn.addEventListener('click', () => applyRangePreset('since2021', rangeSkipCovidBtn));
+rangeResetBtn.addEventListener('click', () => applyRangePreset('full', rangeResetBtn));
+setActivePresetBtn(rangeLast2Btn);
 
 // ---- Total Participants chart ----
 let totalChart, yoyChart;
@@ -2420,6 +2949,7 @@ window.addEventListener('resize', () => {
   resizeRAF = requestAnimationFrame(() => {
     if (totalChart) totalChart.resize();
     if (yoyChart) yoyChart.resize();
+    movementCharts.forEach(c => c.resize());
   });
 });
 
@@ -2818,6 +3348,18 @@ document.addEventListener('keydown', (e) => {
   document.querySelectorAll('.info-tip-btn').forEach(btn => {
     btn.setAttribute('aria-expanded', 'false');
   });
+});
+
+function openFooterMethods() {
+  const methods = document.getElementById('methods');
+  if (methods) methods.open = true;
+}
+document.querySelectorAll('a[href="#methods"]').forEach(a => {
+  a.addEventListener('click', openFooterMethods);
+});
+if (location.hash === '#methods') openFooterMethods();
+window.addEventListener('hashchange', () => {
+  if (location.hash === '#methods') openFooterMethods();
 });
 
 startLiveDashboard(initDashboard);
