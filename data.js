@@ -121,12 +121,186 @@ const STUDENT_SOURCE_COLS = [
 ];
 const STUDENT_SOURCE_KEYS = STUDENT_SOURCE_COLS.map(d => d.key);
 
+// Demographic mixes of who applied (not outcomes by group). Palette is
+// distinct from approved/procedural/ineligible so these cannot read as
+// disposition. Language lumps everything but English and Spanish into Other.
+const DEMO_COLOR = {
+  steel: '#3D6B8C',
+  gold: '#C4A35A',
+  plum: '#5C4A7A',
+  olive: '#7BA05B',
+  mauve: '#8B6B8C',
+  pine: '#4A7A6B',
+  clay: '#A07050',
+  taupe: '#9A8B7A',
+  slate: '#5A6A78'
+};
+const STUDENT_AGE_COLS = [
+  { key: 'under17', header: 'New Applications Age 17 and Under' },
+  { key: 'age1849', header: 'New Applications Age 8 to 49' },
+  { key: 'over50', header: 'New Applications Age 50 and Over' },
+  { key: 'total', header: 'New Applications Age Total' },
+  { key: 'avgAge', header: 'New Applications Avg Age' },
+  { key: 'ict', header: 'New Applications - ICT Transfers' }
+];
+const STUDENT_AGE_KEYS = STUDENT_AGE_COLS.map(d => d.key);
+const STUDENT_AGE_STACK = [
+  { key: 'under17', label: '17 and under', shortLabel: '17 and under', color: DEMO_COLOR.olive },
+  { key: 'age1849', label: '18–49', shortLabel: '18–49', color: DEMO_COLOR.steel },
+  { key: 'over50', label: '50 and over', shortLabel: '50 and over', color: DEMO_COLOR.plum }
+];
+const STUDENT_LANGUAGE_COLS = [
+  { key: 'armenian', header: 'New Applications Language Armenian' },
+  { key: 'cambodian', header: 'New Applications Language Cambodian' },
+  { key: 'cantonese', header: 'New Applications Language Cantonese' },
+  { key: 'english', header: 'New Applications Language English' },
+  { key: 'farsi', header: 'New Applications Langugage Farsi' },
+  { key: 'korean', header: 'New Applications Language Korean' },
+  { key: 'mandarin', header: 'New Applications Language Mandarin' },
+  { key: 'otherLang', header: 'New Applications Language Other' },
+  { key: 'russian', header: 'New Applications Language Russian' },
+  { key: 'spanish', header: 'New Applications Language Spanish' },
+  { key: 'vietnamese', header: 'New Applications Language Vietnamese' },
+  { key: 'missing', header: 'New Applications Language Missing' },
+  { key: 'total', header: 'New Applications Language Total' }
+];
+const STUDENT_LANGUAGE_KEYS = STUDENT_LANGUAGE_COLS.map(d => d.key);
+const LANGUAGE_OTHER_PARTS = [
+  'armenian', 'cambodian', 'cantonese', 'farsi', 'korean', 'mandarin',
+  'otherLang', 'russian', 'vietnamese', 'missing'
+];
+const LANGUAGE_STACK = [
+  { key: 'english', label: 'English', shortLabel: 'English', color: DEMO_COLOR.steel },
+  { key: 'spanish', label: 'Spanish', shortLabel: 'Spanish', color: DEMO_COLOR.gold },
+  { key: 'other', label: 'Other', shortLabel: 'Other', color: DEMO_COLOR.taupe, parts: LANGUAGE_OTHER_PARTS }
+];
+const STUDENT_RACE_COLS = [
+  { key: 'hispanic', header: 'New Applications Hispanic' },
+  { key: 'white', header: 'New Applications White' },
+  { key: 'asian', header: 'New Application Asian' },
+  { key: 'black', header: 'New Applications Black or African_American' },
+  { key: 'multi', header: 'New Applications More Than One Race/Ethnicity' },
+  { key: 'aian', header: 'New Applications American Indian Alaskan Native' },
+  { key: 'nhpi', header: 'New Applications Native Hawaiian Pacific Islander' },
+  { key: 'otherRace', header: 'New Applications Other Race/Ethnicity' },
+  { key: 'unknown', header: 'New Applications Unknown Race/Ethnicity' },
+  { key: 'total', header: 'New Applications Race/Ethnicity Total' }
+];
+const STUDENT_RACE_KEYS = STUDENT_RACE_COLS.map(d => d.key);
+const RACE_STACK = [
+  { key: 'hispanic', label: 'Hispanic', shortLabel: 'Hispanic', color: DEMO_COLOR.gold },
+  { key: 'white', label: 'White', shortLabel: 'White', color: DEMO_COLOR.steel },
+  { key: 'asian', label: 'Asian', shortLabel: 'Asian', color: DEMO_COLOR.plum },
+  { key: 'black', label: 'Black or African American', shortLabel: 'Black', color: DEMO_COLOR.olive },
+  { key: 'multi', label: 'More than one', shortLabel: 'More than one', color: DEMO_COLOR.mauve },
+  { key: 'aian', label: 'American Indian / Alaska Native', shortLabel: 'AIAN', color: DEMO_COLOR.pine },
+  { key: 'nhpi', label: 'Native Hawaiian / Pacific Islander', shortLabel: 'NHPI', color: DEMO_COLOR.clay },
+  { key: 'otherRace', label: 'Other', shortLabel: 'Other', color: DEMO_COLOR.taupe },
+  { key: 'unknown', label: 'Unknown', shortLabel: 'Unknown', color: DEMO_COLOR.slate }
+];
+const STUDENT_GENDER_COLS = [
+  { key: 'female', header: 'New Applications Gender Female' },
+  { key: 'male', header: 'New Applications Gender Male' },
+  { key: 'otherGender', header: 'New Applications Gender Other' },
+  { key: 'declined', header: 'New Applications Gender Declined_to_State' },
+  { key: 'total', header: 'New Applications Gender Total' }
+];
+const STUDENT_GENDER_KEYS = STUDENT_GENDER_COLS.map(d => d.key);
+const GENDER_STACK = [
+  { key: 'female', label: 'Female', shortLabel: 'Female', color: DEMO_COLOR.mauve },
+  { key: 'male', label: 'Male', shortLabel: 'Male', color: DEMO_COLOR.steel },
+  { key: 'otherGender', label: 'Other', shortLabel: 'Other', color: DEMO_COLOR.gold },
+  { key: 'declined', label: 'Declined to state', shortLabel: 'Declined', color: DEMO_COLOR.taupe }
+];
+const SSI_LANGUAGE_COLS = [
+  { key: 'armenian', header: 'SSI Disposed HH Language - Armenian' },
+  { key: 'cambodian', header: 'SSI Disposed HH Language - Cambodian' },
+  { key: 'cantonese', header: 'SSI Disposed HH Language - Cantonese' },
+  { key: 'english', header: 'SSI Disposed HH Language - English' },
+  { key: 'farsi', header: 'SSI Disposed HH Language - Farsi' },
+  { key: 'korean', header: 'SSI Disposed HH Language - Korean' },
+  { key: 'mandarin', header: 'SSI Disposed HH Language - Mandarin' },
+  { key: 'otherLang', header: 'SSI Disposed HH Language - Other' },
+  { key: 'russian', header: 'SSI Disposed HH Language - Russian' },
+  { key: 'spanish', header: 'SSI Disposed HH Language - Spanish' },
+  { key: 'vietnamese', header: 'SSI Disposed HH Language - Vietnamese' }
+];
+const SSI_LANGUAGE_KEYS = SSI_LANGUAGE_COLS.map(d => d.key);
+const SSI_LANGUAGE_OTHER_PARTS = LANGUAGE_OTHER_PARTS.filter(k => k !== 'missing');
+const SSI_LANGUAGE_STACK = [
+  { key: 'english', label: 'English', shortLabel: 'English', color: DEMO_COLOR.steel },
+  { key: 'spanish', label: 'Spanish', shortLabel: 'Spanish', color: DEMO_COLOR.gold },
+  { key: 'other', label: 'Other', shortLabel: 'Other', color: DEMO_COLOR.taupe, parts: SSI_LANGUAGE_OTHER_PARTS }
+];
+const SSI_RACE_COLS = [
+  { key: 'hispanic', header: 'SSI Person Race/Ethnicity - Hispanic' },
+  { key: 'white', header: 'SSI Person Race/Ethnicity - White' },
+  { key: 'asian', header: 'SSI Person Race/Ethnicity - Asian' },
+  { key: 'black', header: 'SSI Person Race/Ethnicity - Black or African American' },
+  { key: 'multi', header: 'SSI Person Race/Ethnicity - More Than One Race/Ethnicity' },
+  { key: 'aian', header: 'SSI Person Race/Ethnicity - American Indian or Alaska Native' },
+  { key: 'nhpi', header: 'SSI Person Race/Ethnicity - Native Hawaiian or Other Pacific Islander' },
+  { key: 'otherRace', header: 'SSI Person Race/Ethnicity - Other' },
+  { key: 'unknown', header: 'SSI Person Race/Ethnicity - Unknown' },
+  { key: 'total', header: 'SSI Persons in New Apps Disposed' }
+];
+const SSI_RACE_KEYS = SSI_RACE_COLS.map(d => d.key);
+
+const SSI_HH_SIZE_COLS = [
+  { key: 'hh1', header: 'SSI-only HHs of 1 added in the month' },
+  { key: 'hh2', header: 'SSI-only HHs of 2 added in the month' },
+  { key: 'hh3', header: 'SSI only-HHs of 3+ added in the month' },
+  { key: 'total', header: 'Total SSI-only HHs added in the month' }
+];
+const SSI_HH_SIZE_KEYS = SSI_HH_SIZE_COLS.map(d => d.key);
+const SSI_HH_SIZE_STACK = [
+  { key: 'hh1', label: '1 person', shortLabel: '1 person', color: DEMO_COLOR.steel },
+  { key: 'hh2', label: '2 people', shortLabel: '2 people', color: DEMO_COLOR.gold },
+  { key: 'hh3', label: '3 or more', shortLabel: '3+', color: DEMO_COLOR.plum }
+];
+
+// Overlapping student exemptions that are typically ≥5% of Age Total
+// statewide. Not a partition — do not 100% stack. Tiny / obsolete types
+// (JTPA, Trade Act, Tribal TANF, WIOA, Title 4, state/local training,
+// CalFresh E&T, CalGrant TANF, CalWORKs, Disabled) stay off the canvas.
+const STUDENT_EXEMPTION_COLS = [
+  { key: 'etProgram', header: 'New Applications Exemptions- Employment and Training Program' },
+  { key: 'otherEt', header: 'New Applications Exemptions-Other Employment and Training Program' },
+  { key: 'lpie', header: 'New Applications Exemptions-LPIE' },
+  { key: 'employed20', header: 'New Applications Exemptions- Employed 20 Hours Week' },
+  { key: 'careChild', header: 'New Applications Exemptions-Care of a Child' },
+  { key: 'workStudy', header: 'New Applications Exemptions- Work Study' }
+];
+const STUDENT_EXEMPTION_KEYS = STUDENT_EXEMPTION_COLS.map(d => d.key);
+const STUDENT_EXEMPTION_STACK = [
+  { key: 'etProgram', label: 'Employment and Training', shortLabel: 'E&T', color: DEMO_COLOR.steel },
+  { key: 'otherEt', label: 'Other E&T', shortLabel: 'Other E&T', color: DEMO_COLOR.gold },
+  { key: 'lpie', label: 'LPIE', shortLabel: 'LPIE', color: DEMO_COLOR.plum },
+  { key: 'employed20', label: 'Employed 20 hours', shortLabel: '20 hours', color: DEMO_COLOR.olive },
+  { key: 'careChild', label: 'Care of a child', shortLabel: 'Care of a child', color: DEMO_COLOR.mauve },
+  { key: 'workStudy', label: 'Work study', shortLabel: 'Work study', color: DEMO_COLOR.pine }
+];
+
+// Some-SSI deductions (match the SSI outcomes column). SSI-only Claim *
+// columns exist in parallel and are not plotted here.
+const SSI_DEDUCTION_COLS = [
+  { key: 'shelter', header: 'Claim Shelter Deduction - SSI' },
+  { key: 'medical', header: 'Claim Standard Medical Deduction - SSI' },
+  { key: 'homeless', header: 'Claim Homeless Deduction - SSI' }
+];
+const SSI_DEDUCTION_KEYS = SSI_DEDUCTION_COLS.map(d => d.key);
+const SSI_DEDUCTION_STACK = [
+  { key: 'shelter', label: 'Shelter', shortLabel: 'Shelter', color: DEMO_COLOR.steel },
+  { key: 'medical', label: 'Standard medical', shortLabel: 'Medical', color: DEMO_COLOR.gold },
+  { key: 'homeless', label: 'Homeless', shortLabel: 'Homeless', color: DEMO_COLOR.clay }
+];
+
 const OUTCOME_COUNT_KEYS = ['disposed', 'approved', 'ineligible', 'procedural', 'withdrawn'];
 const OUTCOME_PART_KEYS = ['approved', 'ineligible', 'procedural', 'withdrawn'];
 const STUDENT_OUTCOME_PART_KEYS = ['approved', 'denied', 'pended'];
 const SSI_RAW_KEYS = ['approved', 'denied', 'ineligible', 'procedural', 'ssiOnlyIneligible', 'ssiOnlyProcedural'];
 const SSI_VOLUME_KEYS = ['onlineApps', 'nonOnlineApps'];
-const SSI_SERIES_KEYS = SSI_RAW_KEYS.concat(SSI_VOLUME_KEYS);
+const SSI_SERIES_KEYS = SSI_RAW_KEYS.concat(SSI_VOLUME_KEYS).concat(['avgAge']);
 const CHANNEL_RAW_KEYS = ['received', 'online', 'gcfAll', 'gcfCfa', 'gcfCbo', 'gcfSsa'];
 const MOVEMENT_KEYS = ['caseApproved', 'ict', 'reinstated', 'rescinded', 'discontinued'];
 // CDSS stars both true 1–10 cells and complementary totals ≥11. Identity
@@ -1012,6 +1186,21 @@ function ingestMasterExplore(parsed, months, all_counties) {
   STUDENT_SOURCE_COLS.forEach(d => {
     sourceCols[d.key] = findCol(map, [d.header]);
   });
+  function mapCols(defs) {
+    const cols = {};
+    defs.forEach(d => { cols[d.key] = findCol(map, [d.header]); });
+    return cols;
+  }
+  const studentAgeCols = mapCols(STUDENT_AGE_COLS);
+  const studentLanguageCols = mapCols(STUDENT_LANGUAGE_COLS);
+  const studentRaceCols = mapCols(STUDENT_RACE_COLS);
+  const studentGenderCols = mapCols(STUDENT_GENDER_COLS);
+  const studentExemptionCols = mapCols(STUDENT_EXEMPTION_COLS);
+  const ssiLanguageCols = mapCols(SSI_LANGUAGE_COLS);
+  const ssiRaceCols = mapCols(SSI_RACE_COLS);
+  const ssiHhSizeCols = mapCols(SSI_HH_SIZE_COLS);
+  const ssiDeductionCols = mapCols(SSI_DEDUCTION_COLS);
+  const ssiAvgAgeCol = findCol(map, ['Average Age of SSI Persons Newly Applying']);
 
   const missing = [];
   if (!countyCol || !monthCol || !yearCol) missing.push('County / Month / Calendar Year');
@@ -1020,6 +1209,19 @@ function ingestMasterExplore(parsed, months, all_counties) {
   Object.keys(channelCols).forEach(k => { if (!channelCols[k]) missing.push('channel ' + k); });
   Object.keys(denialCols).forEach(k => { if (!denialCols[k]) missing.push('student denial ' + k); });
   Object.keys(sourceCols).forEach(k => { if (!sourceCols[k]) missing.push('student source ' + k); });
+  function missingGroup(cols, label) {
+    Object.keys(cols).forEach(k => { if (!cols[k]) missing.push(label + ' ' + k); });
+  }
+  missingGroup(studentAgeCols, 'student age');
+  missingGroup(studentLanguageCols, 'student language');
+  missingGroup(studentRaceCols, 'student race');
+  missingGroup(studentGenderCols, 'student gender');
+  missingGroup(studentExemptionCols, 'student exemption');
+  missingGroup(ssiLanguageCols, 'SSI language');
+  missingGroup(ssiRaceCols, 'SSI race');
+  missingGroup(ssiHhSizeCols, 'SSI household size');
+  missingGroup(ssiDeductionCols, 'SSI deduction');
+  if (!ssiAvgAgeCol) missing.push('SSI average age');
   if (missing.length) {
     throw new Error('Master_Monthly is missing explore columns: ' + missing.join(', '));
   }
@@ -1027,6 +1229,15 @@ function ingestMasterExplore(parsed, months, all_counties) {
   const ssi_series = {};
   const student_denial_series = {};
   const student_source_series = {};
+  const student_age_series = {};
+  const student_language_series = {};
+  const student_race_series = {};
+  const student_gender_series = {};
+  const student_exemption_series = {};
+  const ssi_language_series = {};
+  const ssi_race_series = {};
+  const ssi_hh_size_series = {};
+  const ssi_deduction_series = {};
   const channel_series = {};
   function ensure(store, county, keys) {
     if (!store[county]) {
@@ -1056,6 +1267,8 @@ function ingestMasterExplore(parsed, months, all_counties) {
       if (n == null) return;
       ssiRow[k][period] = n;
     });
+    const ssiAvg = parseNumber(row[ssiAvgAgeCol]);
+    if (ssiAvg != null) ssiRow.avgAge[period] = ssiAvg;
 
     const chRow = ensure(channel_series, county, CHANNEL_RAW_KEYS);
     CHANNEL_RAW_KEYS.forEach(k => {
@@ -1079,6 +1292,31 @@ function ingestMasterExplore(parsed, months, all_counties) {
       srcRow[d.key][period] = parsedVal.value;
       if (parsedVal.estimated) srcRow.estimated[d.key][period] = true;
     });
+
+    function ingestDemo(store, keys, cols) {
+      const demoRow = ensure(store, county, keys);
+      keys.forEach(k => {
+        if (k === 'total' || k === 'avgAge') {
+          const n = parseNumber(row[cols[k]]);
+          if (n == null) return;
+          demoRow[k][period] = n;
+          return;
+        }
+        const parsedVal = parseStarredNumber(row[cols[k]]);
+        if (parsedVal.value == null) return;
+        demoRow[k][period] = parsedVal.value;
+        if (parsedVal.estimated) demoRow.estimated[k][period] = true;
+      });
+    }
+    ingestDemo(student_age_series, STUDENT_AGE_KEYS, studentAgeCols);
+    ingestDemo(student_language_series, STUDENT_LANGUAGE_KEYS, studentLanguageCols);
+    ingestDemo(student_race_series, STUDENT_RACE_KEYS, studentRaceCols);
+    ingestDemo(student_gender_series, STUDENT_GENDER_KEYS, studentGenderCols);
+    ingestDemo(student_exemption_series, STUDENT_EXEMPTION_KEYS, studentExemptionCols);
+    ingestDemo(ssi_language_series, SSI_LANGUAGE_KEYS, ssiLanguageCols);
+    ingestDemo(ssi_race_series, SSI_RACE_KEYS, ssiRaceCols);
+    ingestDemo(ssi_hh_size_series, SSI_HH_SIZE_KEYS, ssiHhSizeCols);
+    ingestDemo(ssi_deduction_series, SSI_DEDUCTION_KEYS, ssiDeductionCols);
   });
 
   return {
@@ -1094,6 +1332,23 @@ function ingestMasterExplore(parsed, months, all_counties) {
       STUDENT_SOURCE_KEYS,
       months,
       all_counties
+    ),
+    student_age_series: padCountyPeriodSeries(student_age_series, STUDENT_AGE_KEYS, months, all_counties),
+    student_language_series: padCountyPeriodSeries(
+      student_language_series, STUDENT_LANGUAGE_KEYS, months, all_counties
+    ),
+    student_race_series: padCountyPeriodSeries(student_race_series, STUDENT_RACE_KEYS, months, all_counties),
+    student_gender_series: padCountyPeriodSeries(
+      student_gender_series, STUDENT_GENDER_KEYS, months, all_counties
+    ),
+    student_exemption_series: padCountyPeriodSeries(
+      student_exemption_series, STUDENT_EXEMPTION_KEYS, months, all_counties
+    ),
+    ssi_language_series: padCountyPeriodSeries(ssi_language_series, SSI_LANGUAGE_KEYS, months, all_counties),
+    ssi_race_series: padCountyPeriodSeries(ssi_race_series, SSI_RACE_KEYS, months, all_counties),
+    ssi_hh_size_series: padCountyPeriodSeries(ssi_hh_size_series, SSI_HH_SIZE_KEYS, months, all_counties),
+    ssi_deduction_series: padCountyPeriodSeries(
+      ssi_deduction_series, SSI_DEDUCTION_KEYS, months, all_counties
     ),
     channel_series: padCountyPeriodSeries(channel_series, CHANNEL_RAW_KEYS, months, all_counties)
   };
@@ -1435,7 +1690,15 @@ function buildOutcomesData(outcomeRows, county_meta) {
     ssi_only_stack: SSI_ONLY_DENIAL_STACK,
     student_denial_stack: STUDENT_DENIAL_STACK,
     channel_stack: CHANNEL_STACK,
-    ssi_channel_stack: SSI_CHANNEL_STACK
+    ssi_channel_stack: SSI_CHANNEL_STACK,
+    student_age_stack: STUDENT_AGE_STACK,
+    language_stack: LANGUAGE_STACK,
+    race_stack: RACE_STACK,
+    gender_stack: GENDER_STACK,
+    ssi_language_stack: SSI_LANGUAGE_STACK,
+    ssi_hh_size_stack: SSI_HH_SIZE_STACK,
+    student_exemption_stack: STUDENT_EXEMPTION_STACK,
+    ssi_deduction_stack: SSI_DEDUCTION_STACK
   };
 }
 
@@ -1597,6 +1860,79 @@ function studentChannelFromRaw(raw) {
       other: !!flags.otherSource
     }
   };
+}
+
+function mixFromParts(raw, stack, total) {
+  if (!raw) return null;
+  const flags = raw.estimated || {};
+  const counts = { estimated: {} };
+  let any = false;
+  stack.forEach(group => {
+    const partKeys = group.parts || [group.key];
+    let sum = 0;
+    let est = false;
+    partKeys.forEach(k => {
+      if (raw[k] != null) {
+        sum += raw[k];
+        any = true;
+      }
+      if (flags[k]) est = true;
+    });
+    counts[group.key] = sum;
+    if (est) counts.estimated[group.key] = true;
+  });
+  if (!any && (total == null || total === 0)) return null;
+  const partSum = stack.reduce((s, g) => s + counts[g.key], 0);
+  if (total != null) {
+    const leftover = closeResidual(total, stack.map(g => counts[g.key]));
+    const other = leftover != null ? stack.find(g => g.key === 'other') : null;
+    if (other && leftover != null) {
+      counts.other += leftover;
+      counts.disposed = total;
+    } else {
+      counts.disposed = partSum;
+    }
+  } else {
+    counts.disposed = partSum;
+  }
+  if (counts.disposed == null || counts.disposed === 0) return null;
+  return counts;
+}
+
+// Overlapping claims (exemptions, deductions). Denominator stays the
+// applicant / household total — parts are allowed to sum past it.
+function rateFromParts(raw, stack, total) {
+  if (!raw || total == null || total === 0) return null;
+  const flags = raw.estimated || {};
+  const counts = { estimated: {}, disposed: total };
+  let any = false;
+  stack.forEach(group => {
+    const partKeys = group.parts || [group.key];
+    let sum = 0;
+    let est = false;
+    partKeys.forEach(k => {
+      if (raw[k] != null) {
+        sum += raw[k];
+        any = true;
+      }
+      if (flags[k]) est = true;
+    });
+    counts[group.key] = sum;
+    if (est) counts.estimated[group.key] = true;
+  });
+  if (!any) return null;
+  return counts;
+}
+
+function demoRawFromSeries(seriesRow, keys, month) {
+  if (!seriesRow) return null;
+  const raw = { estimated: estimatedFlagsFor(seriesRow, month, keys) };
+  let any = false;
+  keys.forEach(k => {
+    raw[k] = seriesRow[k][month];
+    if (raw[k] != null) any = true;
+  });
+  return any ? raw : null;
 }
 
 function allChannelFromRaw(raw, period) {
@@ -1791,12 +2127,29 @@ async function startLiveOutcomesDashboard(initDashboard) {
     DATA.ssi_series = extra.ssi_series;
     DATA.student_denial_series = extra.student_denial_series;
     DATA.student_source_series = extra.student_source_series;
+    DATA.student_age_series = extra.student_age_series;
+    DATA.student_language_series = extra.student_language_series;
+    DATA.student_race_series = extra.student_race_series;
+    DATA.student_gender_series = extra.student_gender_series;
+    DATA.student_exemption_series = extra.student_exemption_series;
+    DATA.ssi_language_series = extra.ssi_language_series;
+    DATA.ssi_race_series = extra.ssi_race_series;
+    DATA.ssi_hh_size_series = extra.ssi_hh_size_series;
+    DATA.ssi_deduction_series = extra.ssi_deduction_series;
     DATA.channel_series = extra.channel_series;
     DATA.ssi_stack = SSI_OUTCOME_STACK;
     DATA.ssi_only_stack = SSI_ONLY_DENIAL_STACK;
     DATA.ssi_channel_stack = SSI_CHANNEL_STACK;
     DATA.student_denial_stack = STUDENT_DENIAL_STACK;
     DATA.channel_stack = CHANNEL_STACK;
+    DATA.student_age_stack = STUDENT_AGE_STACK;
+    DATA.language_stack = LANGUAGE_STACK;
+    DATA.race_stack = RACE_STACK;
+    DATA.gender_stack = GENDER_STACK;
+    DATA.ssi_language_stack = SSI_LANGUAGE_STACK;
+    DATA.ssi_hh_size_stack = SSI_HH_SIZE_STACK;
+    DATA.student_exemption_stack = STUDENT_EXEMPTION_STACK;
+    DATA.ssi_deduction_stack = SSI_DEDUCTION_STACK;
     const fetchedAt = [cf296Loaded.fetchedAt, legacyLoaded.fetchedAt, metaLoaded.fetchedAt, monthlyLoaded.fetchedAt]
       .filter(t => typeof t === 'number' && isFinite(t));
     setFeedStatus(statusEl, fetchedAt.length ? Math.min.apply(null, fetchedAt) : Date.now());
