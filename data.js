@@ -128,7 +128,7 @@ const SSI_RAW_KEYS = ['approved', 'denied', 'ineligible', 'procedural', 'ssiOnly
 const SSI_VOLUME_KEYS = ['onlineApps', 'nonOnlineApps'];
 const SSI_SERIES_KEYS = SSI_RAW_KEYS.concat(SSI_VOLUME_KEYS);
 const CHANNEL_RAW_KEYS = ['received', 'online', 'gcfAll', 'gcfCfa', 'gcfCbo', 'gcfSsa'];
-const MOVEMENT_KEYS = ['caseApproved', 'reinstated', 'discontinued'];
+const MOVEMENT_KEYS = ['caseApproved', 'ict', 'reinstated', 'rescinded', 'discontinued'];
 // CDSS stars both true 1–10 cells and complementary totals ≥11. Identity
 // reconstruction fills the latter; leftover 1–10 cells are plotted as 5.
 const SMALL_CELL_PLACEHOLDER = 5;
@@ -339,25 +339,17 @@ async function csvCacheSet(key, record) {
   }
 }
 
-function fmtSavedAt(ts) {
-  if (!ts) return '';
+function fmtRefreshedAt(ts) {
+  if (!ts || !isFinite(ts)) return '';
   return new Date(ts).toLocaleString('en-US', {
-    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+    month: 'short', day: 'numeric', year: 'numeric'
   });
 }
 
-function setFeedStatus(statusEl, opts) {
-  const through = opts.through;
-  const source = opts.sourceLabel || 'CalFresh Data – Consolidated';
-  let html = 'Live data from <strong>' + source + '</strong>' +
-    (through ? ', through ' + through : '') + '.';
-  if (opts.fromCache) {
-    html += ' Loaded from this browser’s saved copy' +
-      (opts.fetchedAt ? ' (' + fmtSavedAt(opts.fetchedAt) + ')' : '') +
-      '.';
-  }
+function setFeedStatus(statusEl, fetchedAt) {
+  const when = fmtRefreshedAt(fetchedAt) || fmtRefreshedAt(Date.now());
   statusEl.className = 'live-note';
-  statusEl.innerHTML = html;
+  statusEl.textContent = 'Data sources last refreshed ' + when + '.';
 }
 
 function refreshCsvInBackground(gid, label) {
@@ -918,12 +910,24 @@ function smallCellMovementNote(row) {
   if (!row || !row.estimated) return null;
   const names = [];
   if (row.estimated.caseApproved) names.push('Applications approved');
+  if (row.estimated.rescinded) names.push('Other approvals');
   if (row.estimated.reinstated) names.push('Reinstated (prorated)');
+  if (row.estimated.ict) names.push('ICT in');
   if (row.estimated.discontinued) names.push('Discontinuances');
   if (!names.length) return null;
   if (names.length === 1) return names[0] + ': a starred PACF or NACF part is plotted as 5.';
   const last = names[names.length - 1];
   return names.slice(0, -1).join(', ') + ' and ' + last + ': a starred PACF or NACF part is plotted as 5.';
+}
+
+function movementHoverExtra(row) {
+  const notes = [];
+  if (row && row.rescinded != null && row.rescinded !== 0) {
+    notes.push('Other approvals are typically discontinuances that have been rescinded.');
+  }
+  const small = smallCellMovementNote(row);
+  if (small) notes.push(small);
+  return notes.length ? { footer: notes.join(' ') } : null;
 }
 
 function parseStarredNumber(v) {
@@ -1196,6 +1200,8 @@ function csvToOutcomeRows(parsed, label) {
       '5.a.1', '5a.1', 'overdue', 'over 30'
     ]),
     reinstated: findCf296Field(fields, ['eligibility reinstated'], []),
+    rescinded: findCf296Field(fields, ['other approval'], []),
+    ict: findCf296Field(fields, ['inter-county'], []),
     discontinued: findCf296Field(fields, ['cases discontinued during the month'], [
       'failure to complete', 'expedited'
     ])
@@ -1244,6 +1250,14 @@ function csvToOutcomeRows(parsed, label) {
     reinstated: {
       pacf: findCf296Field(fields, ['eligibility reinstated'], [], 'pacf'),
       nacf: findCf296Field(fields, ['eligibility reinstated'], [], 'nacf')
+    },
+    rescinded: {
+      pacf: findCf296Field(fields, ['other approval'], [], 'pacf'),
+      nacf: findCf296Field(fields, ['other approval'], [], 'nacf')
+    },
+    ict: {
+      pacf: findCf296Field(fields, ['inter-county'], [], 'pacf'),
+      nacf: findCf296Field(fields, ['inter-county'], [], 'nacf')
     },
     discontinued: {
       pacf: findCf296Field(fields, ['cases discontinued during the month'], [
@@ -1295,7 +1309,8 @@ function csvToOutcomeRows(parsed, label) {
     });
     const hasOut = rec.disposed != null || rec.approved != null || rec.ineligible != null ||
       rec.procedural != null || rec.withdrawn != null;
-    const hasMove = rec.caseApproved != null || rec.reinstated != null || rec.discontinued != null;
+    const hasMove = rec.caseApproved != null || rec.reinstated != null || rec.rescinded != null ||
+      rec.ict != null || rec.discontinued != null;
     if (!hasOut && !hasMove && rec.received == null) return null;
     if (hasOut) {
       const resolved = resolveOutcomeCounts(rec);
@@ -1351,10 +1366,10 @@ function buildOutcomesData(outcomeRows, county_meta) {
       series[county] = {
         disposed: {}, approved: {}, ineligible: {}, procedural: {}, withdrawn: {},
         received: {},
-        caseApproved: {}, reinstated: {}, discontinued: {},
+        caseApproved: {}, ict: {}, reinstated: {}, rescinded: {}, discontinued: {},
         estimated: {
           approved: {}, ineligible: {}, procedural: {}, withdrawn: {},
-          caseApproved: {}, reinstated: {}, discontinued: {}
+          caseApproved: {}, ict: {}, reinstated: {}, rescinded: {}, discontinued: {}
         }
       };
     }
@@ -1669,51 +1684,83 @@ function sumOutcomeCounts(memberCounties, period, series, stack) {
   return sums;
 }
 
-function deriveMovement(caseApproved, reinstated, discontinued, estimated) {
-  const additions = (caseApproved == null || reinstated == null) ? null : caseApproved + reinstated;
-  const exits = discontinued == null ? null : discontinued;
-  const net = (additions == null || exits == null) ? null : additions - exits;
+function deriveMovement(parts) {
+  const caseApproved = parts.caseApproved;
+  const ict = parts.ict;
+  const reinstated = parts.reinstated == null ? 0 : parts.reinstated;
+  const rescinded = parts.rescinded == null ? 0 : parts.rescinded;
+  const discontinued = parts.discontinued;
+  const estimated = parts.estimated || {};
+  if (caseApproved == null || ict == null || discontinued == null) return null;
+  const additions = caseApproved + ict + reinstated + rescinded;
   return {
     caseApproved: caseApproved,
+    ict: ict,
     reinstated: reinstated,
+    rescinded: rescinded,
     discontinued: discontinued,
     additions: additions,
-    exits: exits,
-    net: net,
-    estimated: estimated || {}
+    shownAdds: additions,
+    exits: discontinued,
+    net: additions - discontinued,
+    estimated: estimated
   };
 }
 
 function movementForCounty(county, period, series) {
   const s = series && series[county];
   if (!s) return null;
-  return deriveMovement(
-    s.caseApproved[period],
-    s.reinstated[period],
-    s.discontinued[period],
-    estimatedFlagsFor(s, period, MOVEMENT_KEYS)
-  );
+  return deriveMovement({
+    caseApproved: s.caseApproved[period],
+    ict: s.ict[period],
+    reinstated: s.reinstated[period],
+    rescinded: s.rescinded[period],
+    discontinued: s.discontinued[period],
+    estimated: estimatedFlagsFor(s, period, MOVEMENT_KEYS)
+  });
 }
 
 function sumMovementCounts(memberCounties, period, series) {
-  let caseApproved = 0, reinstated = 0, discontinued = 0;
-  let any = false;
+  let caseApproved = 0, ict = 0, reinstated = 0, rescinded = 0, discontinued = 0;
+  let n = 0;
   const estimated = {};
   for (let i = 0; i < memberCounties.length; i++) {
     const s = series[memberCounties[i]];
     if (!s) continue;
     const a = s.caseApproved[period];
-    const r = s.reinstated[period];
+    const t = s.ict[period];
     const d = s.discontinued[period];
-    if (a == null || r == null || d == null) continue;
-    any = true;
+    if (a == null || t == null || d == null) continue;
+    n += 1;
     caseApproved += a;
-    reinstated += r;
+    ict += t;
     discontinued += d;
+    reinstated += s.reinstated[period] == null ? 0 : s.reinstated[period];
+    rescinded += s.rescinded[period] == null ? 0 : s.rescinded[period];
     const flags = estimatedFlagsFor(s, period, MOVEMENT_KEYS);
     MOVEMENT_KEYS.forEach(k => { if (flags[k]) estimated[k] = true; });
   }
-  return any ? deriveMovement(caseApproved, reinstated, discontinued, estimated) : null;
+  if (!n) return null;
+  return deriveMovement({
+    caseApproved: caseApproved,
+    ict: ict,
+    reinstated: reinstated,
+    rescinded: rescinded,
+    discontinued: discontinued,
+    estimated: estimated
+  });
+}
+
+function parseCf296OutcomeRows(legacyParsed, currentParsed) {
+  const byKey = {};
+  csvToOutcomeRows(legacyParsed, 'CF296_Legacy').forEach(r => {
+    byKey[r.county + '|' + r.period] = r;
+  });
+  // Current-era rows overwrite any overlapping legacy month.
+  csvToOutcomeRows(currentParsed, 'CF296').forEach(r => {
+    byKey[r.county + '|' + r.period] = r;
+  });
+  return Object.keys(byKey).map(k => byKey[k]);
 }
 
 async function startLiveOutcomesDashboard(initDashboard) {
@@ -1731,16 +1778,10 @@ async function startLiveOutcomesDashboard(initDashboard) {
       loadCsv(PUBLISHED_SHEET.monthlyGid, 'Master_Monthly')
     ]);
 
-    const byKey = {};
-    csvToOutcomeRows(legacyLoaded.parsed, 'CF296_Legacy').forEach(r => {
-      byKey[r.county + '|' + r.period] = r;
-    });
-    // Current-era rows overwrite any overlapping legacy month.
-    csvToOutcomeRows(cf296Loaded.parsed, 'CF296').forEach(r => {
-      byKey[r.county + '|' + r.period] = r;
-    });
-
-    DATA = buildOutcomesData(Object.keys(byKey).map(k => byKey[k]), metaLoaded.meta || {});
+    DATA = buildOutcomesData(
+      parseCf296OutcomeRows(legacyLoaded.parsed, cf296Loaded.parsed),
+      metaLoaded.meta || {}
+    );
     DATA.student_series = buildStudentSeries(
       csvToStudentOutcomeRows(monthlyLoaded.parsed),
       DATA.months,
@@ -1756,14 +1797,9 @@ async function startLiveOutcomesDashboard(initDashboard) {
     DATA.ssi_channel_stack = SSI_CHANNEL_STACK;
     DATA.student_denial_stack = STUDENT_DENIAL_STACK;
     DATA.channel_stack = CHANNEL_STACK;
-    const through = DATA.latest_complete_month ? fmtMonthShort(DATA.latest_complete_month) : null;
-    setFeedStatus(statusEl, {
-      through: through,
-      sourceLabel: 'CalFresh Data – Consolidated',
-      fromCache: cf296Loaded.fromCache && legacyLoaded.fromCache && metaLoaded.fromCache && monthlyLoaded.fromCache,
-      fetchedAt: [cf296Loaded.fetchedAt, legacyLoaded.fetchedAt, metaLoaded.fetchedAt, monthlyLoaded.fetchedAt]
-        .filter(Boolean).reduce((a, b) => Math.min(a, b), Infinity)
-    });
+    const fetchedAt = [cf296Loaded.fetchedAt, legacyLoaded.fetchedAt, metaLoaded.fetchedAt, monthlyLoaded.fetchedAt]
+      .filter(t => typeof t === 'number' && isFinite(t));
+    setFeedStatus(statusEl, fetchedAt.length ? Math.min.apply(null, fetchedAt) : Date.now());
     mainEl.hidden = false;
     initDashboard();
   } catch (err) {
@@ -1781,10 +1817,12 @@ async function startLiveDashboard(initDashboard) {
     statusEl.className = 'prototype-note';
     statusEl.innerHTML = 'Loading current data...';
 
-    const [monthlyParsed, annualParsed, pitParsed] = await Promise.all([
+    const [monthlyParsed, annualParsed, pitParsed, cf296Loaded, legacyLoaded] = await Promise.all([
       fetchCsv(PUBLISHED_SHEET.monthlyGid, 'Master_Monthly'),
       fetchCsv(PUBLISHED_SHEET.annualGid, 'Master_Annual'),
-      fetchCsv(PUBLISHED_SHEET.pointInTimeGid, 'Master_PointInTime')
+      fetchCsv(PUBLISHED_SHEET.pointInTimeGid, 'Master_PointInTime'),
+      loadCsv(PUBLISHED_SHEET.cf296Gid, 'CF296'),
+      loadCsv(PUBLISHED_SHEET.cf296LegacyGid, 'CF296_Legacy')
     ]);
 
     const monthlyRows = mergeDualIntoMonthly(
@@ -1802,11 +1840,13 @@ async function startLiveDashboard(initDashboard) {
     };
 
     DATA = buildDashboardData(payload);
-    const through = DATA.latest_complete_month ? fmtMonthShort(DATA.latest_complete_month) : null;
-    statusEl.className = 'live-note';
-    statusEl.innerHTML = 'Live data from <strong>CalFresh Data – Consolidated</strong>' +
-      (through ? ', through ' + through : '') +
-      '.';
+    DATA.movement_series = buildOutcomesData(
+      parseCf296OutcomeRows(legacyLoaded.parsed, cf296Loaded.parsed),
+      DATA.county_meta
+    ).series;
+    const fetchedAt = [cf296Loaded.fetchedAt, legacyLoaded.fetchedAt]
+      .filter(t => typeof t === 'number' && isFinite(t));
+    setFeedStatus(statusEl, fetchedAt.length ? Math.min.apply(null, fetchedAt) : Date.now());
     const gapsNote = document.getElementById('reportingGapsNote');
     if (gapsNote) {
       const refresh = describeReportingGapsThisRefresh(DATA.reporting_gaps || {});
