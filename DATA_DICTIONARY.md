@@ -100,6 +100,8 @@ Source: `Definitions_Sources.pdf` (CDSS date 04/10/17, added to project 2026-07-
 - **Total Applications Received / Online Applications Received** — CF296, Items 1 and 1a (cells 1 and 2)
 - **Percent of Expedited Service Benefits Issued in 1-3 Days** — CF296 (post-July 2016) or the retired quarterly DFA 296X (pre-July 2016)
 - **Applications Approved Within 30 Days (Monthly %)** — CF296 formula, see PDF for exact cells
+- **Average Days to Approve** (Master_Quarterly, calendar 2014–2020) — dashboard quarterly average days to approve; plotted on Application Outcomes as a step across the three months of each quarter, then replaced by CF18 in any month CF18 exists (from July 2020 / February 2021)
+- **Average Days to Dispose - SSI** (Master_Monthly) — average days to dispose applications from households with at least some SSI. `SSI Only Average Days to Dispose Application` is the only-SSI subset and is not on the chart. There is no college-student days-to-process column on the Monthly tab
 - **Active Error Rate** — from the federal RADEP system; cumulative FFY data
 - **Negative Error Rate / Negative Error Rate Cases Completed** — federal SNAPQCS system; PMC counties get individual rates, the 39 non-PMC counties share one pooled rate
 - **Recertification Churn / Total Churn (County Consortia Data)** — reapplication/benefit-continuity ratios, see PDF for exact formulas
