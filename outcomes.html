@@ -53,7 +53,31 @@
     margin: 0 0.28em 0 0.18em; vertical-align: middle; top: -0.12em;
   }
   header.page-head p.sub { margin: 0; color: var(--muted); font-size: 12px; max-width: 46em; line-height: 1.45; }
-  header.page-head p.sub a { color: var(--accent); }
+  .copy-email {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--accent);
+    cursor: copy;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .copy-email:hover { color: var(--dark-blue); }
+  .copy-email:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  .copy-email-status {
+    margin-left: 0.45em;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11px;
+  }
+  .copy-email-status:empty { display: none; }
   nav.site-nav {
     display: flex; gap: 2px; flex-wrap: wrap; margin: 0 0 14px;
     border-bottom: 1px solid var(--line);
@@ -504,7 +528,7 @@
       <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="calfreshNameTip" aria-label="What CalFresh means">i</button>
       <span id="calfreshNameTip" class="info-tip-bubble" role="tooltip">CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California.</span>
     </span> Applications</h1>
-    <p class="sub">This is a working prototype developed by Diana Jensen for the love of the data visualization game. All data is from public sources, hopefully a little easier to explore now. Send suggestions or corrections to <a href="mailto:diana@djconsults.com">diana@djconsults.com</a>.</p>
+    <p class="sub">This is a working prototype I developed for the love of the data visualization game. All data is from public sources, hopefully a little easier to explore now.<br>Send me suggestions or corrections at <button type="button" class="copy-email" data-email="diana@djconsults.com" title="Copy email address" aria-label="Copy diana@djconsults.com">diana@djconsults.com</button>.<span class="copy-email-status" aria-live="polite"></span></p>
   </header>
 
   <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
