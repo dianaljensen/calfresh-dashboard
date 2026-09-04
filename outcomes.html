@@ -327,7 +327,7 @@
   .received-holder { height: 120px; }
   .received-plot { margin-top: 4px; }
   .received-plot .chart-plot-title {
-    font-size: 12px; font-weight: 600; color: var(--muted); margin: 0 0 2px;
+    font-size: 12px; font-weight: 700; margin: 0 0 2px;
   }
   .area-panes {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -342,21 +342,35 @@
   }
   .outcome-row-toggle {
     display: flex; align-items: center; gap: 6px;
-    grid-column: 1 / -1;
-    width: 100%; max-width: none; min-width: 0;
+    width: auto; max-width: none; min-width: 0;
     margin: 0; padding: 8px 0 4px;
-    border: 0; border-top: 1px solid var(--line);
-    background: transparent; cursor: pointer;
+    border: 0; background: transparent; cursor: pointer;
     font-family: inherit; font-size: 11px; font-weight: 700;
     text-transform: uppercase; letter-spacing: .03em;
     color: var(--muted); text-align: left; line-height: 1.25;
   }
-  .outcome-row-toggle:first-child { border-top: 0; padding-top: 2px; }
+  .outcome-row-head {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    grid-column: 1 / -1;
+    width: 100%; min-width: 0;
+    margin: 0; padding: 4px 0 2px;
+    border-top: 1px solid var(--line);
+  }
+  .outcome-row-head:first-child { border-top: 0; padding-top: 0; }
+  .outcome-row-head .outcome-row-toggle { flex: 1 1 auto; padding: 8px 0; }
+  .outcome-row-head .outcome-row-toggle[aria-expanded="true"] { padding-bottom: 2px; }
   .outcome-row-toggle:hover, .outcome-row-toggle:focus-visible { color: var(--ink); outline: none; }
-  .outcome-row-toggle[aria-expanded="true"] { color: var(--ink); padding-bottom: 2px; }
-  .outcome-row-toggle.collapsed { padding: 8px 0; }
+  .outcome-row-toggle[aria-expanded="true"] { color: var(--ink); }
   .outcome-row-toggle .filters-toggle-mark { margin: 0; color: currentColor; }
   .outcome-row-toggle[aria-expanded="true"] .filters-toggle-mark::after { display: none; }
+  .outcome-row-unit {
+    display: flex; align-items: center; gap: 4px;
+    margin-left: auto;
+  }
+  .outcome-row-unit .range-btn {
+    min-width: 2.1em; padding: 2px 8px;
+    font-size: 12px; font-weight: 700; text-transform: none; letter-spacing: 0;
+  }
   .outcome-cell { min-width: 260px; }
   .outcome-cell-empty { min-height: 24px; }
   .outcome-grid .chart-holder { height: 240px; }
@@ -388,8 +402,15 @@
   .card-title-row .info-tip-bubble { width: 320px; }
   .nested-plot { margin-top: 4px; }
   .nested-plot .chart-plot-title {
-    font-size: 12px; font-weight: 600; color: var(--muted); margin: 0 0 2px;
+    font-size: 12px; font-weight: 700; color: var(--ink); margin: 0 0 2px;
     line-height: 1.35; max-width: 100%;
+  }
+  .nested-plot .chart-plot-metric { font-weight: 700; }
+  .nested-plot .chart-plot-place {
+    font-size: 11px; font-weight: 600; color: var(--muted); line-height: 1.3;
+  }
+  .outcome-grid .outcome-cell > .nested-plot > .chart-plot-title {
+    min-height: calc(1.35em + 1.2em);
   }
   .nested-holder { height: 140px; }
   .outcome-legend {
@@ -622,10 +643,10 @@
 
   <div class="card link-a">
     <div class="card-title-row">
-      <h2>Application Outcome Trends</h2>
+      <h2>Application Trends</h2>
       <span class="info-tip">
-        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="outcomesTip" aria-label="About application outcome trends">i</button>
-        <span id="outcomesTip" class="info-tip-bubble" role="tooltip">Rows expand from the section labels; Outcomes starts open. All applications, college student applications, and SSI household applications use different recipes — they cannot overlay on one chart. Student outcomes are share of applications disposed (approved or denied). Pended applications are still in process and sit on hover, not in the mix. When the nine denial-reason columns are close to Denied, the mix is Approved / Ineligible / Procedurally Denied / Other; otherwise Approved / Denied. SSI outcomes are Approved / Denied until ineligible and procedural are close to Denied, then that split (plus Other for a small leftover). Hover on a stacked mix includes the count those percents are of. SSI Denial details is households with only SSI recipients (not the some-SSI mix above). Channels uses GetCalFresh, BenefitsCal / Other Online, and Other. On SSI, GetCalFresh is labeled GetCalFresh (SSA) and is <code>SSA_GCF_apps_submit</code> subtracted from Online SSI. CDSS replaces counts under 11 with an asterisk; those slices are plotted as 5. Hover percents then start with ~ and note that some data was masked. Larger hidden totals, and counties that did not report, stay blank. Student Denial details ungroups the large reason types (ineligible, over income, failed to provide income, failed determination, missed interview, procedural); Other is unavailable, out of the home, ineligible CF student, and residual.</span>
+        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="outcomesTip" aria-label="About application trends">i</button>
+        <span id="outcomesTip" class="info-tip-bubble" role="tooltip">Rows expand from the section labels; Outcomes starts open. All applications, college student applications, and SSI household applications use different recipes — they cannot overlay on one chart. Student outcomes are share of applications disposed (approved or denied). Pended applications are still in process and sit on hover, not in the mix. When the nine denial-reason columns are close to Denied, the mix is Approved / Ineligible / Procedurally Denied / Other; otherwise Approved / Denied. SSI outcomes are Approved / Denied until ineligible and procedural are close to Denied, then that split (plus Other for a small leftover). Hover on a stacked mix includes the count those percents are of. SSI Denial details is households with only SSI recipients (not the some-SSI mix above). Channels uses GetCalFresh, BenefitsCal / Other Online, and Other. On SSI, GetCalFresh is labeled GetCalFresh (SSA) and is <code>SSA_GCF_apps_submit</code> subtracted from Online SSI. Age, Language, Race, Gender, Household size, and Exemptions &amp; deductions are who applied that month, not approval rates by group. Exemptions and deductions overlap — they are shares claiming each type, not a 100% mix. CDSS replaces counts under 11 with an asterisk; those slices are plotted as 5. Hover percents then start with ~ and note that some data was masked. Larger hidden totals, and counties that did not report, stay blank. Student Denial details ungroups the large reason types (ineligible, over income, failed to provide income, failed determination, missed interview, procedural); Other is unavailable, out of the home, ineligible CF student, and residual.</span>
       </span>
     </div>
     <div class="groupby-control" role="group" aria-label="Compare">
@@ -647,7 +668,7 @@
     <p class="caption" id="areaCaption">Share of applications disposed that month</p>
     <div id="areaPanes" class="outcome-grid"></div>
     <table class="sr-only" id="areaChartTable">
-      <caption>Application outcome trends as a share of applications disposed, by month</caption>
+      <caption>Application trends as a share of applications disposed, by month</caption>
       <thead><tr><th scope="col">Month</th></tr></thead>
       <tbody></tbody>
     </table>
@@ -746,6 +767,7 @@
       <li>CDSS hides small numbers to protect privacy. When that happens, we still show the mix, but those percents are estimates (they start with ~). If too much of a month is hidden, we leave it blank rather than guess.</li>
       <li>Total applications is how many came in that month, from the CDSS Data Dashboard Monthly tab, not from CF296. The stacked percents are how that month’s decisions broke down; not the same count.</li>
       <li>Channels (expandable row) use the same three names, but are calculated based on available variables for each population. <a href="#methods">See wonky &amp; math-y details</a>.</li>
+      <li>Age, Language, Race, Gender, Household size, and Exemptions &amp; deductions (expandable rows) are who applied that month, not approval rates by group. College students have age, language, race, gender, and exemptions; SSI has language, race, household size, and deductions. Toggle # / % on the row; % is the default so columns stay comparable. Exemptions and deductions overlap (not a 100% mix). <a href="#methods">See wonky &amp; math-y details</a>.</li>
       <li>Some CalWIN counties reported 0 SSI applications received from December 2019 through May 2022. SSI outcomes still exist those months.</li>
       <li>SSI household outcomes are displayed according to best available data from the CDSS Data Dashboard Monthly tab. When ineligible + procedural is close to denied, the mix is shown as approved / ineligible / procedural / other. CalWIN counties ~2020–May 2022 show total denials, but not a break-out of ineligible vs. procedural, and are shown as a single lumped Denied in warm grey. Months where the ineligible / procedural split overshoots total denials are also shown this way.</li>
       <li>SSI Denial details is households with only SSI recipients: ineligible vs procedural, a subset of some-SSI denials.</li>
@@ -801,11 +823,24 @@
         <li>Months that have approved and denied are still shown.</li>
         <li>SSI Denial details is <code>SSI Only - Ineligible Denials</code> vs <code>SSI Only Procedural Denials</code>: only-SSI households, a subset of some-SSI denials.</li>
       </ul>
+      <h3 class="footer-wonk-h">Who applied (Age, Language, Race, Gender, Household size, Exemptions &amp; deductions)</h3>
+      <ul class="footer-notes">
+        <li>These mixes are composition of the applicant pool, not outcomes crossed by demographic. CDSS does not publish approved/denied by age, language, race, or gender.</li>
+        <li>College students, from the Monthly tab’s <code>New Applications …</code> block: Age (17 and under / 18–49 / 50 and over — CDSS names the middle band <code>New Applications Age 8 to 49</code>), Language (English / Spanish / Other), Race/ethnicity (nine CDSS categories), Gender (Female / Male / Other / Declined to state). Denominators are the matching Age / Language / Race / Gender Totals. Age Total is persons, not a checksum of approved + denied + pended. Hover on Age includes <code>New Applications Avg Age</code>.</li>
+        <li>SSI: Language is <code>SSI Disposed HH Language - [X]</code> (households). Race is <code>SSI Person Race/Ethnicity - [X]</code>, persons in new apps disposed (the same total as <code>SSI Persons in New Apps Disposed</code>). No SSI age bands. Average age (<code>Average Age of SSI Persons Newly Applying</code>) sits on SSI household-size and volume hover. No SSI-app gender columns.</li>
+        <li>Household size is SSI-only households added that month: 1 / 2 / 3+ of <code>SSI-only HHs of 1 added in the month</code>, <code>SSI-only HHs of 2 added in the month</code>, and <code>SSI only-HHs of 3+ added in the month</code> (hyphen placement is CDSS’s). Denominator is <code>Total SSI-only HHs added in the month</code>. Not the some-SSI disposed mix on Outcomes.</li>
+        <li>Language Other lumps every listed language except English and Spanish (including CDSS Other and, for students, Missing).</li>
+        <li>Exemptions &amp; deductions are overlapping shares, not a 100% stack. College students: types typically ≥5% of <code>New Applications Age Total</code> statewide — Employment and Training, Other E&amp;T, LPIE (Local Programs that Increase Employability), employed 20 hours, care of a child, work study. Tiny or obsolete exemption columns (JTPA, Trade Act, Tribal TANF, WIOA, Title 4, state/local training, CalFresh E&amp;T, CalGrant TANF, CalWORKs, Disabled) are omitted. SSI: <code>Claim Homeless Deduction - SSI</code>, <code>Claim Shelter Deduction - SSI</code>, <code>Claim Standard Medical Deduction - SSI</code> as a share of some-SSI approved + denied. Parallel SSI-only claim columns are unused here.</li>
+        <li>Student volume hover notes <code>New Applications - ICT Transfers</code>.</li>
+        <li>Default view is 100% (or % claiming, for exemptions). # plots the same series as counts; side-by-side student vs SSI (or two counties) are not comparable magnitudes in #, and SSI race is persons while SSI language is households.</li>
+      </ul>
       <h3 class="footer-wonk-h">Hover</h3>
       <ul class="footer-notes">
         <li>Stacked mix: the count those percents are of. All applications = applications disposed. College students = applications disposed (approved or denied, not <code>New Applications Age Total</code>), plus still pended. SSI = household applications disposed.</li>
         <li>Channels: applications received (all / SSI) or the student source total.</li>
         <li>Denial details: applications denied.</li>
+        <li>Age / Language / Race / Gender / Household size: the count those percents (or stacked counts) are of. Students = the matching Age/Language/Race/Gender total. SSI language = households disposed. SSI race = persons in applications disposed. SSI household size = SSI-only households added. Student Age hover also has average age; SSI household-size and volume hover have SSI average age. Student volume hover notes ICT transfers.</li>
+        <li>Exemptions &amp; deductions: the count those percents are of (student age total, or SSI household applications disposed). Hover lists each overlapping rate; they do not sum to 100%.</li>
       </ul>
     </details>
     <p class="footer-credit">Designed by Diana Jensen, built with help from Cursor.</p>
@@ -874,12 +909,17 @@ function fmtCount(v) {
   if (v == null || isNaN(v)) return 'n/a';
   return Math.round(v).toLocaleString('en-US');
 }
+function fmtAge(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  return v.toFixed(1);
+}
 function fmtNet(v) {
   if (v == null || isNaN(v)) return 'n/a';
   const n = Math.round(v);
   return (n > 0 ? '+' : '') + n.toLocaleString('en-US');
 }
-function shareHoverExtra(counts, stack, denomLabel) {
+function shareHoverExtra(counts, stack, denomLabel, opts) {
+  opts = opts || {};
   const masked = maskedShareHover(counts, stack);
   let note = (counts && counts.disposed != null && denomLabel)
     ? fmtCount(counts.disposed) + ' ' + denomLabel
@@ -888,10 +928,25 @@ function shareHoverExtra(counts, stack, denomLabel) {
     const pendedNote = fmtCount(counts.pended) + ' still pended (not in this mix)';
     note = note ? note + '. ' + pendedNote : pendedNote;
   }
-  if (!masked && !note) return null;
+  let footer = null;
+  if (masked) {
+    footer = opts.countMode
+      ? 'Some data has been masked for this report month; figures are estimates.'
+      : masked.footer;
+  }
+  if (opts.unitNote) footer = footer ? footer + ' ' + opts.unitNote : opts.unitNote;
+  if (opts.avgAge != null && !isNaN(opts.avgAge)) {
+    const ageNote = 'Average age ' + fmtAge(opts.avgAge);
+    note = note ? note + '. ' + ageNote : ageNote;
+  }
+  if (opts.ict != null && !isNaN(opts.ict)) {
+    const ictNote = fmtCount(opts.ict) + ' ICT transfers';
+    note = note ? note + '. ' + ictNote : ictNote;
+  }
+  if (!masked && !note && !footer) return null;
   return {
     note: note,
-    footer: masked ? masked.footer : null,
+    footer: footer,
     approx: !!(masked && masked.approx)
   };
 }
@@ -1425,9 +1480,46 @@ const GRID_ROWS = [
   { id: 'outcomes', label: 'Outcomes' },
   { id: 'totals', label: 'Total applications' },
   { id: 'channels', label: 'Channels' },
+  {
+    id: 'age', label: 'Age', demo: true,
+    tipId: 'ageRowTip',
+    tip: 'Who applied, not approval rates by age. College students only — SSI has no age bands (average age sits on SSI household-size and volume hover). These are persons on student applications (New Applications Age Total), not the same count as applications disposed. The middle band is CDSS “Age 8 to 49,” labeled 18–49. Average age is on hover. % compares mix across columns; # is size within one population (columns are not comparable magnitudes).'
+  },
+  {
+    id: 'language', label: 'Language', demo: true,
+    tipId: 'languageRowTip',
+    tip: 'Who applied, not approval rates by language. English and Spanish are ungrouped; other languages are lumped. College students use New Applications Language. SSI uses household language of disposed apps. % compares mix across columns; # is size within one population (student vs SSI units differ).'
+  },
+  {
+    id: 'race', label: 'Race', demo: true,
+    tipId: 'raceRowTip',
+    tip: 'Who applied, not approval rates by race. Nine CDSS categories; unused slices are omitted from hover. College students: persons on student applications. SSI: persons in applications disposed — not households. % compares mix across columns; # is size within one population (those units differ).'
+  },
+  {
+    id: 'gender', label: 'Gender', demo: true,
+    tipId: 'genderRowTip',
+    tip: 'Who applied, not approval rates by gender. College students only. Female, Male, Other, and Declined to state. % compares mix across columns; # is size within one population.'
+  },
+  {
+    id: 'hhsize', label: 'Household size', demo: true,
+    tipId: 'hhsizeRowTip',
+    tip: 'SSI-only households added that month (1 / 2 / 3+), not the some-SSI mix on Outcomes. Average age of SSI persons newly applying sits on hover. % is the mix; # is counts.'
+  },
+  {
+    id: 'exemptions', label: 'Exemptions & deductions', demo: true, overlap: true,
+    tipId: 'exemptionsRowTip',
+    tip: 'Share claiming each type — they overlap, so this is not a 100% mix. College students: exemptions typically ≥5% statewide (Employment and Training, Other E&T, LPIE, employed 20 hours, care of a child, work study). SSI: Homeless / Shelter / Standard medical deductions on some-SSI households. All applications has neither. % is share of that population; # is counts claiming.'
+  },
   { id: 'denials', label: 'Denial details' }
 ];
-const openRows = { outcomes: true, totals: false, channels: false, denials: false };
+const openRows = {
+  outcomes: true, totals: false, channels: false, age: false, language: false,
+  race: false, gender: false, hhsize: false, exemptions: false, denials: false
+};
+const demoUnit = {
+  age: 'share', language: 'share', race: 'share', gender: 'share',
+  hhsize: 'share', exemptions: 'share'
+};
 
 function stackFor(mode) {
   return populationStack(mode);
@@ -1439,6 +1531,15 @@ function popLabel(mode) {
 function denialsRowAvailable() {
   const modes = visibleOutcomeModes();
   return modes.indexOf('students') !== -1 || modes.indexOf('ssi') !== -1;
+}
+function demoRowAvailable(rowId) {
+  const modes = visibleOutcomeModes();
+  if (rowId === 'age' || rowId === 'gender') return modes.indexOf('students') !== -1;
+  if (rowId === 'hhsize') return modes.indexOf('ssi') !== -1;
+  if (rowId === 'language' || rowId === 'race' || rowId === 'exemptions') {
+    return modes.indexOf('students') !== -1 || modes.indexOf('ssi') !== -1;
+  }
+  return true;
 }
 
 const allEntities = ['Statewide', ...DATA.all_counties];
@@ -1650,6 +1751,11 @@ function maybeSwitchToPlaces() {
 }
 function rowHasContent(rowId, population) {
   if (rowId === 'denials') return population === 'students' || population === 'ssi';
+  if (rowId === 'age' || rowId === 'gender') return population === 'students';
+  if (rowId === 'hhsize') return population === 'ssi';
+  if (rowId === 'language' || rowId === 'race' || rowId === 'exemptions') {
+    return population === 'students' || population === 'ssi';
+  }
   return true;
 }
 function gcfSunsetLines() {
@@ -1847,6 +1953,248 @@ function ssiChannelCountsForEntity(entity, month) {
     gcfSsa: ch && ch.gcfSsa
   });
 }
+function demoCountsForEntity(entity, month, seriesName, keys, stack) {
+  const series = DATA[seriesName];
+  if (!series) return null;
+  const useTotal = keys.indexOf('total') !== -1;
+  function fromCounty(county) {
+    const raw = demoRawFromSeries(series[county], keys, month);
+    return mixFromParts(raw, stack, raw && useTotal ? raw.total : null);
+  }
+  const members = entityMembers(entity);
+  if (!members) return fromCounty(entity.id);
+  const sums = { disposed: 0, estimated: {} };
+  stack.forEach(g => { sums[g.key] = 0; });
+  let any = false;
+  members.forEach(c => {
+    const counts = fromCounty(c);
+    if (!counts) return;
+    any = true;
+    sums.disposed += counts.disposed;
+    stack.forEach(g => { sums[g.key] += counts[g.key]; });
+    stack.forEach(g => { if (counts.estimated[g.key]) sums.estimated[g.key] = true; });
+  });
+  return any ? sums : null;
+}
+function studentAgeCountsForEntity(entity, month) {
+  return demoCountsForEntity(entity, month, 'student_age_series', STUDENT_AGE_KEYS, DATA.student_age_stack || STUDENT_AGE_STACK);
+}
+function studentLanguageCountsForEntity(entity, month) {
+  return demoCountsForEntity(entity, month, 'student_language_series', STUDENT_LANGUAGE_KEYS, DATA.language_stack || LANGUAGE_STACK);
+}
+function studentRaceCountsForEntity(entity, month) {
+  return demoCountsForEntity(entity, month, 'student_race_series', STUDENT_RACE_KEYS, DATA.race_stack || RACE_STACK);
+}
+function studentGenderCountsForEntity(entity, month) {
+  return demoCountsForEntity(entity, month, 'student_gender_series', STUDENT_GENDER_KEYS, DATA.gender_stack || GENDER_STACK);
+}
+function ssiLanguageCountsForEntity(entity, month) {
+  return demoCountsForEntity(entity, month, 'ssi_language_series', SSI_LANGUAGE_KEYS, DATA.ssi_language_stack || SSI_LANGUAGE_STACK);
+}
+function ssiRaceCountsForEntity(entity, month) {
+  return demoCountsForEntity(entity, month, 'ssi_race_series', SSI_RACE_KEYS, DATA.race_stack || RACE_STACK);
+}
+function ssiHhSizeCountsForEntity(entity, month) {
+  return demoCountsForEntity(entity, month, 'ssi_hh_size_series', SSI_HH_SIZE_KEYS, DATA.ssi_hh_size_stack || SSI_HH_SIZE_STACK);
+}
+function seriesValueAt(series, county, key, month) {
+  const s = series && series[county];
+  if (!s || !s[key]) return null;
+  const v = s[key][month];
+  return v == null ? null : v;
+}
+function weightedAvgForEntity(entity, month, valueAt, weightAt) {
+  const members = entityMembers(entity);
+  if (!members) {
+    return valueAt(entity.id, month);
+  }
+  let num = 0;
+  let den = 0;
+  members.forEach(c => {
+    const v = valueAt(c, month);
+    const w = weightAt(c, month);
+    if (v == null || w == null || w <= 0) return;
+    num += v * w;
+    den += w;
+  });
+  return den ? num / den : null;
+}
+function studentAvgAgeForEntity(entity, month) {
+  return weightedAvgForEntity(
+    entity, month,
+    (c, m) => seriesValueAt(DATA.student_age_series, c, 'avgAge', m),
+    (c, m) => seriesValueAt(DATA.student_age_series, c, 'total', m)
+  );
+}
+function ssiAvgAgeForEntity(entity, month) {
+  return weightedAvgForEntity(
+    entity, month,
+    (c, m) => seriesValueAt(DATA.ssi_series, c, 'avgAge', m),
+    (c, m) => seriesValueAt(DATA.ssi_race_series, c, 'total', m)
+  );
+}
+function studentIctForEntity(entity, month) {
+  const members = entityMembers(entity);
+  const counties = members || [entity.id];
+  let sum = 0;
+  let any = false;
+  counties.forEach(c => {
+    const v = seriesValueAt(DATA.student_age_series, c, 'ict', month);
+    if (v == null) return;
+    sum += v;
+    any = true;
+  });
+  return any ? sum : null;
+}
+function rateCountsForEntity(entity, month, seriesName, keys, stack, denomAt) {
+  const series = DATA[seriesName];
+  if (!series) return null;
+  function fromCounty(county) {
+    const raw = demoRawFromSeries(series[county], keys, month);
+    return rateFromParts(raw, stack, denomAt(county, month));
+  }
+  const members = entityMembers(entity);
+  if (!members) return fromCounty(entity.id);
+  const sums = { disposed: 0, estimated: {} };
+  stack.forEach(g => { sums[g.key] = 0; });
+  let any = false;
+  members.forEach(c => {
+    const counts = fromCounty(c);
+    if (!counts) return;
+    any = true;
+    sums.disposed += counts.disposed;
+    stack.forEach(g => { sums[g.key] += counts[g.key]; });
+    stack.forEach(g => { if (counts.estimated[g.key]) sums.estimated[g.key] = true; });
+  });
+  return any ? sums : null;
+}
+function studentExemptionCountsForEntity(entity, month) {
+  return rateCountsForEntity(
+    entity, month, 'student_exemption_series', STUDENT_EXEMPTION_KEYS,
+    DATA.student_exemption_stack || STUDENT_EXEMPTION_STACK,
+    (c, m) => seriesValueAt(DATA.student_age_series, c, 'total', m)
+  );
+}
+function ssiDeductionCountsForEntity(entity, month) {
+  return rateCountsForEntity(
+    entity, month, 'ssi_deduction_series', SSI_DEDUCTION_KEYS,
+    DATA.ssi_deduction_stack || SSI_DEDUCTION_STACK,
+    (c, m) => {
+      const approved = seriesValueAt(DATA.ssi_series, c, 'approved', m);
+      const denied = seriesValueAt(DATA.ssi_series, c, 'denied', m);
+      if (approved == null || denied == null) return null;
+      const d = approved + denied;
+      return d === 0 ? null : d;
+    }
+  );
+}
+function demoRowSpec(rowId, population) {
+  if (rowId === 'age' && population === 'students') {
+    return {
+      stack: DATA.student_age_stack || STUDENT_AGE_STACK,
+      countsAt: studentAgeCountsForEntity,
+      denomLabel: 'College student applicants (age total)',
+      unitNote: 'Persons on student applications, not applications disposed.',
+      hideZeroHover: false,
+      hoverExtra: (entity, month) => ({ avgAge: studentAvgAgeForEntity(entity, month) })
+    };
+  }
+  if (rowId === 'language' && population === 'students') {
+    return {
+      stack: DATA.language_stack || LANGUAGE_STACK,
+      countsAt: studentLanguageCountsForEntity,
+      denomLabel: 'College student applicants (language total)',
+      unitNote: 'Persons on student applications.',
+      hideZeroHover: false
+    };
+  }
+  if (rowId === 'language' && population === 'ssi') {
+    return {
+      stack: DATA.ssi_language_stack || SSI_LANGUAGE_STACK,
+      countsAt: ssiLanguageCountsForEntity,
+      denomLabel: 'SSI households disposed',
+      unitNote: 'Household language of disposed SSI applications.',
+      hideZeroHover: false
+    };
+  }
+  if (rowId === 'race' && population === 'students') {
+    return {
+      stack: DATA.race_stack || RACE_STACK,
+      countsAt: studentRaceCountsForEntity,
+      denomLabel: 'College student applicants (race/ethnicity total)',
+      unitNote: 'Persons on student applications.',
+      hideZeroHover: true
+    };
+  }
+  if (rowId === 'race' && population === 'ssi') {
+    return {
+      stack: DATA.race_stack || RACE_STACK,
+      countsAt: ssiRaceCountsForEntity,
+      denomLabel: 'SSI persons in applications disposed',
+      unitNote: 'Persons in disposed SSI applications, not households.',
+      hideZeroHover: true
+    };
+  }
+  if (rowId === 'gender' && population === 'students') {
+    return {
+      stack: DATA.gender_stack || GENDER_STACK,
+      countsAt: studentGenderCountsForEntity,
+      denomLabel: 'College student applicants (gender total)',
+      unitNote: 'Persons on student applications.',
+      hideZeroHover: true
+    };
+  }
+  if (rowId === 'hhsize' && population === 'ssi') {
+    return {
+      stack: DATA.ssi_hh_size_stack || SSI_HH_SIZE_STACK,
+      countsAt: ssiHhSizeCountsForEntity,
+      denomLabel: 'SSI-only households added',
+      unitNote: 'SSI-only households added that month, not some-SSI disposed apps.',
+      hideZeroHover: true,
+      hoverExtra: (entity, month) => ({ avgAge: ssiAvgAgeForEntity(entity, month) })
+    };
+  }
+  if (rowId === 'exemptions' && population === 'students') {
+    return {
+      stack: DATA.student_exemption_stack || STUDENT_EXEMPTION_STACK,
+      countsAt: studentExemptionCountsForEntity,
+      denomLabel: 'College student applicants (age total)',
+      unitNote: 'A person can have more than one exemption.',
+      hideZeroHover: true,
+      overlap: true
+    };
+  }
+  if (rowId === 'exemptions' && population === 'ssi') {
+    return {
+      stack: DATA.ssi_deduction_stack || SSI_DEDUCTION_STACK,
+      countsAt: ssiDeductionCountsForEntity,
+      denomLabel: 'SSI household applications disposed',
+      unitNote: 'A household can claim more than one deduction.',
+      hideZeroHover: true,
+      overlap: true
+    };
+  }
+  return null;
+}
+function nestedSubtitle(pane) {
+  const pop = popLabel(pane.population);
+  const place = pane.geoTitle;
+  if (!pop) return place;
+  if (!place) return pop;
+  return pop + ' · ' + place;
+}
+function fillNestedPlotTitle(titleEl, metricText, pane) {
+  titleEl.textContent = '';
+  const metric = document.createElement('span');
+  metric.className = 'chart-plot-metric';
+  metric.textContent = metricText;
+  const place = document.createElement('span');
+  place.className = 'chart-plot-place';
+  place.textContent = nestedSubtitle(pane);
+  titleEl.appendChild(metric);
+  titleEl.appendChild(document.createTextNode('\n'));
+  titleEl.appendChild(place);
+}
 function lockYAxisWidth(axis) {
   axis.width = 72;
 }
@@ -1918,6 +2266,8 @@ function outcomeColumns(geos) {
   }));
 }
 function appendRowToggle(holder, row, expanded) {
+  const head = document.createElement('div');
+  head.className = 'outcome-row-head';
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'outcome-row-toggle' + (expanded ? '' : ' collapsed');
@@ -1927,15 +2277,48 @@ function appendRowToggle(holder, row, expanded) {
     openRows[row.id] = !openRows[row.id];
     buildAreaCharts();
   });
-  holder.appendChild(btn);
+  head.appendChild(btn);
+  if (row.tip) {
+    const tip = document.createElement('span');
+    tip.className = 'info-tip';
+    tip.innerHTML = '<button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="' +
+      row.tipId + '" aria-label="About ' + row.label + '">i</button>' +
+      '<span id="' + row.tipId + '" class="info-tip-bubble" role="tooltip">' + row.tip + '</span>';
+    head.appendChild(tip);
+  }
+  if (row.demo) {
+    const unit = document.createElement('div');
+    unit.className = 'outcome-row-unit';
+    unit.setAttribute('role', 'group');
+    unit.setAttribute('aria-label', row.label + ' as counts or percents');
+    ['count', 'share'].forEach(mode => {
+      const ub = document.createElement('button');
+      ub.type = 'button';
+      ub.className = 'range-btn groupby-btn' + (demoUnit[row.id] === mode ? ' active' : '');
+      ub.setAttribute('aria-pressed', demoUnit[row.id] === mode ? 'true' : 'false');
+      ub.textContent = mode === 'count' ? '#' : '%';
+      ub.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (demoUnit[row.id] === mode) return;
+        demoUnit[row.id] = mode;
+        if (!openRows[row.id]) openRows[row.id] = true;
+        buildAreaCharts();
+      });
+      unit.appendChild(ub);
+    });
+    head.appendChild(unit);
+  }
+  holder.appendChild(head);
   return btn;
 }
-function appendNestedShareChart(wrap, hoverId, titleText, labels, stack, countsAt, showMonthAxis, monthMarkers, denomLabel, hideZeroHover) {
+function appendNestedShareChart(wrap, hoverId, titleText, labels, stack, countsAt, showMonthAxis, monthMarkers, denomLabel, hideZeroHover, opts) {
+  opts = opts || {};
   const recPlot = document.createElement('div');
   recPlot.className = 'chart-plot nested-plot received-plot';
   const recTitle = document.createElement('h4');
   recTitle.className = 'chart-plot-title';
-  recTitle.textContent = titleText;
+  if (opts.pane) fillNestedPlotTitle(recTitle, titleText, opts.pane);
+  else recTitle.textContent = titleText;
   const recHover = document.createElement('div');
   recHover.className = 'chart-hover';
   recHover.id = hoverId;
@@ -1949,10 +2332,13 @@ function appendNestedShareChart(wrap, hoverId, titleText, labels, stack, countsA
   recPlot.appendChild(recHover);
   recPlot.appendChild(recHold);
   wrap.appendChild(recPlot);
+  const countMode = !!opts.countMode;
   const datasets = stack.map((s, i) => ({
     label: s.label,
     data: labels.map(m => {
-      const shares = outcomeShares(countsAt(m), stack);
+      const counts = countsAt(m);
+      if (countMode) return counts && counts[s.key] != null ? counts[s.key] : null;
+      const shares = outcomeShares(counts, stack);
       return shares ? shares[s.key] : null;
     }),
     backgroundColor: hexAlpha(s.color, 0.85),
@@ -1964,8 +2350,22 @@ function appendNestedShareChart(wrap, hoverId, titleText, labels, stack, countsA
     spanGaps: false,
     yAxisID: 'y',
     bandLabel: s.shortLabel || s.label,
-    hideZeroHover: !!hideZeroHover
+    hideZeroHover: !!hideZeroHover,
+    valueKind: countMode ? 'count' : undefined
   }));
+  const yScale = countMode
+    ? {
+        stacked: true, min: 0,
+        afterFit: lockYAxisWidth,
+        ticks: { callback: v => fmtCount(v), maxTicksLimit: 4 },
+        grid: { color: '#f0f0f0' }
+      }
+    : {
+        stacked: true, min: 0, max: 100,
+        afterFit: lockYAxisWidth,
+        ticks: { callback: v => v + '%', maxTicksLimit: 4 },
+        grid: { color: '#f0f0f0' }
+      };
   const chart = new Chart(recCanvas, {
     type: 'line',
     data: { labels, datasets },
@@ -1982,7 +2382,16 @@ function appendNestedShareChart(wrap, hoverId, titleText, labels, stack, countsA
         tooltip: {
           enabled: false,
           external: hoverTooltipExternal(hoverId, 'above', idx => {
-            return shareHoverExtra(countsAt(labels[idx]), stack, denomLabel);
+            const month = labels[idx];
+            const extra = (opts.hoverExtra && opts.pane)
+              ? opts.hoverExtra(opts.pane, month)
+              : {};
+            return shareHoverExtra(countsAt(month), stack, denomLabel, {
+              countMode: countMode,
+              unitNote: opts.unitNote,
+              avgAge: extra && extra.avgAge,
+              ict: extra && extra.ict
+            });
           }),
           itemSort: (a, b) => {
             const order = stack.map(s => s.label);
@@ -1992,24 +2401,109 @@ function appendNestedShareChart(wrap, hoverId, titleText, labels, stack, countsA
       },
       scales: {
         x: { ticks: { display: false }, grid: { display: false } },
-        y: {
-          stacked: true, min: 0, max: 100,
-          afterFit: lockYAxisWidth,
-          ticks: { callback: v => v + '%', maxTicksLimit: 4 },
-          grid: { color: '#f0f0f0' }
-        }
+        y: yScale
       }
     }
   });
   nestedCharts.push(chart);
   return datasets;
 }
-function appendNestedCountChart(wrap, hoverId, titleText, labels, data, color, label, showMonthAxis) {
+function appendNestedRateChart(wrap, hoverId, titleText, labels, stack, countsAt, showMonthAxis, denomLabel, hideZeroHover, opts) {
+  opts = opts || {};
   const recPlot = document.createElement('div');
   recPlot.className = 'chart-plot nested-plot received-plot';
   const recTitle = document.createElement('h4');
   recTitle.className = 'chart-plot-title';
-  recTitle.textContent = titleText;
+  if (opts.pane) fillNestedPlotTitle(recTitle, titleText, opts.pane);
+  else recTitle.textContent = titleText;
+  const recHover = document.createElement('div');
+  recHover.className = 'chart-hover';
+  recHover.id = hoverId;
+  recHover.setAttribute('aria-live', 'polite');
+  const recHold = document.createElement('div');
+  recHold.className = 'chart-holder nested-holder';
+  const recCanvas = document.createElement('canvas');
+  recCanvas.setAttribute('aria-hidden', 'true');
+  recHold.appendChild(recCanvas);
+  recPlot.appendChild(recTitle);
+  recPlot.appendChild(recHover);
+  recPlot.appendChild(recHold);
+  wrap.appendChild(recPlot);
+  const countMode = !!opts.countMode;
+  const datasets = stack.map(s => ({
+    label: s.label,
+    data: labels.map(m => {
+      const counts = countsAt(m);
+      if (!counts || counts.disposed == null || counts.disposed === 0) return null;
+      if (counts[s.key] == null) return null;
+      return countMode ? counts[s.key] : (counts[s.key] / counts.disposed) * 100;
+    }),
+    backgroundColor: hexAlpha(s.color, 0.12),
+    borderColor: s.color,
+    borderWidth: 2,
+    pointRadius: 0,
+    fill: false,
+    tension: 0,
+    spanGaps: false,
+    yAxisID: 'y',
+    hideZeroHover: !!hideZeroHover,
+    valueKind: countMode ? 'count' : undefined
+  }));
+  const yScale = countMode
+    ? {
+        stacked: false, min: 0,
+        afterFit: lockYAxisWidth,
+        ticks: { callback: v => fmtCount(v), maxTicksLimit: 4 },
+        grid: { color: '#f0f0f0' }
+      }
+    : {
+        stacked: false, min: 0,
+        afterFit: lockYAxisWidth,
+        ticks: { callback: v => v + '%', maxTicksLimit: 4 },
+        grid: { color: '#f0f0f0' }
+      };
+  const chart = new Chart(recCanvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false, axis: 'x' },
+      layout: { padding: { top: 4, bottom: showMonthAxis ? 30 : 8 } },
+      plugins: {
+        legend: { display: false },
+        monthYearAxis: !!showMonthAxis,
+        isolatedStackSlices: false,
+        stackBandLabels: false,
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal(hoverId, 'above', idx => {
+            return shareHoverExtra(countsAt(labels[idx]), stack, denomLabel, {
+              countMode: countMode,
+              unitNote: opts.unitNote
+            });
+          }),
+          itemSort: (a, b) => {
+            const order = stack.map(s => s.label);
+            return order.indexOf(a.dataset.label) - order.indexOf(b.dataset.label);
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { display: false }, grid: { display: false } },
+        y: yScale
+      }
+    }
+  });
+  nestedCharts.push(chart);
+  return datasets;
+}
+function appendNestedCountChart(wrap, hoverId, titleText, labels, data, color, label, showMonthAxis, pane, getNote) {
+  const recPlot = document.createElement('div');
+  recPlot.className = 'chart-plot nested-plot received-plot';
+  const recTitle = document.createElement('h4');
+  recTitle.className = 'chart-plot-title';
+  if (pane) fillNestedPlotTitle(recTitle, titleText, pane);
+  else recTitle.textContent = titleText;
   const recHover = document.createElement('div');
   recHover.className = 'chart-hover';
   recHover.id = hoverId;
@@ -2050,7 +2544,9 @@ function appendNestedCountChart(wrap, hoverId, titleText, labels, data, color, l
         stackBandLabels: false,
         tooltip: {
           enabled: false,
-          external: hoverTooltipExternal(hoverId, 'above')
+          external: hoverTooltipExternal(hoverId, 'above', getNote
+            ? idx => getNote(labels[idx])
+            : undefined)
         }
       },
       scales: {
@@ -2069,6 +2565,9 @@ function appendNestedCountChart(wrap, hoverId, titleText, labels, data, color, l
 
 function syncBreakoutUi() {
   if (!denialsRowAvailable() && openRows.denials) openRows.denials = false;
+  ['age', 'language', 'race', 'gender', 'hhsize', 'exemptions'].forEach(id => {
+    if (!demoRowAvailable(id) && openRows[id]) openRows[id] = false;
+  });
 }
 function appendEmptyOutcomeCell(holder) {
   const cell = document.createElement('div');
@@ -2164,7 +2663,11 @@ function buildAreaCharts() {
   const modes = visibleOutcomeModes();
   syncBreakoutUi();
 
-  const gridRows = GRID_ROWS.filter(row => row.id !== 'denials' || denialsRowAvailable());
+  const gridRows = GRID_ROWS.filter(row => {
+    if (row.id === 'denials') return denialsRowAvailable();
+    if (row.demo) return demoRowAvailable(row.id);
+    return true;
+  });
   const nCols = Math.max(columns.length, 1);
   holder.style.gridTemplateColumns = 'repeat(' + nCols + ', minmax(280px, 1fr))';
 
@@ -2211,7 +2714,7 @@ function buildAreaCharts() {
             cell, 'receivedHover' + ci,
             'Applications received',
             labels, receivedData, RECEIVED_COLOR, 'Applications received',
-            showAxis
+            showAxis, col
           );
           tableHeaders.push(col.title + ' — Applications received');
           const ts = tableSeries.find(t => t.pane === col);
@@ -2222,7 +2725,11 @@ function buildAreaCharts() {
             cell, 'studentNewAppsHover' + ci,
             'College student applications',
             labels, newAppsData, RECEIVED_COLOR, 'College student applications',
-            showAxis
+            showAxis, col,
+            m => {
+              const ict = studentIctForEntity(col, m);
+              return ict == null ? null : { note: fmtCount(ict) + ' ICT transfers' };
+            }
           );
           tableHeaders.push(col.title + ' — College student applications');
           const ts = tableSeries.find(t => t.pane === col);
@@ -2233,7 +2740,11 @@ function buildAreaCharts() {
             cell, 'ssiAppsHover' + ci,
             'SSI applications',
             labels, ssiAppsData, RECEIVED_COLOR, 'SSI applications',
-            showAxis
+            showAxis, col,
+            m => {
+              const age = ssiAvgAgeForEntity(col, m);
+              return age == null ? null : { note: 'Average age ' + fmtAge(age) };
+            }
           );
           tableHeaders.push(col.title + ' — SSI applications');
           const ts = tableSeries.find(t => t.pane === col);
@@ -2251,7 +2762,9 @@ function buildAreaCharts() {
             m => allChannelFromRaw(channelRawForEntity(col, m), m),
             showAxis,
             gcfSunsetLines(),
-            'Applications received'
+            'Applications received',
+            false,
+            { pane: col }
           );
         } else if (col.population === 'students') {
           appendNestedShareChart(
@@ -2261,7 +2774,9 @@ function buildAreaCharts() {
             m => studentSourceCountsForEntity(col, m),
             showAxis,
             undefined,
-            'College student applications'
+            'College student applications',
+            false,
+            { pane: col }
           );
         } else {
           appendNestedShareChart(
@@ -2271,7 +2786,49 @@ function buildAreaCharts() {
             m => ssiChannelCountsForEntity(col, m),
             showAxis,
             undefined,
-            'SSI household applications received'
+            'SSI household applications received',
+            false,
+            { pane: col }
+          );
+        }
+        return;
+      }
+
+      if (row.demo) {
+        const countMode = demoUnit[row.id] === 'count';
+        const demo = demoRowSpec(row.id, col.population);
+        if (!demo) {
+          cell.className = 'outcome-cell outcome-cell-empty';
+          return;
+        }
+        const chartOpts = {
+          pane: col,
+          countMode: countMode,
+          unitNote: (countMode || demo.overlap || row.id === 'hhsize') ? demo.unitNote : null,
+          hoverExtra: demo.hoverExtra
+        };
+        if (demo.overlap) {
+          appendNestedRateChart(
+            cell, row.id + 'Hover' + ci,
+            row.label,
+            labels, demo.stack,
+            m => demo.countsAt(col, m),
+            showAxis,
+            demo.denomLabel,
+            !!demo.hideZeroHover,
+            chartOpts
+          );
+        } else {
+          appendNestedShareChart(
+            cell, row.id + 'Hover' + ci,
+            row.label,
+            labels, demo.stack,
+            m => demo.countsAt(col, m),
+            showAxis,
+            undefined,
+            demo.denomLabel,
+            !!demo.hideZeroHover,
+            chartOpts
           );
         }
         return;
@@ -2287,18 +2844,20 @@ function buildAreaCharts() {
             showAxis,
             undefined,
             'College student applications denied',
-            true
+            true,
+            { pane: col }
           );
         } else if (col.population === 'ssi') {
           appendNestedShareChart(
             cell, 'ssiOnlyHover' + ci,
-            'Denial types for households that include only SSI recipients',
+            'SSI-only denials',
             labels, DATA.ssi_only_stack || SSI_ONLY_DENIAL_STACK,
             m => ssiOnlyCountsForEntity(col, m),
             showAxis,
             undefined,
             'SSI-only applications denied',
-            true
+            true,
+            { pane: col }
           );
         }
       }
@@ -2313,7 +2872,7 @@ function buildAreaCharts() {
     document.getElementById('areaCaption').textContent = place;
   }
   document.querySelector('#areaChartTable caption').textContent =
-    'Application outcome trends as a share of each population’s own total, by month';
+    'Application trends as a share of each population’s own total, by month';
 
   const thead = document.querySelector('#areaChartTable thead tr');
   thead.innerHTML = tableHeaders.map(h => '<th scope="col">' + h + '</th>').join('');

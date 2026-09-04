@@ -118,6 +118,10 @@ Headline application columns (households/applications, not persons):
 
 These are reported monthly from January 2023 onward (Statewide and counties). `New Applications Age Total` does **not** match approved + denied (or + pended); treat age totals as a different unit (likely persons), not a checksum for application counts.
 
+**Who-applied mixes on Application Trends (Diana, 2026-09-04; household size / exemptions 2026-09-04):** Age / Language / Race / Gender are composition of the applicant pool, not outcomes by group. Age uses 17 and under / 18–49 / 50 and over; CDSS names the middle band `New Applications Age 8 to 49`. Language keeps English and Spanish and lumps the rest (including CDSS Other and Missing) as Other. Race/ethnicity uses the nine CDSS `New Applications …` categories. Gender is Female / Male / Other / Declined to state. Denominators are the matching Totals. Hover on Age includes `New Applications Avg Age`. Student volume hover notes `New Applications - ICT Transfers`.
+
+**Exemptions (overlapping, not a mix):** The 16 `New Applications Exemptions- …` columns can overlap on one person. Application Trends plots the types that are typically ≥5% of `New Applications Age Total` statewide: Employment and Training Program, Other Employment and Training Program, LPIE, Employed 20 Hours Week, Care of a Child, Work Study. Tiny / obsolete types stay off the canvas.
+
 **Application sources (Statewide live check, through May 2026):** `Applications Submitted via BenefitsCal` + `Applications Submitted via Code for America` + `Applications Submitted via Other Online Source` + `Applications Submitted via Other Source` equals approved + denied + pended in every statewide month (residual 0). They do **not** equal `New Applications Age Total`. Do not mix `Applications Submitted via Code for America` with `CfA_GCF_apps_submit`. Code for America on the student series continues after June 2025, at a small volume, as BenefitsCal becomes the main channel. The `explore/outcomes-drilldowns` Channels row groups those four into GetCalFresh / BenefitsCal / Other Online / Other.
 
 **Denial-reason identity (Statewide live check, through May 2026):** `Denial Reason - Ineligible` + `Denial Reason - Procedural` is only a subset of `Applications Denied Containing at Least One Student` (e.g. May 2026: 1,747 + 1,280 = 3,027 vs 9,026 denied). Missed interview, failed to complete determination, over income, and the other listed reasons sit alongside those two. The nine `Denial Reason - …` columns together nearly equal total denials after October 2023 (Statewide median residual ~0.1% of denied; May 2026 residual 82). January–June 2023 under-counts (residual 5–13%). There is no withdrawn column. How Application Outcomes groups those reasons on the chart (Approved / Ineligible / Procedurally Denied / Other vs lumped Denied; Denial details ungrouping) is a dashboard recipe, not a CDSS definition. That recipe lives in the collapsed **Wonky & math-y details** fold on Application Outcomes.
@@ -140,7 +144,13 @@ SSI-only is a **subset of denials**, not a full third stack (no SSI-only approve
 - `SSI Only - Ineligible Denials`
 - `SSI Only Procedural Denials`
 
-The Denial details mix on Application Outcome Trends is those two columns (households that include only SSI recipients). Hover shows their sum — the SSI-only denied count for that month.
+The Denial details mix on Application Trends is those two columns (households that include only SSI recipients). Hover shows their sum — the SSI-only denied count for that month.
+
+**Who-applied mixes (Diana, 2026-09-04; household size / exemptions 2026-09-04):** SSI Language is `SSI Disposed HH Language - [X]` (households disposed; English / Spanish / Other, same lumping as students). SSI Race is the nine `SSI Person Race/Ethnicity - [X]` columns — persons in new apps disposed, the same total as `SSI Persons in New Apps Disposed`. There are no SSI age bands. `Average Age of SSI Persons Newly Applying` sits on household-size and volume hover. No SSI-app gender columns.
+
+**SSI-only household size (added in the month):** `SSI-only HHs of 1 added in the month`, `SSI-only HHs of 2 added in the month`, `SSI only-HHs of 3+ added in the month` (hyphen placement is CDSS’s), denominator `Total SSI-only HHs added in the month`. New SSI-only cases that month — not the some-SSI disposed mix.
+
+**SSI deductions (overlapping, some-SSI):** `Claim Homeless Deduction - SSI`, `Claim Shelter Deduction - SSI`, `Claim Standard Medical Deduction - SSI`, as a share of some-SSI approved + denied. Parallel `SSI Only Claim …` columns are unused on Application Trends.
 
 Volume under the SSI mix (explore `explore/outcomes-drilldowns`) is `Online Apps - SSI` + `Non-Online Apps - SSI` (households with at least some SSI). That pair is not `SSI Only Online Apps` / `SSI Only Non Online Apps`. Reporting starts June 2019. Statewide, the sum nearly equals approved + denied; do not treat it as a required checksum, and do not impute 5 for starred cells.
 
