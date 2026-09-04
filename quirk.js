@@ -14,7 +14,7 @@
     { id: 'brave-penguin', title: 'Brave penguin', src: 'assets/quirk/brave-penguin.png' },
     { id: 'punk-elephant', title: 'Punk elephant', src: 'assets/quirk/punk-elephant.png' }
   ];
-  const START_INDEX = ITEMS.findIndex(item => item.id === 'sunmaxxing-cat');
+  const START_INDEX = ITEMS.findIndex(item => item.id === 'ostrich');
 
   function el(tag, attrs, children) {
     const node = document.createElement(tag);
@@ -47,7 +47,7 @@
     'aria-controls': 'quirkDialog',
     'aria-label': QUIRK_LABEL
   }, [
-    el('img', { src: 'assets/quirk/doodle-cat.png', alt: '', width: '48', height: '48' }),
+    el('img', { src: 'assets/quirk/doodle-ostrich.png', alt: '', height: '80' }),
     el('span', { className: 'quirk-doodle-tip', text: QUIRK_LABEL })
   ]);
   row.appendChild(doodle);
@@ -186,5 +186,32 @@
       e.preventDefault();
       first.focus();
     }
+  });
+})();
+
+(function () {
+  document.querySelectorAll('.copy-email').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const email = btn.getAttribute('data-email');
+      if (!email) return;
+      try {
+        await navigator.clipboard.writeText(email);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = email;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      const status = btn.parentElement && btn.parentElement.querySelector('.copy-email-status');
+      if (!status) return;
+      status.textContent = 'Copied';
+      clearTimeout(btn._copyTimer);
+      btn._copyTimer = setTimeout(() => { status.textContent = ''; }, 1600);
+    });
   });
 })();

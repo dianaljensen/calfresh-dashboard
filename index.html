@@ -66,7 +66,31 @@
     margin: 0 0.28em 0 0.18em; vertical-align: middle; top: -0.12em;
   }
   header.page-head p.sub { margin: 0; color: var(--muted); font-size: 12px; max-width: 46em; line-height: 1.45; }
-  header.page-head p.sub a { color: var(--accent); }
+  .copy-email {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--accent);
+    cursor: copy;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .copy-email:hover { color: var(--dark-blue); }
+  .copy-email:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  .copy-email-status {
+    margin-left: 0.45em;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11px;
+  }
+  .copy-email-status:empty { display: none; }
   .prototype-note {
     background: #fff7e8; border: 1px solid #f0d9a8; color: #6b4b12;
     font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
@@ -158,6 +182,10 @@
      rendered it at -- without this, the column can't shrink smoothly and the chart
      only "catches up" in jumps as resize events force Chart.js to redraw smaller. */
   .charts-row > .card, .chart-holder { min-width: 0; }
+  /* Sticky filters stay pinned only while Total Participants and Annual % Change
+     are in view. Once this wrapper ends, the bar scrolls away (Annual % Change
+     by County has its own lists; Caseload movement has its own date/place bar). */
+  .trend-sticky-scope { display: flow-root; }
   .time-range-control { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px 16px; margin-bottom: 18px; }
   .shared-controls {
     background: var(--card);
@@ -208,6 +236,19 @@
     display: none;
   }
   .shared-controls:not(.filters-open) .shared-filters { display: none; }
+  .caseload-filters {
+    margin: 0 0 14px;
+    padding: 0 0 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .caseload-filters .shared-filters { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .caseload-filters .shared-filters .card-filters { margin-bottom: 0; }
+  .caseload-filters.filters-open .shared-filters {
+    max-height: min(50vh, 320px);
+    overflow-y: auto;
+  }
+  .caseload-filters:not(.filters-open) .shared-filters { display: none; }
+  .caseload-filters .shared-filters-toggle { margin-top: 12px; }
   .bucket-filters:not(.filters-open) .bucket-filter-lists { display: none; }
   .bucket-filters .shared-filters-toggle { margin-top: 0; }
   .bucket-filters.filters-open .bucket-filter-lists {
@@ -508,12 +549,13 @@
       <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="calfreshNameTip" aria-label="What CalFresh means">i</button>
       <span id="calfreshNameTip" class="info-tip-bubble" role="tooltip">CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California.</span>
     </span> Participation Trends</h1>
-    <p class="sub">This is a working prototype developed by Diana Jensen for the love of the data visualization game. All data is from public sources, hopefully a little easier to explore now. Send suggestions or corrections to <a href="mailto:diana@djconsults.com">diana@djconsults.com</a>.</p>
+    <p class="sub">This is a working prototype I developed for the love of the data visualization game. All data is from public sources, hopefully a little easier to explore now.<br>Send me suggestions or corrections at <button type="button" class="copy-email" data-email="diana@djconsults.com" title="Copy email address" aria-label="Copy diana@djconsults.com">diana@djconsults.com</button>.<span class="copy-email-status" aria-live="polite"></span></p>
   </header>
 
   <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
 
   <div id="dashboardMain" hidden>
+  <div class="trend-sticky-scope">
   <div class="shared-controls time-range-control link-a" id="sharedControls">
     <div class="time-range-header">
       <span class="time-range-label">Showing<strong id="rangeLabel"></strong></span>
@@ -558,7 +600,7 @@
             <label for="sizeCompareSelect">County size</label>
             <span class="info-tip">
               <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeCompareTip" aria-label="About the County size filter">i</button>
-              <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Leave empty to include all sizes. Selecting a size keeps only matching counties on these two charts (independent of the bar chart below). X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Region lines use only members of the selected sizes. Clicking a county of another size adds that size to the filter.</span>
+              <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Leave empty to include all sizes. Selecting a size keeps only matching counties on these two charts (independent of the county bar chart and Caseload movement below). X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Region lines use only members of the selected sizes. Clicking a county of another size adds that size to the filter.</span>
             </span>
           </div>
           <select id="sizeCompareSelect" multiple></select>
@@ -651,6 +693,7 @@
       </table>
     </div>
   </div>
+  </div>
 
   <div class="card link-b">
     <div class="bucket-title-row">
@@ -727,6 +770,86 @@
         <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementTip" aria-label="About caseload movement">i</button>
         <span id="movementTip" class="info-tip-bubble" role="tooltip">Net is additions minus discontinuances.</span>
       </span>
+    </div>
+    <div class="caseload-filters" id="movementControls">
+      <div class="time-range-header">
+        <span class="time-range-label">Showing<strong id="movementRangeLabel"></strong></span>
+        <button type="button" id="movementRangeLast2" class="range-btn">Last 2 years</button>
+        <button type="button" id="movementRangeSkipCovid" class="range-btn">Since 2021 (post COVID spike)</button>
+        <button type="button" id="movementRangeReset" class="range-btn">Full range</button>
+      </div>
+      <div class="range-slider">
+        <div class="range-track"><div class="range-track-fill" id="movementRangeTrackFill"></div></div>
+        <input type="range" id="movementRangeStart" class="range-input" min="0" max="0" value="0" step="1"
+          aria-label="Caseload movement start of date range" title="Drag to set the start of the date range">
+        <input type="range" id="movementRangeEnd" class="range-input" min="0" max="0" value="0" step="1"
+          aria-label="Caseload movement end of date range" title="Drag to set the end of the date range">
+      </div>
+      <p class="range-hint">Drag either handle to change the date range</p>
+
+      <button type="button" id="movementFiltersToggle" class="shared-filters-toggle"
+        aria-expanded="false" aria-controls="movementFilters">
+        <span class="shared-filters-toggle-text">
+          <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
+          <span class="shared-filters-summary" id="movementFiltersSummary">Sacramento</span>
+        </span>
+      </button>
+      <div class="shared-filters" id="movementFilters">
+        <div class="card-filters">
+          <div class="card-filters-clear">
+            <button type="button" id="movementClearBtn" class="range-btn">Clear filters</button>
+            <div class="filter-hint">Click a name to add or remove it. These filters are only for this chart; they start matching the two charts above.</div>
+          </div>
+          <div class="filter-group multi">
+            <div class="filter-label-row">
+              <label for="movementCompareSelect">Counties</label>
+              <span class="info-tip">
+                <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementCountiesTip" aria-label="About the Counties filter">i</button>
+                <span id="movementCountiesTip" class="info-tip-bubble" role="tooltip">California can be selected on its own. This chart does not use Add Statewide comparison from the charts above.</span>
+              </span>
+            </div>
+            <select id="movementCompareSelect" multiple></select>
+          </div>
+          <div class="filter-group multi">
+            <div class="filter-label-row">
+              <label for="movementSizeSelect">County size</label>
+              <span class="info-tip">
+                <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementSizeTip" aria-label="About the County size filter">i</button>
+                <span id="movementSizeTip" class="info-tip-bubble" role="tooltip">Leave empty to include all sizes. Independent of the charts above. X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Clicking a county of another size adds that size to the filter.</span>
+              </span>
+            </div>
+            <select id="movementSizeSelect" multiple></select>
+          </div>
+          <div class="region-with-drill">
+            <div class="filter-group multi">
+              <div class="filter-label-row">
+                <label for="movementRegionSelect">Regions</label>
+                <span class="info-tip">
+                  <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementRegionsTip" aria-label="About the Regions filter">i</button>
+                  <span id="movementRegionsTip" class="info-tip-bubble" role="tooltip">Adds one chart per region (combined counts of member counties). Independent of the charts above.</span>
+                </span>
+              </div>
+              <select id="movementRegionSelect" multiple></select>
+            </div>
+            <div class="filter-group drill-panel">
+              <div class="filter-label-row">
+                <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
+                <span class="info-tip">
+                  <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementDrillTip" aria-label="About drill into group">i</button>
+                  <span id="movementDrillTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate (or size filter) stays on the chart. If both a region and a size are selected, Counties follows the region — still limited to the selected sizes. Turning the switch off clears Counties.</span>
+                </span>
+              </div>
+              <button type="button" id="movementDrillBtn" class="drill-toggle" aria-pressed="false" disabled
+                aria-label="Drill into group, off"
+                title="Select exactly one region or one size group to turn this on">
+                <span id="movementDrillBtnLabel">Drill into group</span>
+                <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
+              </button>
+              <div class="filter-hint" id="movementDrillHint">Available when exactly one region or one size group is selected.</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <p class="caption" id="movementCaption">Certified cases added and discontinued</p>
     <div id="movementPanes" class="area-panes"></div>
@@ -1789,6 +1912,18 @@ BUCKET_ORDER.forEach(s => {
   opt.value = s; opt.textContent = SIZE_DISPLAY[s] || s;
   sizeCompareSelect.appendChild(opt);
 });
+const movementCompareSelect = document.getElementById('movementCompareSelect');
+const movementRegionSelect = document.getElementById('movementRegionSelect');
+const movementSizeSelect = document.getElementById('movementSizeSelect');
+const movementControls = document.getElementById('movementControls');
+const movementFiltersToggle = document.getElementById('movementFiltersToggle');
+const movementFiltersSummary = document.getElementById('movementFiltersSummary');
+const movementDrillBtn = document.getElementById('movementDrillBtn');
+let movementFollowsTop = true;
+let movementDrillActive = false;
+Array.from(compareSelect.options).forEach(o => movementCompareSelect.appendChild(o.cloneNode(true)));
+Array.from(regionCompareSelect.options).forEach(o => movementRegionSelect.appendChild(o.cloneNode(true)));
+Array.from(sizeCompareSelect.options).forEach(o => movementSizeSelect.appendChild(o.cloneNode(true)));
 const REGION_COLORS = ['#a05195', '#665191', '#2f4b7c', '#003f5c', '#d45087', '#f95d6a', '#ff7c43', '#ffa600', '#488f31'];
 const REGION_COLOR_BY_NAME = {};
 REGION_ORDER.forEach((r, i) => { REGION_COLOR_BY_NAME[r] = REGION_COLORS[i % REGION_COLORS.length]; });
@@ -1797,6 +1932,7 @@ REGION_ORDER.forEach((r, i) => { REGION_COLOR_BY_NAME[r] = REGION_COLORS[i % REG
 // chart's "Add Statewide comparison" toggle (on by default), not from this list.
 const DEFAULT_COUNTY = 'Sacramento';
 Array.from(compareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_COUNTY; });
+Array.from(movementCompareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_COUNTY; });
 
 // ---- Time-range scrub (dual-handle slider over the months array) ----
 const rangeStartInput = document.getElementById('rangeStart');
@@ -1815,11 +1951,28 @@ let rangeEnd = monthCount - 1;
 rangeStartInput.value = rangeStart;
 rangeEndInput.value = rangeEnd;
 
+const movementRangeStartInput = document.getElementById('movementRangeStart');
+const movementRangeEndInput = document.getElementById('movementRangeEnd');
+const movementRangeLabelEl = document.getElementById('movementRangeLabel');
+const movementRangeTrackFill = document.getElementById('movementRangeTrackFill');
+movementRangeStartInput.max = monthCount - 1;
+movementRangeEndInput.max = monthCount - 1;
+let movementRangeStart = rangeStart;
+let movementRangeEnd = rangeEnd;
+movementRangeStartInput.value = movementRangeStart;
+movementRangeEndInput.value = movementRangeEnd;
+
 function updateRangeLabel() {
-  rangeLabelEl.textContent = ' ' + fmtMonth(DATA.months[rangeStart]) + ' – ' + fmtMonth(DATA.months[rangeEnd]);
+  syncRangeLabel(rangeStart, rangeEnd, rangeLabelEl, rangeTrackFill);
+}
+function updateMovementRangeLabel() {
+  syncRangeLabel(movementRangeStart, movementRangeEnd, movementRangeLabelEl, movementRangeTrackFill);
+}
+function syncRangeLabel(start, end, labelEl, fillEl) {
+  labelEl.textContent = ' ' + fmtMonth(DATA.months[start]) + ' – ' + fmtMonth(DATA.months[end]);
   const max = Math.max(monthCount - 1, 1);
-  rangeTrackFill.style.left = (rangeStart / max * 100) + '%';
-  rangeTrackFill.style.width = ((rangeEnd - rangeStart) / max * 100) + '%';
+  fillEl.style.left = (start / max * 100) + '%';
+  fillEl.style.width = ((end - start) / max * 100) + '%';
 }
 
 function currentCounties() {
@@ -1831,6 +1984,19 @@ function currentRegions() {
 function currentSizes() {
   return Array.from(sizeCompareSelect.selectedOptions).map(o => o.value);
 }
+function selectionFrom(countySel, regionSel, sizeSel) {
+  const sizes = Array.from(sizeSel.selectedOptions).map(o => o.value);
+  const counties = Array.from(countySel.selectedOptions).map(o => o.value).filter(c => countyMatchesSizes(c, sizes));
+  const regions = Array.from(regionSel.selectedOptions).map(o => o.value).filter(r => regionMemberCounties(r, sizes).length > 0);
+  if (!counties.length && !regions.length) return { counties: ['Statewide'], regions: [], sizes };
+  return { counties, regions, sizes };
+}
+function currentSelection() {
+  return selectionFrom(compareSelect, regionCompareSelect, sizeCompareSelect);
+}
+function movementSelection() {
+  return selectionFrom(movementCompareSelect, movementRegionSelect, movementSizeSelect);
+}
 function countyMatchesSizes(c, sizes) {
   if (!sizes.length) return true;
   if (c === 'Statewide') return true;
@@ -1840,13 +2006,6 @@ function countyMatchesSizes(c, sizes) {
 function sizeCaptionSuffix(sizes) {
   if (!sizes.length) return '';
   return ' (' + sizes.map(s => SIZE_DISPLAY[s] || s).join(', ') + ')';
-}
-function currentSelection() {
-  const sizes = currentSizes();
-  const counties = currentCounties().filter(c => countyMatchesSizes(c, sizes));
-  const regions = currentRegions().filter(r => regionMemberCounties(r, sizes).length > 0);
-  if (!counties.length && !regions.length) return { counties: ['Statewide'], regions: [], sizes };
-  return { counties, regions, sizes };
 }
 function countiesWithStateLast(counties) {
   return counties.filter(c => c !== 'Statewide').concat(counties.filter(c => c === 'Statewide'));
@@ -1900,6 +2059,12 @@ function updateFiltersSummary(counties, regions, sizes) {
     .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
   sharedFiltersSummary.textContent = names.length ? names.join(' · ') : 'California';
 }
+function updateMovementFiltersSummary(counties, regions, sizes) {
+  const names = counties.map(c => c === 'Statewide' ? 'California' : c)
+    .concat(regions)
+    .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
+  movementFiltersSummary.textContent = names.length ? names.join(' · ') : 'California';
+}
 
 function applyOverlayLock(counties, regions) {
   const allow = isSingleFocusEntity(counties, regions) && !statewideCompareTotal;
@@ -1942,11 +2107,11 @@ const MOVEMENT_HOVER_ORDER = [
   'Discontinuances',
   'Net'
 ];
-function movementForEntity(entity, month) {
+function movementForEntity(entity, month, sizes) {
   const series = DATA.movement_series;
   if (!series) return null;
   if (entity.kind === 'region') {
-    return sumMovementCounts(regionMemberCounties(entity.id, currentSizes()), month, series);
+    return sumMovementCounts(regionMemberCounties(entity.id, sizes), month, series);
   }
   if (entity.kind === 'size') {
     return sumMovementCounts(sizeMemberCounties(entity.id), month, series);
@@ -1954,8 +2119,8 @@ function movementForEntity(entity, month) {
   return movementForCounty(entity.id, month, series);
 }
 function buildMovementCharts() {
-  const { counties, regions, sizes } = currentSelection();
-  const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
+  const { counties, regions, sizes } = movementSelection();
+  const labels = DATA.months.slice(movementRangeStart, movementRangeEnd + 1);
   const panes = paneEntities(counties, regions, sizes);
   const holder = document.getElementById('movementPanes');
   movementCharts.forEach(c => c.destroy());
@@ -1991,7 +2156,7 @@ function buildMovementCharts() {
     wrap.appendChild(canvasHold);
     holder.appendChild(wrap);
 
-    const monthly = labels.map(m => movementForEntity(pane, m));
+    const monthly = labels.map(m => movementForEntity(pane, m, sizes));
     const stackDatasets = MOVEMENT_SERIES.map((s, i) => ({
       type: 'line',
       label: s.label,
@@ -2103,7 +2268,7 @@ function buildMovementCharts() {
   }));
 }
 
-function rebuildTimeSeriesCharts() {
+function rebuildTopCharts() {
   updateRangeLabel();
   const { counties, regions, sizes } = currentSelection();
   applyOverlayLock(counties, regions);
@@ -2111,7 +2276,13 @@ function rebuildTimeSeriesCharts() {
   updateStatewideToggleState(counties);
   buildTotalChart(counties, regions);
   buildYoyChart(counties, regions);
-  buildMovementCharts();
+  if (movementFollowsTop) {
+    copyTopFiltersToMovement();
+    buildMovementCharts();
+  }
+}
+function rebuildTimeSeriesCharts() {
+  rebuildTopCharts();
 }
 
 function handleRangeInput() {
@@ -2160,6 +2331,15 @@ rangeLast2Btn.addEventListener('click', () => applyRangePreset('last2', rangeLas
 rangeSkipCovidBtn.addEventListener('click', () => applyRangePreset('since2021', rangeSkipCovidBtn));
 rangeResetBtn.addEventListener('click', () => applyRangePreset('full', rangeResetBtn));
 setActivePresetBtn(rangeLast2Btn);
+
+const movementRangeLast2Btn = document.getElementById('movementRangeLast2');
+const movementRangeSkipCovidBtn = document.getElementById('movementRangeSkipCovid');
+const movementRangeResetBtn = document.getElementById('movementRangeReset');
+const movementPresetBtns = [movementRangeLast2Btn, movementRangeSkipCovidBtn, movementRangeResetBtn];
+function setMovementPresetBtn(btn) {
+  movementPresetBtns.forEach(b => b.classList.toggle('active', b === btn));
+}
+setMovementPresetBtn(movementRangeLast2Btn);
 
 // ---- Total Participants chart ----
 let totalChart, yoyChart;
@@ -2773,13 +2953,16 @@ statewideCompareTotalBtn.addEventListener('click', () => {
   if (statewideCompareTotalBtn.disabled) return;
   statewideCompareTotal = !statewideCompareTotal;
   syncStatewideToggleUi(statewideCompareTotalBtn, statewideCompareTotal);
-  rebuildTimeSeriesCharts();
+  const { counties, regions } = currentSelection();
+  applyOverlayLock(counties, regions);
+  buildTotalChart(counties, regions);
 });
 statewideCompareYoyBtn.addEventListener('click', () => {
   if (statewideCompareYoyBtn.disabled) return;
   statewideCompareYoy = !statewideCompareYoy;
   syncStatewideToggleUi(statewideCompareYoyBtn, statewideCompareYoy);
-  rebuildTimeSeriesCharts();
+  const { counties, regions } = currentSelection();
+  buildYoyChart(counties, regions);
 });
 
 const drillRegionBtn = document.getElementById('drillRegionBtn');
@@ -2939,7 +3122,213 @@ document.getElementById('clearCompareBtn').addEventListener('click', () => {
   rebuildTimeSeriesCharts();
 });
 
+function copySelectSelection(fromSel, toSel) {
+  const want = new Set(Array.from(fromSel.selectedOptions).map(o => o.value));
+  Array.from(toSel.options).forEach(o => { o.selected = want.has(o.value); });
+}
+function copyTopFiltersToMovement() {
+  copySelectSelection(compareSelect, movementCompareSelect);
+  copySelectSelection(regionCompareSelect, movementRegionSelect);
+  copySelectSelection(sizeCompareSelect, movementSizeSelect);
+  movementRangeStart = rangeStart;
+  movementRangeEnd = rangeEnd;
+  movementRangeStartInput.value = rangeStart;
+  movementRangeEndInput.value = rangeEnd;
+  movementPresetBtns.forEach((btn, i) => {
+    btn.classList.toggle('active', rangePresetBtns[i].classList.contains('active'));
+  });
+  movementDrillActive = drillActive;
+  setMovementDrillUi(movementDrillActive);
+  updateMovementRangeLabel();
+  const sel = movementSelection();
+  updateMovementFiltersSummary(sel.counties, sel.regions, sel.sizes);
+}
+
+function movementCounties() {
+  return Array.from(movementCompareSelect.selectedOptions).map(o => o.value);
+}
+function movementRegions() {
+  return Array.from(movementRegionSelect.selectedOptions).map(o => o.value);
+}
+function movementSizes() {
+  return Array.from(movementSizeSelect.selectedOptions).map(o => o.value);
+}
+function movementDrillTarget() {
+  const regions = movementRegions();
+  const sizes = movementSizes();
+  if (regions.length === 1) return { kind: 'region', id: regions[0] };
+  if (regions.length === 0 && sizes.length === 1) return { kind: 'size', id: sizes[0] };
+  return null;
+}
+function movementDrillTargetCounties(target) {
+  if (!target) return new Set();
+  if (target.kind === 'region') return new Set(regionMemberCounties(target.id, movementSizes()));
+  return new Set(sizeMemberCounties(target.id));
+}
+function movementCountiesMatchDrill(target) {
+  const want = movementDrillTargetCounties(target);
+  const selected = new Set(movementCounties());
+  if (selected.size !== want.size) return false;
+  for (const v of want) if (!selected.has(v)) return false;
+  return true;
+}
+function setMovementDrillUi(on) {
+  movementDrillActive = !!on;
+  const target = movementDrillTarget();
+  const regions = movementRegions();
+  const sizes = movementSizes();
+  movementDrillBtn.disabled = !movementDrillActive && !target;
+  const label = drillLabel(target);
+  const labelEl = document.getElementById('movementDrillBtnLabel');
+  if (labelEl) labelEl.textContent = label;
+  movementDrillBtn.setAttribute('aria-pressed', movementDrillActive ? 'true' : 'false');
+  movementDrillBtn.setAttribute('aria-label', movementDrillActive ? label + ', on' : label + ', off');
+  const hint = document.getElementById('movementDrillHint');
+  if (movementDrillActive) {
+    if (target && target.kind === 'size') {
+      hint.textContent = 'On: Counties follows the selected size group. Switching size groups keeps the drill-down on.';
+      movementDrillBtn.title = 'Drill into size group is on';
+    } else if (target && target.kind === 'region') {
+      hint.textContent = 'On: Counties follows the selected region. Switching regions keeps the drill-down on.';
+      movementDrillBtn.title = 'Drill into region is on';
+    } else {
+      hint.textContent = 'On: pick one region or one size group and Counties will follow it.';
+      movementDrillBtn.title = 'Drill into group is on';
+    }
+  } else if (target && target.kind === 'region') {
+    hint.textContent = 'Available — turn on to break this region into its counties.';
+    movementDrillBtn.title = 'Turn on to drill into this region';
+  } else if (target && target.kind === 'size') {
+    hint.textContent = 'Available — turn on to break this size group into its counties.';
+    movementDrillBtn.title = 'Turn on to drill into this size group';
+  } else if (regions.length > 1) {
+    hint.textContent = 'Select only one region to turn this on — it can’t follow more than one at a time.';
+    movementDrillBtn.title = 'Select exactly one region or one size group to turn this on';
+  } else if (sizes.length > 1) {
+    hint.textContent = 'Select only one size group to turn this on — it can’t follow more than one at a time.';
+    movementDrillBtn.title = 'Select exactly one region or one size group to turn this on';
+  } else {
+    hint.textContent = 'Available when exactly one region or one size group is selected.';
+    movementDrillBtn.title = 'Select exactly one region or one size group to turn this on';
+  }
+}
+function applyMovementDrillIfActive() {
+  if (!movementDrillActive) return;
+  const target = movementDrillTarget();
+  if (!target) return;
+  const want = movementDrillTargetCounties(target);
+  Array.from(movementCompareSelect.options).forEach(o => { o.selected = want.has(o.value); });
+}
+function dropMovementCountiesOutsideSizes() {
+  const sizes = movementSizes();
+  if (!sizes.length) return;
+  Array.from(movementCompareSelect.options).forEach(o => {
+    if (o.selected && !countyMatchesSizes(o.value, sizes)) o.selected = false;
+  });
+}
+function includeMovementSizesOfSelectedCounties() {
+  const sizes = movementSizes();
+  if (!sizes.length) return;
+  Array.from(movementCompareSelect.selectedOptions).forEach(o => {
+    if (o.value === 'Statewide') return;
+    const s = DATA.county_meta[o.value] && DATA.county_meta[o.value].size;
+    if (!s) return;
+    Array.from(movementSizeSelect.options).forEach(opt => {
+      if (opt.value === s) opt.selected = true;
+    });
+  });
+}
+function onMovementFiltersChange() {
+  movementFollowsTop = false;
+  const sel = movementSelection();
+  updateMovementRangeLabel();
+  updateMovementFiltersSummary(sel.counties, sel.regions, sel.sizes);
+  buildMovementCharts();
+}
+
+function handleMovementRangeInput() {
+  let s = parseInt(movementRangeStartInput.value, 10);
+  let e = parseInt(movementRangeEndInput.value, 10);
+  if (s > e) {
+    if (this === movementRangeStartInput) { e = s; movementRangeEndInput.value = e; }
+    else { s = e; movementRangeStartInput.value = s; }
+  }
+  movementRangeStart = s;
+  movementRangeEnd = e;
+  movementPresetBtns.forEach(b => b.classList.remove('active'));
+  onMovementFiltersChange();
+}
+movementRangeStartInput.addEventListener('input', handleMovementRangeInput);
+movementRangeEndInput.addEventListener('input', handleMovementRangeInput);
+
+function applyMovementRangePreset(preset, btn) {
+  if (preset === 'last2') {
+    movementRangeStart = lastNMonthsStart(DEFAULT_RANGE_MONTHS);
+    movementRangeEnd = monthCount - 1;
+  } else if (preset === 'since2021') {
+    const idx = DATA.months.indexOf('2021-01');
+    movementRangeStart = idx === -1 ? 0 : idx;
+    movementRangeEnd = monthCount - 1;
+  } else {
+    movementRangeStart = 0;
+    movementRangeEnd = monthCount - 1;
+  }
+  movementRangeStartInput.value = movementRangeStart;
+  movementRangeEndInput.value = movementRangeEnd;
+  setMovementPresetBtn(btn);
+  onMovementFiltersChange();
+}
+movementRangeLast2Btn.addEventListener('click', () => applyMovementRangePreset('last2', movementRangeLast2Btn));
+movementRangeSkipCovidBtn.addEventListener('click', () => applyMovementRangePreset('since2021', movementRangeSkipCovidBtn));
+movementRangeResetBtn.addEventListener('click', () => applyMovementRangePreset('full', movementRangeResetBtn));
+
+movementCompareSelect.addEventListener('change', () => {
+  includeMovementSizesOfSelectedCounties();
+  if (movementDrillActive) {
+    const target = movementDrillTarget();
+    if (!target || !movementCountiesMatchDrill(target)) movementDrillActive = false;
+  }
+  setMovementDrillUi(movementDrillActive);
+  onMovementFiltersChange();
+});
+movementRegionSelect.addEventListener('change', () => {
+  setMovementDrillUi(movementDrillActive);
+  applyMovementDrillIfActive();
+  onMovementFiltersChange();
+});
+movementSizeSelect.addEventListener('change', () => {
+  dropMovementCountiesOutsideSizes();
+  setMovementDrillUi(movementDrillActive);
+  applyMovementDrillIfActive();
+  onMovementFiltersChange();
+});
+movementFiltersToggle.addEventListener('click', () => {
+  const open = !movementControls.classList.contains('filters-open');
+  movementControls.classList.toggle('filters-open', open);
+  movementFiltersToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+movementDrillBtn.addEventListener('click', () => {
+  if (movementDrillActive) {
+    setMovementDrillUi(false);
+    Array.from(movementCompareSelect.options).forEach(o => { o.selected = false; });
+  } else {
+    if (!movementDrillTarget()) return;
+    setMovementDrillUi(true);
+    applyMovementDrillIfActive();
+  }
+  onMovementFiltersChange();
+});
+document.getElementById('movementClearBtn').addEventListener('click', () => {
+  [movementCompareSelect, movementRegionSelect, movementSizeSelect].forEach(el => {
+    Array.from(el.options).forEach(o => { o.selected = false; });
+  });
+  Array.from(movementCompareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_COUNTY; });
+  setMovementDrillUi(false);
+  onMovementFiltersChange();
+});
+
 updateDrillButtonState();
+setMovementDrillUi(false);
 rebuildTimeSeriesCharts();
 
 // Chart.js's built-in responsive detection can lag or misfire when the layout
@@ -3304,7 +3693,7 @@ function buildBucketChart() {
 }
 
 [regionFilterEl, sizeFilterEl, countyFilterEl].forEach(el => el.addEventListener('change', buildBucketChart));
-[compareSelect, regionCompareSelect, sizeCompareSelect, regionFilterEl, sizeFilterEl, countyFilterEl]
+[compareSelect, regionCompareSelect, sizeCompareSelect, movementCompareSelect, movementRegionSelect, movementSizeSelect, regionFilterEl, sizeFilterEl, countyFilterEl]
   .forEach(enablePlainClickToggle);
 buildBucketChart();
 
