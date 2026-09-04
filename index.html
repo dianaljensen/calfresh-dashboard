@@ -6,6 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
 <script src="data.js"></script>
+<link rel="stylesheet" href="quirk.css">
 <style>
   :root {
     --ink: #1f2430;
@@ -459,6 +460,7 @@
   }
   footer.source-note .footer-wonk-h:first-of-type { margin-top: 8px; }
   footer.source-note .footer-methods .footer-notes { margin-bottom: 2px; }
+  footer.source-note .footer-credit { margin: 16px 0 0; }
   .live-note {
     background: #eef6f4; border: 1px solid #c5ddd6; color: #1f4d43;
     font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
@@ -482,7 +484,7 @@
     /* Range slider and multiselect boxes don't render usefully on paper --
        hide the interactive controls, the "Showing" text label already states
        the active date range as plain text. */
-    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover { display: none; }
+    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover, .quirk-doodle, .quirk-dialog { display: none; }
     .shared-filters, .bucket-filter-lists { display: flex !important; border-top: 0; padding-top: 0; }
     .filter-group.multi select { min-height: auto; }
   }
@@ -773,6 +775,7 @@
         <li>ICT in is Item 5.c (incoming only). ICT outs are inside Item 7; CF296 has no ICT-out cell. Statewide, ICT in and those outs should cancel in the net.</li>
       </ul>
     </details>
+    <p class="footer-credit">Designed by Diana Jensen, built with help from Cursor.</p>
   </footer>
   </div>
 </div>
@@ -3364,5 +3367,6 @@ window.addEventListener('hashchange', () => {
 
 startLiveDashboard(initDashboard);
 </script>
+<script src="quirk.js"></script>
 </body>
 </html>
