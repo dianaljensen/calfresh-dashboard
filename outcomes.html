@@ -305,8 +305,19 @@
   .chart-plot > h2,
   .chart-plot > h3,
   .chart-plot > h4,
-  .chart-plot > .caption {
+  .chart-plot > .caption,
+  .chart-plot > .timeliness-legend,
+  .chart-plot > .chart-plot-head {
     padding-left: var(--plot-title-inset);
+  }
+  .chart-plot-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; flex-wrap: wrap; margin: 0 0 4px; min-height: 28px;
+  }
+  .chart-plot-head .chart-plot-title { margin: 0; padding-left: 0; }
+  .chart-plot-head .layer-toggle {
+    padding: 2px 8px; font-size: 12px; --layer-color: #C17B5C;
+    white-space: nowrap; flex-shrink: 0;
   }
   .chart-hover {
     display: none; position: fixed; z-index: 30; left: 0; top: 0;
@@ -332,6 +343,31 @@
   .area-panes {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 16px; margin-bottom: 8px;
+  }
+  .timeliness-plots {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .timeliness-plots .chart-holder { height: 240px; }
+  @media (max-width: 800px) {
+    .timeliness-plots { grid-template-columns: 1fr; }
+  }
+  .timeliness-legend {
+    display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 10px;
+    font-size: 12px; color: var(--ink);
+  }
+  .timeliness-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .timeliness-legend i {
+    display: inline-block; width: 14px; height: 3px; border-radius: 1px;
+  }
+  .timeliness-legend i.dashed {
+    background: repeating-linear-gradient(90deg, currentColor 0 5px, transparent 5px 8px);
+    background-color: transparent;
+    height: 0;
+    border-top: 2px dashed currentColor;
+    width: 16px;
   }
   .outcome-grid {
     display: grid;
@@ -525,7 +561,8 @@
     body { background: #fff; }
     .link-a, .link-b, .card.link-a, .card.link-b { background: #fff !important; }
     .card, .time-range-control, .section-controls { box-shadow: none; position: static; }
-    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover, .quirk-doodle, .quirk-dialog { display: none; }
+    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover, .quirk-doodle, .quirk-dialog,
+    .timeliness-plots .layer-toggle { display: none; }
     .shared-filters, .bucket-filter-lists { display: flex !important; border-top: 0; padding-top: 0; }
     .filter-group.multi select { min-height: auto; }
   }
@@ -755,9 +792,53 @@
     </table>
   </div>
 
+  <div class="card link-a">
+    <div class="card-title-row">
+      <h2>Timeliness</h2>
+      <span class="info-tip">
+        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="timelinessTip" aria-label="About timeliness">i</button>
+        <span id="timelinessTip" class="info-tip-bubble" role="tooltip">Share decided after the 30-day or 3-day deadline, plus average days to process. Higher is later. Lines overlay. Date and place follow Application Trends.</span>
+      </span>
+    </div>
+    <p class="caption" id="timelinessCaption">All applications</p>
+    <div class="timeliness-plots">
+      <div class="chart-plot">
+        <div class="chart-plot-head">
+          <h3 class="chart-plot-title" id="latePlotTitle">Processed late</h3>
+        </div>
+        <div class="timeliness-legend" id="timelinessLegend" hidden></div>
+        <div class="chart-hover" id="lateChartHover" aria-live="polite"></div>
+        <div class="chart-holder"><canvas id="lateChart" aria-hidden="true"></canvas></div>
+      </div>
+      <div class="chart-plot">
+        <div class="chart-plot-head">
+          <h3 class="chart-plot-title" id="daysPlotTitle">Average Days to Process</h3>
+          <label class="layer-toggle">
+            <input type="checkbox" id="ssiDaysToggle" checked>
+            SSI households
+          </label>
+        </div>
+        <p class="caption" id="daysCaption"></p>
+        <div class="timeliness-legend" id="daysLegend" hidden></div>
+        <div class="chart-hover" id="daysChartHover" aria-live="polite"></div>
+        <div class="chart-holder"><canvas id="daysChart" aria-hidden="true"></canvas></div>
+      </div>
+    </div>
+    <table class="sr-only" id="lateChartTable">
+      <caption>Share of applications processed after the 30-day or 3-day expedited deadline, by month</caption>
+      <thead><tr><th scope="col">Month</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <table class="sr-only" id="daysChartTable">
+      <caption>Average days to process applications, by month</caption>
+      <thead><tr><th scope="col">Month</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
   <footer class="source-note">
     <span class="footer-section-label">Sources</span>
-    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296: Applications, Expedited Service, and Recertifications</a> and the <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard">CalFresh Data Dashboard</a>.
+    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296: Applications, Expedited Service, and Recertifications</a>, <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-tables/cf-18">CF18: Recertification and Application Processing</a>, and the <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard">CalFresh Data Dashboard</a>.
 
     <span class="footer-section-label">Definitions</span>
     County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000, computed from the latest available month of the CDSS Data Dashboard Monthly tab.
@@ -771,6 +852,7 @@
       <li>Some CalWIN counties reported 0 SSI applications received from December 2019 through May 2022. SSI outcomes still exist those months.</li>
       <li>SSI household outcomes are displayed according to best available data from the CDSS Data Dashboard Monthly tab. When ineligible + procedural is close to denied, the mix is shown as approved / ineligible / procedural / other. CalWIN counties ~2020–May 2022 show total denials, but not a break-out of ineligible vs. procedural, and are shown as a single lumped Denied in warm grey. Months where the ineligible / procedural split overshoots total denials are also shown this way.</li>
       <li>SSI Denial details is households with only SSI recipients: ineligible vs procedural, a subset of some-SSI denials.</li>
+      <li>Timeliness percents are all applications from CF296, not college student or SSI mixes. After 30 days and after 3 days (expedited) overlay on one chart — different clocks for all disposed vs expedited applications. Days to process is all applications (Quarterly tab, then CF18); SSI households (Monthly tab) sit on a checkbox on that chart (on by default). College students have no days column. <a href="#methods">See wonky &amp; math-y details</a>.</li>
     </ul>
     <details class="footer-methods" id="methods">
       <summary>
@@ -841,6 +923,16 @@
         <li>Denial details: applications denied.</li>
         <li>Age / Language / Race / Gender / Household size: the count those percents (or stacked counts) are of. Students = the matching Age/Language/Race/Gender total. SSI language = households disposed. SSI race = persons in applications disposed. SSI household size = SSI-only households added. Student Age hover also has average age; SSI household-size and volume hover have SSI average age. Student volume hover notes ICT transfers.</li>
         <li>Exemptions &amp; deductions: the count those percents are of (student age total, or SSI household applications disposed). Hover lists each overlapping rate; they do not sum to 100%.</li>
+        <li>Timeliness percents: After 30 days is applications disposed; after 3 days is expedited applications found entitled. Hover lists that count on each row. Days to process: initial applications approved (CF18, with expedited / non-expedited in single-place hover) or SSI household applications disposed.</li>
+      </ul>
+      <h3 class="footer-wonk-h">Timeliness</h3>
+      <ul class="footer-notes">
+        <li>After 30 days and after 3 days (expedited) overlay on one chart. Both are all applications only — CF296 has no student or SSI timeliness cells. Date and place follow Application Trends. Lines overlay (unlike the outcome stacks).</li>
+        <li>Processed after 30 days = (Item 2.a.1 approved over 30, county-caused + Item 2.b.3 denied over 30, county-caused) ÷ Item 2 applications disposed. Applicant-caused delays are not in those cells.</li>
+        <li>Expedited after 3 days = (Item 3.a.2 issued in 4–7 days + Item 3.a.3 issued over 7 days) ÷ Item 3.a found entitled to expedited service. If those buckets are missing, entitled minus issued in 1–3 days.</li>
+        <li>Region and size-group percent lines are combined counts, not an average of percentages, and are dashed.</li>
+        <li>Days to process (all applications): CF18 average days to approval of initial applications, weighted by the expedited and non-expedited approval-count buckets. Prefer CF18 in any month it exists. Earlier months use the Quarterly tab’s <code>Average Days to Approve</code>, held flat across the three months of that quarter. Region and size-group days use the same CF18 count weights; they are blank in the quarterly-only era (no counts to weight). Statewide CF18 is recomputed from county counts — the sheet’s Statewide average cells are an unweighted mean of county averages.</li>
+        <li>Days to process (SSI): Monthly tab <code>Average Days to Dispose - SSI</code> (households with at least some SSI). Region/size lines are weighted by SSI approved + denied. <code>SSI Only Average Days to Dispose Application</code> is not on this chart. The SSI line is a checkbox on Average Days to Process (on by default), not tied to Compare populations. College students have no days-to-process column on the Monthly tab.</li>
       </ul>
     </details>
     <p class="footer-credit">Designed by Diana Jensen, built with help from Cursor.</p>
@@ -875,6 +967,15 @@ const SIZE_DISPLAY = {
   'Medium': 'Medium',
   'Small': 'Small'
 };
+const COMPARE_COLORS = [
+  '#1f2430', '#e69f00', '#009e73', '#cc79a7', '#56b4e9', '#d55e00',
+  '#0072b2', '#6a3d9a', '#b15928', '#66a61e', '#e7298a', '#a6761d'
+];
+const DAYS_ALL_COLORS = ['#5B4B8A', '#2E6F62', '#3D6B8A', '#4A7C59', '#6B5B4B', '#4E6B7A'];
+const DAYS_SSI_COLORS = ['#C17B5C', '#A65D57', '#B8860B', '#8B5A2B', '#C4A35A', '#9C6B4A'];
+const REGION_COLORS = ['#a05195', '#665191', '#2f4b7c', '#003f5c', '#d45087', '#f95d6a', '#ff7c43', '#ffa600', '#488f31'];
+const REGION_COLOR_BY_NAME = {};
+REGION_ORDER.forEach((r, i) => { REGION_COLOR_BY_NAME[r] = REGION_COLORS[i % REGION_COLORS.length]; });
 const POPULATION_META = {
   all: {
     id: 'all',
@@ -910,6 +1011,10 @@ function fmtCount(v) {
   return Math.round(v).toLocaleString('en-US');
 }
 function fmtAge(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  return v.toFixed(1);
+}
+function fmtDays(v) {
   if (v == null || isNaN(v)) return 'n/a';
   return v.toFixed(1);
 }
@@ -956,8 +1061,16 @@ function formatHoverRaw(p, approx) {
   else if (typeof p.dataset.displayPct === 'number') text = p.dataset.displayPct.toFixed(1) + '%';
   else if (p.dataset.valueKind === 'net') text = fmtNet(p.raw);
   else if (p.dataset.valueKind === 'count') text = fmtCount(p.raw);
+  else if (p.dataset.valueKind === 'days') text = fmtDays(p.raw);
   else text = p.raw.toFixed(1) + '%';
-  if (approx && text && text !== 'n/a') text = '~' + text;
+  const pointApprox = approx || (p.dataset.estimatedFlags && p.dataset.estimatedFlags[p.dataIndex]);
+  if (pointApprox && text && text !== 'n/a') text = '~' + text;
+  if (p.dataset.denomData) {
+    const n = p.dataset.denomData[p.dataIndex];
+    if (n != null && p.dataset.denomLabel) {
+      text += ' · ' + fmtCount(n) + ' ' + p.dataset.denomLabel;
+    }
+  }
   return text;
 }
 function hexAlpha(hex, a) {
@@ -1030,12 +1143,14 @@ function hoverTooltipExternal(hoverId, placement, getNote) {
     let note = null;
     let footer = null;
     let approx = false;
+    let extraRows = null;
     if (typeof getNote === 'function') {
       const extra = getNote(items[0].dataIndex, context);
       if (extra && typeof extra === 'object') {
         note = extra.note || null;
         footer = extra.footer || null;
         approx = !!extra.approx;
+        extraRows = extra.rows || null;
       } else if (typeof extra === 'string') {
         note = extra;
       }
@@ -1043,7 +1158,7 @@ function hoverTooltipExternal(hoverId, placement, getNote) {
     const rows = items.map(p => ({
       color: p.dataset.borderColor || p.dataset.backgroundColor,
       text: p.dataset.label + ': ' + formatHoverRaw(p, approx)
-    }));
+    })).concat(extraRows || []);
     renderHoverTooltip(el, { title, note, rows, footer });
     const canvas = context.chart.canvas;
     const plot = canvas.closest('.chart-plot');
@@ -1473,6 +1588,7 @@ let selectedRegions = [];
 let selectedSizes = [];
 let rangePreset = 'last2';
 let drillActive = false;
+let showSsiDays = true;
 const areaCharts = [];
 const nestedCharts = [];
 const RECEIVED_COLOR = '#2a6ebb';
@@ -1836,6 +1952,42 @@ function countsForEntity(entity, month, mode) {
   }
   if (members) return sumOutcomeCounts(members, month, DATA.series, stackFor(pop));
   return countsForCounty(entity.id, month, pop);
+}
+function timelinessForEntity(entity, month) {
+  const members = entityMembers(entity);
+  if (members) return sumTimelinessCounts(members, month, DATA.series);
+  return timelinessForCounty(entity.id, month, DATA.series);
+}
+function daysPlaceMembers(entity) {
+  const members = entityMembers(entity);
+  if (members) return members;
+  if (entity.id === 'Statewide') return DATA.all_counties;
+  return null;
+}
+function allAppsDaysForEntity(entity, month) {
+  const members = daysPlaceMembers(entity);
+  if (members) {
+    const statewideQ = (entity.id === 'Statewide' && DATA.days_series && DATA.days_series.Statewide)
+      ? DATA.days_series.Statewide.quarterlyDays[month]
+      : null;
+    return allAppsDaysForMembers(members, month, DATA.days_series, statewideQ);
+  }
+  return allAppsDaysForCounty(entity.id, month, DATA.days_series);
+}
+function ssiDaysForEntity(entity, month) {
+  const members = daysPlaceMembers(entity);
+  if (members) return weightedSsiDays(members, month, DATA.ssi_series);
+  return ssiDaysForCounty(entity.id, month, DATA.ssi_series);
+}
+function daysForEntity(entity, month, pop) {
+  if (pop === 'students') return null;
+  if (pop === 'ssi') return ssiDaysForEntity(entity, month);
+  return allAppsDaysForEntity(entity, month);
+}
+function visibleDaysModes() {
+  const modes = ['all'];
+  if (showSsiDays) modes.push('ssi');
+  return modes;
 }
 function currentShares(counts, mode) {
   return outcomeShares(counts, stackFor(mode || populationMode));
@@ -2896,6 +3048,299 @@ function buildAreaCharts() {
     });
     return row;
   }));
+  buildTimelinessCharts();
+}
+
+const TIMELINESS_METRICS = [
+  {
+    key: 'over30',
+    label: 'After 30 days',
+    denomNote: 'applications disposed',
+    denomKey: 'disposed'
+  },
+  {
+    key: 'esOver3',
+    label: 'After 3 days (expedited)',
+    denomNote: 'expedited applications',
+    denomKey: 'esEntitled'
+  }
+];
+const timelinessCharts = [];
+
+function placeLineStyle(entity, i) {
+  if (entity.kind === 'region') {
+    return { color: REGION_COLOR_BY_NAME[entity.id] || COMPARE_COLORS[i % COMPARE_COLORS.length], dash: [5, 3] };
+  }
+  if (entity.kind === 'size') {
+    return { color: COMPARE_COLORS[i % COMPARE_COLORS.length], dash: [5, 3] };
+  }
+  if (entity.id === 'Statewide') {
+    return { color: '#4a6678', dash: [6, 4] };
+  }
+  return { color: COMPARE_COLORS[i % COMPARE_COLORS.length], dash: undefined };
+}
+
+function daysLineStyle(entity, pop, i) {
+  const palette = pop === 'ssi' ? DAYS_SSI_COLORS : DAYS_ALL_COLORS;
+  const color = palette[i % palette.length];
+  if (entity.kind === 'region' || entity.kind === 'size') {
+    return { color: color, dash: [5, 3] };
+  }
+  if (entity.id === 'Statewide') {
+    return { color: color, dash: [6, 4] };
+  }
+  if (pop === 'ssi') {
+    return { color: color, dash: [4, 3] };
+  }
+  return { color: color, dash: undefined };
+}
+
+function daysSeriesLabel(geo, pop, geos, pops) {
+  const name = popLabel(pop);
+  if (pops.length === 1) return geos.length === 1 ? name : geo.title;
+  if (geos.length === 1) return name;
+  return geo.title + ' · ' + name;
+}
+
+function lateHoverExtra(series, idx) {
+  const anyEst = series.some(s => {
+    const row = s.monthly[idx];
+    return row && row.estimated && row.estimated[s.metric.key];
+  });
+  return {
+    footer: anyEst
+      ? 'Some data has been masked for this report month; %s are estimates.'
+      : null
+  };
+}
+
+function buildTimelinessCharts() {
+  const { counties, regions, sizes } = currentSelection();
+  const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
+  const geos = paneEntities(counties, regions, sizes);
+  const captionEl = document.getElementById('timelinessCaption');
+  const legendEl = document.getElementById('timelinessLegend');
+  captionEl.textContent = 'All applications — ' + selectionNames(counties, regions, sizes).join(', ');
+
+  timelinessCharts.forEach(c => c.destroy());
+  timelinessCharts.length = 0;
+  clearHoverTooltip(document.getElementById('lateChartHover'));
+  clearHoverTooltip(document.getElementById('daysChartHover'));
+
+  const series = [];
+  geos.forEach((geo, gi) => {
+    const monthly = labels.map(m => timelinessForEntity(geo, m));
+    TIMELINESS_METRICS.forEach((metric, mi) => {
+      const style = placeLineStyle(geo, gi * TIMELINESS_METRICS.length + mi);
+      series.push({
+        geo: geo,
+        metric: metric,
+        style: style,
+        monthly: monthly,
+        label: geos.length === 1 ? metric.label : geo.title + ' · ' + metric.label
+      });
+    });
+  });
+  fillLineLegend(legendEl, series, s => s.label);
+
+  const ctx = document.getElementById('lateChart');
+  const datasets = series.map(s => ({
+    label: s.label,
+    data: s.monthly.map(row => row ? row[s.metric.key] : null),
+    denomData: s.monthly.map(row => row ? row[s.metric.denomKey] : null),
+    denomLabel: s.metric.denomNote,
+    estimatedFlags: s.monthly.map(row => !!(row && row.estimated && row.estimated[s.metric.key])),
+    borderColor: s.style.color,
+    backgroundColor: s.style.color,
+    borderDash: s.style.dash,
+    pointRadius: 0,
+    borderWidth: 1.75,
+    tension: 0,
+    spanGaps: false
+  }));
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false, axis: 'x' },
+      layout: { padding: { top: 8, bottom: 30 } },
+      plugins: {
+        legend: { display: false },
+        monthYearAxis: true,
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal('lateChartHover', 'above', idx => lateHoverExtra(series, idx)),
+          itemSort: (a, b) => {
+            const ya = a.parsed ? a.parsed.y : null;
+            const yb = b.parsed ? b.parsed.y : null;
+            if (ya == null && yb == null) return 0;
+            if (ya == null) return 1;
+            if (yb == null) return -1;
+            return yb - ya;
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { display: false }, grid: { display: false } },
+        y: {
+          min: 0,
+          ticks: { callback: v => v + '%' },
+          grid: { color: '#f0f0f0' }
+        }
+      }
+    }
+  });
+  timelinessCharts.push(chart);
+
+  const names = series.map(s => s.label);
+  const thead = document.querySelector('#lateChartTable thead tr');
+  thead.innerHTML = '<th scope="col">Month</th>' + names.map(n => '<th scope="col">' + n + '</th>').join('');
+  renderAccessibleTable(document.querySelector('#lateChartTable tbody'), labels.map((m, i) => {
+    const row = [fmtMonth(m)];
+    series.forEach(s => {
+      const rec = s.monthly[i];
+      const v = rec ? rec[s.metric.key] : null;
+      const approx = rec && rec.estimated && rec.estimated[s.metric.key];
+      const denom = rec ? rec[s.metric.denomKey] : null;
+      let cell = v == null ? 'n/a' : ((approx ? '~' : '') + v.toFixed(1) + '%');
+      if (v != null && denom != null) cell += ' (' + fmtCount(denom) + ' ' + s.metric.denomNote + ')';
+      row.push(cell);
+    });
+    return row;
+  }));
+  buildDaysChart(labels, geos, counties, regions, sizes);
+}
+
+function fillLineLegend(legendEl, series, labelOf, always) {
+  legendEl.replaceChildren();
+  if (series.length > 1 || (always && series.length)) {
+    legendEl.hidden = false;
+    series.forEach(s => {
+      const item = document.createElement('span');
+      const swatch = document.createElement('i');
+      swatch.style.color = s.style.color;
+      if (s.style.dash) swatch.className = 'dashed';
+      else swatch.style.background = s.style.color;
+      item.appendChild(swatch);
+      item.appendChild(document.createTextNode(labelOf(s)));
+      legendEl.appendChild(item);
+    });
+  } else {
+    legendEl.hidden = true;
+  }
+}
+
+function daysHoverExtra(series, idx) {
+  if (series.length === 1) {
+    const row = series[0].monthly[idx];
+    if (!row) return null;
+    if (row.source === 'cf18') {
+      const n = (row.esN || 0) + (row.neN || 0);
+      const extra = [];
+      if (row.esDays != null) extra.push({ text: 'Expedited: ' + fmtDays(row.esDays) });
+      if (row.neDays != null) extra.push({ text: 'Non-expedited: ' + fmtDays(row.neDays) });
+      return {
+        note: n ? fmtCount(n) + ' initial applications approved' : null,
+        rows: extra
+      };
+    }
+    if (row.source === 'quarterly') {
+      return { note: 'Quarterly average, held across the quarter' };
+    }
+    if (row.source === 'ssi') {
+      return {
+        note: row.weight != null
+          ? fmtCount(row.weight) + ' SSI household applications disposed'
+          : 'SSI household applications'
+      };
+    }
+    return null;
+  }
+  const sources = series.map(s => s.monthly[idx] && s.monthly[idx].source).filter(Boolean);
+  if (sources.indexOf('quarterly') !== -1 && sources.every(src => src === 'quarterly')) {
+    return { note: 'Quarterly average, held across the quarter' };
+  }
+  return null;
+}
+
+function buildDaysChart(labels, geos, counties, regions, sizes) {
+  const captionEl = document.getElementById('daysCaption');
+  const legendEl = document.getElementById('daysLegend');
+  clearHoverTooltip(document.getElementById('daysChartHover'));
+  const pops = visibleDaysModes();
+  const series = [];
+  geos.forEach((geo, gi) => {
+    pops.forEach(pop => {
+      series.push({
+        label: daysSeriesLabel(geo, pop, geos, pops),
+        style: daysLineStyle(geo, pop, gi),
+        monthly: labels.map(m => daysForEntity(geo, m, pop))
+      });
+    });
+  });
+  captionEl.hidden = true;
+  fillLineLegend(legendEl, series, s => s.label, true);
+
+  const ctx = document.getElementById('daysChart');
+  const datasets = series.map(s => ({
+    label: s.label,
+    data: s.monthly.map(row => row ? row.days : null),
+    borderColor: s.style.color,
+    backgroundColor: s.style.color,
+    borderDash: s.style.dash,
+    pointRadius: 0,
+    borderWidth: 1.75,
+    tension: 0,
+    spanGaps: false,
+    valueKind: 'days'
+  }));
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false, axis: 'x' },
+      layout: { padding: { top: 8, bottom: 30 } },
+      plugins: {
+        legend: { display: false },
+        monthYearAxis: true,
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal('daysChartHover', 'above', idx => daysHoverExtra(series, idx)),
+          itemSort: (a, b) => {
+            const ya = a.parsed ? a.parsed.y : null;
+            const yb = b.parsed ? b.parsed.y : null;
+            if (ya == null && yb == null) return 0;
+            if (ya == null) return 1;
+            if (yb == null) return -1;
+            return yb - ya;
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { display: false }, grid: { display: false } },
+        y: {
+          min: 0,
+          ticks: { callback: v => v },
+          grid: { color: '#f0f0f0' }
+        }
+      }
+    }
+  });
+  timelinessCharts.push(chart);
+
+  const names = series.map(s => s.label);
+  const thead = document.querySelector('#daysChartTable thead tr');
+  thead.innerHTML = '<th scope="col">Month</th>' + names.map(n => '<th scope="col">' + n + '</th>').join('');
+  renderAccessibleTable(document.querySelector('#daysChartTable tbody'), labels.map((m, i) => {
+    const row = [fmtMonth(m)];
+    series.forEach(s => {
+      const v = s.monthly[i] ? s.monthly[i].days : null;
+      row.push(v == null ? 'n/a' : fmtDays(v));
+    });
+    return row;
+  }));
 }
 
 function syncGeoRangeUi() {
@@ -3130,6 +3575,11 @@ function clearGeoFilters() {
 
 syncExploreModeUi();
 
+document.getElementById('ssiDaysToggle').addEventListener('change', e => {
+  showSsiDays = e.target.checked;
+  buildTimelinessCharts();
+});
+
 buildAreaCharts();
 
 let resizeRAF = null;
@@ -3138,6 +3588,7 @@ window.addEventListener('resize', () => {
   resizeRAF = requestAnimationFrame(() => {
     areaCharts.forEach(c => c.resize());
     nestedCharts.forEach(c => c.resize());
+    timelinessCharts.forEach(c => c.resize());
     if (bucketChart) bucketChart.resize();
   });
 });
