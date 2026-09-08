@@ -29,7 +29,7 @@ Participation Trends (`index.html`) has its own short footer; pasted at the bott
 
 ### Sources
 
-> Data: CDSS CF296: Applications, Expedited Service, and Recertifications and the CalFresh Data Dashboard.
+> Data: CDSS CF296: Applications, Expedited Service, and Recertifications (ACL 22-85) and the CalFresh Data Dashboard.
 
 Slimmed 2026-09-03; recipes moved into Methods.
 

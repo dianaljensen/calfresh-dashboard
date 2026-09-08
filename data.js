@@ -9,7 +9,7 @@ const PUBLISHED_SHEET = {
   pointInTimeGid: '1435977340',  // Master_PointInTime (dual Medi-Cal enrollment)
   cf296Gid: '1704035547',        // CF296 (FY2025-26+, 135 cells)
   cf296LegacyGid: '1152285266', // CF296_Legacy (FY2016-17 through FY2024-25)
-  cf18Gid: '732589613',          // CF18 (FY2020-21+, days to approval)
+  cf18Gid: '732589613',          // CF18 (FY2020-21+, churn + days to approval)
   quarterlyGid: '1534624266'     // Master_Quarterly (Average Days to Approve through 2020)
 };
 
@@ -304,6 +304,42 @@ const SSI_RAW_KEYS = ['approved', 'denied', 'ineligible', 'procedural', 'ssiOnly
 const SSI_VOLUME_KEYS = ['onlineApps', 'nonOnlineApps'];
 const SSI_SERIES_KEYS = SSI_RAW_KEYS.concat(SSI_VOLUME_KEYS).concat(['avgAge', 'daysDispose']);
 const DAYS_CF18_KEYS = ['esDays', 'esN', 'neDays', 'neN'];
+
+// CF18 Measurement 1 (households due) and Measurement 2 (applications disposed).
+// Cell numbers are the DataDictionary C1…C58 labels in pipeline/cf18_labels.json.
+// Recert = RRR column; SAR 7 is the parallel column. Item 1 leftover after the
+// completed/returned slices is “no return within 4 months.” Reapplications
+// (Items 9–16) is one orange band on top of the stack.
+const CHURN_DUE_STACK = [
+  { key: 'noLoss', label: 'No loss of benefits', shortLabel: 'No loss', color: '#2C5985' },
+  { key: 'lateLoss', label: 'Late with loss', shortLabel: 'Late with loss', color: '#4BA5BA' },
+  { key: 'ineligible', label: 'Ineligible', shortLabel: 'Ineligible', color: '#6A6A6A' },
+  { key: 'noReturn', label: 'No renewal and no return within 4 months', shortLabel: 'No return', color: '#C0C0C0' },
+  { key: 'reapp', label: 'Reapplications', shortLabel: 'Reapplications', color: '#FB7906' }
+];
+const CHURN_APP_STACK = [
+  { key: 'new', label: 'New / not recently on', shortLabel: 'New', color: '#3D6B4F' },
+  { key: 'recentNoDue', label: 'Recently on, no SAR 7 or recert due', shortLabel: 'Recently on', color: '#8A9A6B' },
+  { key: 'sar7Churn', label: 'SAR 7 churn', shortLabel: 'SAR 7 churn', color: '#6B3D5A' },
+  { key: 'recertChurn', label: 'Recertification churn', shortLabel: 'Recert churn', color: '#A56B7D' }
+];
+const CHURN_DUE_BAND_KEYS = CHURN_DUE_STACK.map(d => d.key);
+const CHURN_APP_BAND_KEYS = CHURN_APP_STACK.map(d => d.key);
+const CHURN_REAPP_LAG = {
+  0: { elig: ['new1Elig', 'new2Elig', 'new3Elig', 'new4Elig'], inelig: ['new1Inelig', 'new2Inelig', 'new3Inelig', 'new4Inelig'] },
+  1: { elig: ['new1Elig'], inelig: ['new1Inelig'] },
+  2: { elig: ['new2Elig'], inelig: ['new2Inelig'] },
+  3: { elig: ['new3Elig'], inelig: ['new3Inelig'] },
+  4: { elig: ['new4Elig'], inelig: ['new4Inelig'] }
+};
+const CHURN_REAPP_ELIG_MONTHS = [
+  { key: 'new1Elig', months: 1 },
+  { key: 'new2Elig', months: 2 },
+  { key: 'new3Elig', months: 3 },
+  { key: 'new4Elig', months: 4 }
+];
+const CHURN_DAYS_PER_MONTH = 30;
+const CHURN_BENEFIT_FALLBACK = 198;
 const QUARTER_MONTHS = {
   Q1: ['01', '02', '03'],
   Q2: ['04', '05', '06'],
@@ -1004,6 +1040,27 @@ function findCf18Field(fields, includeAll, excludeAny) {
     return true;
   });
   return matches.length ? matches[0] : null;
+}
+
+function findCf18Cell(fields, n) {
+  const re = new RegExp('^C' + n + ':');
+  return (fields || []).find(f => re.test(String(f).trim())) || null;
+}
+
+function parseCf18Count(v, opts) {
+  const allowStar = !!(opts && opts.allowStar);
+  const emptyAsZero = !!(opts && opts.emptyAsZero);
+  if (v === '' || v == null) {
+    return emptyAsZero ? { value: 0, estimated: false } : { value: null, estimated: false };
+  }
+  const s = String(v).trim();
+  if (s === '*') {
+    return allowStar
+      ? { value: SMALL_CELL_PLACEHOLDER, estimated: true }
+      : { value: null, estimated: false };
+  }
+  const n = parseNumber(s);
+  return { value: n, estimated: false };
 }
 
 function parseCf296Period(reportMonth, dateVal) {
@@ -2309,6 +2366,390 @@ function csvToCf18DaysRows(parsed) {
   return rows;
 }
 
+function cf18CellMap(fields) {
+  const map = {};
+  for (let n = 1; n <= 58; n++) {
+    const col = findCf18Cell(fields, n);
+    if (col) map[n] = col;
+  }
+  return map;
+}
+
+function readCf18Cell(row, cols, n, opts) {
+  if (!cols[n]) return { value: null, estimated: false };
+  return parseCf18Count(row[cols[n]], opts);
+}
+
+function deriveDueMix(scheduledPack, parts) {
+  if (!scheduledPack || scheduledPack.value == null || scheduledPack.value <= 0) return null;
+  const keys = Object.keys(parts);
+  let estimated = !!scheduledPack.estimated;
+  const vals = {};
+  for (let i = 0; i < keys.length; i++) {
+    const p = parts[keys[i]];
+    if (!p || p.value == null) return null;
+    vals[keys[i]] = p.value;
+    if (p.estimated) estimated = true;
+  }
+  const noLoss = vals.timelyElig + vals.untimelyElig + vals.lateNoLoss;
+  const lateLoss = vals.lateLoss;
+  const newApp1 = vals.new1Elig + vals.new1Inelig;
+  const newApp24 = vals.new2Elig + vals.new2Inelig + vals.new3Elig + vals.new3Inelig +
+    vals.new4Elig + vals.new4Inelig;
+  const ineligible = vals.timelyInelig + vals.untimelyInelig + vals.lateInelig;
+  const known = noLoss + lateLoss + newApp1 + newApp24 + ineligible;
+  let noReturn = scheduledPack.value - known;
+  if (noReturn < -0.5) {
+    if (estimated && noReturn > -SMALL_CELL_MAX) noReturn = 0;
+    else return null;
+  }
+  if (noReturn < 0) noReturn = 0;
+  return {
+    scheduled: scheduledPack.value,
+    noLoss: noLoss,
+    lateLoss: lateLoss,
+    reapp: newApp1 + newApp24,
+    newApp1: newApp1,
+    newApp24: newApp24,
+    ineligible: ineligible,
+    noReturn: noReturn,
+    daysLost: vals.daysLost,
+    hover: {
+      timelyElig: vals.timelyElig,
+      untimelyElig: vals.untimelyElig,
+      lateNoLoss: vals.lateNoLoss,
+      new1Elig: vals.new1Elig,
+      new1Inelig: vals.new1Inelig,
+      new2Elig: vals.new2Elig,
+      new2Inelig: vals.new2Inelig,
+      new3Elig: vals.new3Elig,
+      new3Inelig: vals.new3Inelig,
+      new4Elig: vals.new4Elig,
+      new4Inelig: vals.new4Inelig,
+      timelyInelig: vals.timelyInelig,
+      untimelyInelig: vals.untimelyInelig,
+      lateInelig: vals.lateInelig
+    },
+    estimated: estimated
+  };
+}
+
+function deriveAppMix(allPack, recentPack, sar7Pack, recertPack, hoverPacks) {
+  if (!allPack || allPack.value == null || allPack.value <= 0) return null;
+  if (!recentPack || recentPack.value == null) return null;
+  if (!sar7Pack || sar7Pack.value == null) return null;
+  if (!recertPack || recertPack.value == null) return null;
+  const all = allPack.value;
+  const recentOn = recentPack.value;
+  const sar7Churn = sar7Pack.value;
+  const recertChurn = recertPack.value;
+  const churn = sar7Churn + recertChurn;
+  const newApps = all - recentOn;
+  const recentNoDue = recentOn - churn;
+  if (newApps < -0.5 || recentNoDue < -0.5) return null;
+  const estimated = !!(allPack.estimated || recentPack.estimated ||
+    sar7Pack.estimated || recertPack.estimated);
+  return {
+    all: all,
+    new: newApps < 0 ? 0 : newApps,
+    recentNoDue: recentNoDue < 0 ? 0 : recentNoDue,
+    sar7Churn: sar7Churn,
+    recertChurn: recertChurn,
+    hover: hoverPacks,
+    estimated: estimated
+  };
+}
+
+function dueReappCounts(row, lag) {
+  if (!row || !row.hover) return null;
+  const spec = CHURN_REAPP_LAG[lag] || CHURN_REAPP_LAG[0];
+  let elig = 0;
+  let inelig = 0;
+  spec.elig.forEach(k => { elig += row.hover[k] || 0; });
+  spec.inelig.forEach(k => { inelig += row.hover[k] || 0; });
+  return {
+    elig: elig,
+    inelig: inelig,
+    total: elig + inelig,
+    estimated: !!row.estimated
+  };
+}
+
+function dueSortPart(row, key) {
+  if (!row) return null;
+  if (key === 'newApp') return row.reapp != null ? row.reapp : ((row.newApp1 || 0) + (row.newApp24 || 0));
+  if (key === 'churn') {
+    if (row.sar7Churn == null && row.recertChurn == null) return null;
+    return (row.sar7Churn || 0) + (row.recertChurn || 0);
+  }
+  if (row[key] == null) return null;
+  return row[key];
+}
+
+function dueSortRate(row, key) {
+  if (!row || row.scheduled == null || row.scheduled <= 0) return null;
+  const part = dueSortPart(row, key);
+  if (part == null) return null;
+  return 100 * part / row.scheduled;
+}
+
+function statewideBenefitByMonth(monthlyRows) {
+  const map = {};
+  (monthlyRows || []).forEach(r => {
+    if (r.county !== 'Statewide') return;
+    if (r.dollars_issued == null || r.households == null || r.households <= 0) return;
+    map[r.period] = r.dollars_issued / r.households;
+  });
+  return map;
+}
+
+function benefitPerHousehold(period, byMonth) {
+  const map = byMonth || {};
+  if (period && map[period] != null) return { value: map[period], period: period };
+  const keys = Object.keys(map).sort();
+  if (period) {
+    for (let i = keys.length - 1; i >= 0; i--) {
+      if (keys[i] <= period) return { value: map[keys[i]], period: keys[i] };
+    }
+  }
+  if (keys.length) return { value: map[keys[keys.length - 1]], period: keys[keys.length - 1] };
+  return { value: CHURN_BENEFIT_FALLBACK, period: null };
+}
+
+function dueLateLossHouseholdMonths(row) {
+  if (!row || row.lateLoss == null || row.lateLoss <= 0) return null;
+  if (row.daysLost == null) return null;
+  return {
+    households: row.lateLoss,
+    days: row.daysLost,
+    householdMonths: row.lateLoss * (row.daysLost / CHURN_DAYS_PER_MONTH)
+  };
+}
+
+function dueReappEligHouseholdMonths(row) {
+  if (!row || !row.hover) return null;
+  let households = 0;
+  let householdMonths = 0;
+  CHURN_REAPP_ELIG_MONTHS.forEach(spec => {
+    const n = row.hover[spec.key] || 0;
+    households += n;
+    householdMonths += n * spec.months;
+  });
+  if (!households) return { households: 0, householdMonths: 0 };
+  return { households: households, householdMonths: householdMonths };
+}
+
+function csvToCf18ChurnRows(parsed) {
+  const fields = parsed.meta.fields || [];
+  const map = headerMap(fields);
+  const countyCol = findCol(map, ['County Name', 'County']);
+  const reportMonthCol = findCol(map, ['Report Month']);
+  const dateCol = findCol(map, ['Date']);
+  const cols = cf18CellMap(fields);
+  const needed = [1, 2, 37, 38, 39, 40];
+  const missing = needed.filter(n => !cols[n]);
+  if (!countyCol || missing.length) {
+    throw new Error('CF18 is missing churn columns: ' +
+      (!countyCol ? 'County Name' : missing.map(n => 'C' + n).join(', ')));
+  }
+  const dueSpec = {
+    sar7: { scheduled: 1, timelyElig: 3, timelyInelig: 5, untimelyElig: 7, untimelyInelig: 9,
+      lateNoLoss: 13, lateLoss: 15, daysLost: 17, lateInelig: 19,
+      new1Elig: 21, new1Inelig: 23, new2Elig: 25, new2Inelig: 27,
+      new3Elig: 29, new3Inelig: 31, new4Elig: 33, new4Inelig: 35 },
+    recert: { scheduled: 2, timelyElig: 4, timelyInelig: 6, untimelyElig: 8, untimelyInelig: 10,
+      lateNoLoss: 14, lateLoss: 16, daysLost: 18, lateInelig: 20,
+      new1Elig: 22, new1Inelig: 24, new2Elig: 26, new2Inelig: 28,
+      new3Elig: 30, new3Inelig: 32, new4Elig: 34, new4Inelig: 36 }
+  };
+
+  const appHoverSpec = {
+    sar7: { restore: 41, d1den: 43, d1app: 45, d2den: 47, d2app: 49, d3den: 51, d3app: 53, d4den: 55, d4app: 57 },
+    recert: { restore: 42, d1den: 44, d1app: 46, d2den: 48, d2app: 50, d3den: 52, d3app: 54, d4den: 56, d4app: 58 }
+  };
+
+  const rows = [];
+  parsed.data.forEach(row => {
+    const county = normalizeCountyName(row[countyCol]);
+    const period = parseCf296Period(row[reportMonthCol], row[dateCol]);
+    if (!county || !period) return;
+    const due = {};
+    ['sar7', 'recert'].forEach(kind => {
+      const spec = dueSpec[kind];
+      const scheduled = readCf18Cell(row, cols, spec.scheduled, { allowStar: false });
+      const parts = {};
+      Object.keys(spec).forEach(k => {
+        if (k === 'scheduled') return;
+        const emptyAsZero = k === 'daysLost' ? false : true;
+        const allowStar = k !== 'daysLost';
+        parts[k] = readCf18Cell(row, cols, spec[k], { allowStar: allowStar, emptyAsZero: emptyAsZero });
+      });
+      if (parts.daysLost.value == null) parts.daysLost = { value: 0, estimated: false };
+      due[kind] = deriveDueMix(scheduled, parts);
+    });
+    const hover = { sar7: {}, recert: {} };
+    ['sar7', 'recert'].forEach(kind => {
+      Object.keys(appHoverSpec[kind]).forEach(k => {
+        const pack = readCf18Cell(row, cols, appHoverSpec[kind][k], { allowStar: true, emptyAsZero: true });
+        hover[kind][k] = pack.value;
+      });
+    });
+    const apps = deriveAppMix(
+      readCf18Cell(row, cols, 37, { allowStar: false }),
+      readCf18Cell(row, cols, 38, { allowStar: true, emptyAsZero: true }),
+      readCf18Cell(row, cols, 39, { allowStar: true, emptyAsZero: true }),
+      readCf18Cell(row, cols, 40, { allowStar: true, emptyAsZero: true }),
+      hover
+    );
+    rows.push({ county: county, period: period, due: due, apps: apps });
+  });
+  return rows;
+}
+
+function buildChurnData(churnRows, county_meta) {
+  const series = {};
+  const countiesSet = new Set();
+  const monthsSet = new Set();
+  function ensure(county) {
+    if (!series[county]) {
+      series[county] = { sar7: {}, recert: {}, apps: {} };
+    }
+    return series[county];
+  }
+  churnRows.forEach(r => {
+    monthsSet.add(r.period);
+    if (r.county !== 'Statewide') countiesSet.add(r.county);
+    const s = ensure(r.county);
+    if (r.due.sar7) s.sar7[r.period] = r.due.sar7;
+    if (r.due.recert) s.recert[r.period] = r.due.recert;
+    if (r.apps) s.apps[r.period] = r.apps;
+  });
+  const months = Array.from(monthsSet).sort();
+  const all_counties = Array.from(countiesSet).sort();
+  const entities = ['Statewide'].concat(all_counties);
+  entities.forEach(county => {
+    const s = ensure(county);
+    months.forEach(m => {
+      if (s.sar7[m] === undefined) s.sar7[m] = null;
+      if (s.recert[m] === undefined) s.recert[m] = null;
+      if (s.apps[m] === undefined) s.apps[m] = null;
+    });
+  });
+  let latest_complete_month = months[months.length - 1] || null;
+  for (let i = months.length - 1; i >= 0; i--) {
+    const s = series.Statewide;
+    if (s && s.recert[months[i]] && s.recert[months[i]].scheduled != null) {
+      latest_complete_month = months[i];
+      break;
+    }
+  }
+  const meta = county_meta || {};
+  all_counties.forEach(c => {
+    if (!meta[c]) meta[c] = { households_latest: 0, size: 'Small' };
+  });
+  return {
+    months: months,
+    latest_complete_month: latest_complete_month,
+    series: series,
+    county_meta: meta,
+    all_counties: all_counties,
+    due_stack: CHURN_DUE_STACK,
+    app_stack: CHURN_APP_STACK
+  };
+}
+
+function sumDueRows(rows) {
+  const keys = CHURN_DUE_BAND_KEYS.concat(['scheduled']);
+  const hoverKeys = ['timelyElig', 'untimelyElig', 'lateNoLoss', 'new1Elig', 'new1Inelig',
+    'new2Elig', 'new2Inelig', 'new3Elig', 'new3Inelig', 'new4Elig', 'new4Inelig',
+    'timelyInelig', 'untimelyInelig', 'lateInelig'];
+  const sums = {};
+  keys.forEach(k => { sums[k] = 0; });
+  const hover = {};
+  hoverKeys.forEach(k => { hover[k] = 0; });
+  let n = 0;
+  let estimated = false;
+  let daysN = 0;
+  let daysNum = 0;
+  (rows || []).forEach(row => {
+    if (!row || row.scheduled == null) return;
+    n += 1;
+    keys.forEach(k => { sums[k] += row[k] || 0; });
+    hoverKeys.forEach(k => { hover[k] += (row.hover && row.hover[k]) || 0; });
+    if (row.estimated) estimated = true;
+    if (row.daysLost != null && row.lateLoss > 0) {
+      daysNum += row.daysLost * row.lateLoss;
+      daysN += row.lateLoss;
+    }
+  });
+  if (!n) return null;
+  sums.hover = hover;
+  sums.estimated = estimated;
+  sums.daysLost = daysN ? daysNum / daysN : null;
+  return sums;
+}
+
+function sumChurnDue(memberCounties, period, series, kind) {
+  const keys = CHURN_DUE_BAND_KEYS.concat(['scheduled', 'daysLost']);
+  const sums = {};
+  keys.forEach(k => { sums[k] = 0; });
+  const hoverKeys = ['timelyElig', 'untimelyElig', 'lateNoLoss', 'new1Elig', 'new1Inelig',
+    'new2Elig', 'new2Inelig', 'new3Elig', 'new3Inelig', 'new4Elig', 'new4Inelig',
+    'timelyInelig', 'untimelyInelig', 'lateInelig'];
+  const hover = {};
+  hoverKeys.forEach(k => { hover[k] = 0; });
+  let n = 0;
+  let estimated = false;
+  let daysN = 0;
+  let daysNum = 0;
+  for (let i = 0; i < memberCounties.length; i++) {
+    const s = series[memberCounties[i]];
+    const row = s && s[kind] && s[kind][period];
+    if (!row || row.scheduled == null) continue;
+    n += 1;
+    keys.forEach(k => { sums[k] += row[k] || 0; });
+    hoverKeys.forEach(k => { hover[k] += (row.hover && row.hover[k]) || 0; });
+    if (row.estimated) estimated = true;
+    if (row.daysLost != null && row.lateLoss > 0) {
+      daysNum += row.daysLost * row.lateLoss;
+      daysN += row.lateLoss;
+    }
+  }
+  if (!n) return null;
+  sums.hover = hover;
+  sums.estimated = estimated;
+  sums.daysLost = daysN ? daysNum / daysN : null;
+  return sums;
+}
+
+function sumChurnApps(memberCounties, period, series) {
+  const keys = CHURN_APP_BAND_KEYS.concat(['all']);
+  const sums = {};
+  keys.forEach(k => { sums[k] = 0; });
+  const hover = { sar7: {}, recert: {} };
+  const hoverKeys = ['restore', 'd1den', 'd1app', 'd2den', 'd2app', 'd3den', 'd3app', 'd4den', 'd4app'];
+  hoverKeys.forEach(k => { hover.sar7[k] = 0; hover.recert[k] = 0; });
+  let n = 0;
+  let estimated = false;
+  for (let i = 0; i < memberCounties.length; i++) {
+    const s = series[memberCounties[i]];
+    const row = s && s.apps && s.apps[period];
+    if (!row || row.all == null) continue;
+    n += 1;
+    keys.forEach(k => { sums[k] += row[k] || 0; });
+    ['sar7', 'recert'].forEach(kind => {
+      hoverKeys.forEach(k => {
+        hover[kind][k] += (row.hover && row.hover[kind] && row.hover[kind][k]) || 0;
+      });
+    });
+    if (row.estimated) estimated = true;
+  }
+  if (!n) return null;
+  sums.hover = hover;
+  sums.estimated = estimated;
+  return sums;
+}
+
 function csvToQuarterlyDaysRows(parsed) {
   const fields = parsed.meta.fields || [];
   const map = headerMap(fields);
@@ -2525,6 +2966,36 @@ async function startLiveOutcomesDashboard(initDashboard) {
       cf296Loaded.fetchedAt, legacyLoaded.fetchedAt, metaLoaded.fetchedAt,
       monthlyLoaded.fetchedAt, cf18Loaded.fetchedAt, quarterlyLoaded.fetchedAt
     ]
+      .filter(t => typeof t === 'number' && isFinite(t));
+    setFeedStatus(statusEl, fetchedAt.length ? Math.min.apply(null, fetchedAt) : Date.now());
+    mainEl.hidden = false;
+    initDashboard();
+  } catch (err) {
+    statusEl.className = 'prototype-note error-note';
+    statusEl.innerHTML = '<strong>Could not load live spreadsheet data.</strong> ' +
+      String(err.message || err);
+  }
+}
+
+async function startLiveChurnDashboard(initDashboard) {
+  const statusEl = document.getElementById('dataStatus');
+  const mainEl = document.getElementById('dashboardMain');
+
+  try {
+    statusEl.className = 'prototype-note';
+    statusEl.innerHTML = 'Loading current data...';
+
+    const [cf18Loaded, monthlyLoaded] = await Promise.all([
+      loadCsv(PUBLISHED_SHEET.cf18Gid, 'CF18'),
+      loadMonthlyRows()
+    ]);
+
+    DATA = buildChurnData(
+      csvToCf18ChurnRows(cf18Loaded.parsed),
+      countyMetaFromMonthlyRows(monthlyLoaded.rows || [])
+    );
+    DATA.benefit_by_month = statewideBenefitByMonth(monthlyLoaded.rows || []);
+    const fetchedAt = [cf18Loaded.fetchedAt, monthlyLoaded.fetchedAt]
       .filter(t => typeof t === 'number' && isFinite(t));
     setFeedStatus(statusEl, fetchedAt.length ? Math.min.apply(null, fetchedAt) : Date.now());
     mainEl.hidden = false;

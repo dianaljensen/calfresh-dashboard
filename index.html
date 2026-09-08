@@ -544,6 +544,7 @@
     <nav class="site-nav" aria-label="Dashboard views">
       <a href="index.html" aria-current="page">Participation Trends</a>
       <a href="outcomes.html">Applications</a>
+      <a href="churn.html">Churn</a>
     </nav>
     <h1>CalFresh<span class="info-tip h1-info-tip">
       <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="calfreshNameTip" aria-label="What CalFresh means">i</button>
@@ -576,7 +577,7 @@
       aria-expanded="false" aria-controls="sharedFilters">
       <span class="shared-filters-toggle-text">
         <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
-        <span class="shared-filters-summary" id="sharedFiltersSummary">Sacramento</span>
+        <span class="shared-filters-summary" id="sharedFiltersSummary">California</span>
       </span>
     </button>
     <div class="shared-filters" id="sharedFilters">
@@ -641,7 +642,7 @@
     <div class="card link-a">
       <div class="chart-plot">
         <h2>Total CalFresh Participants</h2>
-        <p class="caption" id="totalCaption">Sacramento County, monthly persons, 2014–2026</p>
+        <p class="caption" id="totalCaption">California, monthly persons, 2014–2026</p>
         <div class="chart-hover" id="totalChartHover" aria-live="polite"></div>
         <div class="chart-holder"><canvas id="totalChart" aria-hidden="true"></canvas></div>
         <div class="ref-line-legend ref-line-legend-inline" id="totalRefLineLegend"></div>
@@ -791,7 +792,7 @@
         aria-expanded="false" aria-controls="movementFilters">
         <span class="shared-filters-toggle-text">
           <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
-          <span class="shared-filters-summary" id="movementFiltersSummary">Sacramento</span>
+          <span class="shared-filters-summary" id="movementFiltersSummary">California</span>
         </span>
       </button>
       <div class="shared-filters" id="movementFilters">
@@ -862,7 +863,7 @@
 
   <footer class="source-note">
     <span class="footer-section-label">Sources</span>
-    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard">CalFresh Data Dashboard</a> and <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296: Applications, Expedited Service, and Recertifications</a>.
+    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard">CalFresh Data Dashboard</a> and <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296: Applications, Expedited Service, and Recertifications</a> (<a href="https://www.cdss.ca.gov/Portals/9/Additional-Resources/Letters-and-Notices/ACLs/2022/22-85.pdf">ACL 22-85</a>).
 
     <span class="footer-section-label">Definitions</span>
     County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000 — computed from the latest available month, provisional pending final confirmation. EAs = Emergency Allotments.
@@ -1928,11 +1929,12 @@ const REGION_COLORS = ['#a05195', '#665191', '#2f4b7c', '#003f5c', '#d45087', '#
 const REGION_COLOR_BY_NAME = {};
 REGION_ORDER.forEach((r, i) => { REGION_COLOR_BY_NAME[r] = REGION_COLORS[i % REGION_COLORS.length]; });
 
-// Default: Sacramento only. California on Annual % Change comes from that
-// chart's "Add Statewide comparison" toggle (on by default), not from this list.
-const DEFAULT_COUNTY = 'Sacramento';
-Array.from(compareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_COUNTY; });
-Array.from(movementCompareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_COUNTY; });
+// Default: California. Add Statewide comparison is disabled while California
+// is already in Counties; it still adds a dashed reference when a county or
+// region is selected instead (Annual % Change on by default).
+const DEFAULT_PLACE = 'Statewide';
+Array.from(compareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_PLACE; });
+Array.from(movementCompareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_PLACE; });
 
 // ---- Time-range scrub (dual-handle slider over the months array) ----
 const rangeStartInput = document.getElementById('rangeStart');
@@ -3116,7 +3118,7 @@ document.getElementById('clearCompareBtn').addEventListener('click', () => {
   [compareSelect, regionCompareSelect, sizeCompareSelect].forEach(el => {
     Array.from(el.options).forEach(o => { o.selected = false; });
   });
-  Array.from(compareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_COUNTY; });
+  Array.from(compareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_PLACE; });
   setDrillActive(false);
   updateDrillButtonState();
   rebuildTimeSeriesCharts();
@@ -3322,7 +3324,7 @@ document.getElementById('movementClearBtn').addEventListener('click', () => {
   [movementCompareSelect, movementRegionSelect, movementSizeSelect].forEach(el => {
     Array.from(el.options).forEach(o => { o.selected = false; });
   });
-  Array.from(movementCompareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_COUNTY; });
+  Array.from(movementCompareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_PLACE; });
   setMovementDrillUi(false);
   onMovementFiltersChange();
 });
