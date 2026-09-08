@@ -1,0 +1,2714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CalFresh Churn — Prototype</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
+<script src="data.js"></script>
+<link rel="stylesheet" href="quirk.css">
+<style>
+  :root {
+    --ink: #1f2430;
+    --muted: #6A6A6A;
+    --line: #e2e4e9;
+    --bg: #fafafa;
+    --card: #ffffff;
+    --accent: #4BA5BA;
+    --accent2: #FB7906;
+    --dark-blue: #2C5985;
+    --gray-blue: #C4D6E4;
+    --denied: #A89890;
+    --light-gray: #C0C0C0;
+    --grid: #ececec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
+  header.page-head { margin-bottom: 6px; }
+  a.brand {
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 0 16px; width: fit-content; max-width: 100%;
+    text-decoration: none; color: inherit;
+  }
+  a.brand img { width: 36px; height: auto; display: block; flex-shrink: 0; }
+  a.brand .brand-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  a.brand .brand-name {
+    font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--dark-blue); line-height: 1.2;
+  }
+  a.brand .brand-meta {
+    font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); line-height: 1.2;
+  }
+  a.brand:hover .brand-name { color: var(--accent); }
+  a.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  header.page-head h1 { font-size: 26px; margin: 0 0 4px; font-weight: 700; }
+  header.page-head h1 .h1-info-tip {
+    margin: 0 0.28em 0 0.18em; vertical-align: middle; top: -0.12em;
+  }
+  header.page-head p.sub { margin: 0; color: var(--muted); font-size: 12px; max-width: 46em; line-height: 1.45; }
+  .copy-email {
+    display: inline; margin: 0; padding: 0; border: 0; background: none;
+    font: inherit; color: var(--accent); cursor: copy;
+    text-decoration: underline; text-underline-offset: 2px;
+  }
+  .copy-email:hover { color: var(--dark-blue); }
+  .copy-email:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  .copy-email-status { margin-left: 0.45em; color: var(--muted); font-weight: 600; font-size: 11px; }
+  .copy-email-status:empty { display: none; }
+  nav.site-nav {
+    display: flex; gap: 2px; flex-wrap: wrap; margin: 0 0 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  nav.site-nav a {
+    padding: 8px 12px 10px; font-size: 13px; font-weight: 600;
+    color: var(--muted); text-decoration: none;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  nav.site-nav a:hover { color: var(--ink); }
+  nav.site-nav a[aria-current="page"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .prototype-note {
+    background: #fff7e8; border: 1px solid #f0d9a8; color: #6b4b12;
+    font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
+  }
+  .card-filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 14px; }
+  .card-filters-clear { flex-basis: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .filter-group { display: flex; flex-direction: column; gap: 6px; }
+  .filter-group label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .filter-group select {
+    font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line);
+    background: #fff; min-width: 200px;
+  }
+  .filter-group.multi { width: 200px; overflow: visible; }
+  .filter-group.multi select { min-height: 92px; width: 200px; }
+  .filter-hint { font-size: 11px; color: var(--muted); max-width: 220px; }
+  .filter-label-row { display: flex; align-items: center; gap: 6px; }
+  .filter-label-row label { margin: 0; }
+  .info-tip { position: relative; display: inline-flex; flex-shrink: 0; }
+  .info-tip-btn {
+    width: 16px; height: 16px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--muted); background: #fff; color: var(--muted);
+    font-size: 11px; font-weight: 700; font-style: italic; font-family: Georgia, "Times New Roman", serif;
+    line-height: 1; cursor: help;
+  }
+  .info-tip-btn:hover, .info-tip-btn:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+  .info-tip-btn:focus-visible { box-shadow: 0 0 0 3px rgba(75,165,186,0.28); }
+  .info-tip-bubble {
+    display: none; position: absolute; left: 0; top: calc(100% + 8px);
+    width: 260px; z-index: 40; padding: 8px 10px;
+    background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+    font-size: 12px; font-weight: 400; font-style: normal; text-transform: none;
+    letter-spacing: 0; line-height: 1.45;
+    box-shadow: 0 4px 14px rgba(31,36,48,0.16);
+  }
+  .info-tip:hover .info-tip-bubble,
+  .info-tip:focus-within .info-tip-bubble,
+  .info-tip-btn[aria-expanded="true"] + .info-tip-bubble { display: block; }
+  .card-filters-clear .filter-hint { max-width: none; }
+  .region-with-drill { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .drill-panel { max-width: 220px; min-width: 180px; }
+  .drill-panel-spacer {
+    visibility: hidden; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em; line-height: 1.2;
+  }
+  .link-a { background: rgba(251,121,6,0.05); }
+  .link-b { background: rgba(75,165,186,0.08); }
+  .card.link-a { border-left: 4px solid var(--accent2); background: rgba(251,121,6,0.05); }
+  .card.link-b { border-left: 4px solid var(--accent); background: rgba(75,165,186,0.08); }
+  .card.link-c { border-left: 4px solid #6B3D5A; background: rgba(107,61,90,0.05); }
+  #churnMeasureDue, #churnMeasureApps { scroll-margin-top: 16px; }
+  .churn-section-sub {
+    margin: 0 0 12px; font-size: 13px; color: var(--muted); line-height: 1.4; max-width: 54em;
+  }
+  .section-controls {
+    margin: 0 0 14px; padding: 0 0 14px; border-bottom: 1px solid var(--line);
+  }
+  .section-controls .shared-filters { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .section-controls .shared-filters .card-filters { margin-bottom: 0; }
+  .section-controls.filters-open .shared-filters {
+    max-height: min(50vh, 320px); overflow-y: auto;
+  }
+  .shared-filters-toggle {
+    display: block; width: 100%; margin-top: 12px; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    cursor: pointer; text-align: left; color: var(--ink); font-family: inherit;
+  }
+  .shared-filters-toggle:hover { background: #f2f2f2; }
+  .shared-filters-toggle[aria-expanded="true"] { border-color: var(--accent2); background: #fff7f0; }
+  .shared-filters-toggle-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .03em; color: var(--muted);
+  }
+  .shared-filters-summary {
+    display: block; font-size: 13px; margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .filters-toggle-keep { white-space: nowrap; }
+  .filters-toggle-mark {
+    display: inline-block; width: 14px; height: 14px;
+    margin-left: 5px; vertical-align: -2px; position: relative; color: var(--muted);
+  }
+  .filters-toggle-mark::before, .filters-toggle-mark::after {
+    content: ""; position: absolute; background: currentColor; border-radius: 1px;
+  }
+  .filters-toggle-mark::before { left: 2px; right: 2px; top: 6px; height: 2px; }
+  .filters-toggle-mark::after { top: 2px; bottom: 2px; left: 6px; width: 2px; }
+  .shared-filters-toggle[aria-expanded="true"] .filters-toggle-mark::after { display: none; }
+  .section-controls:not(.filters-open) .shared-filters { display: none; }
+  .bucket-filters:not(.filters-open) .bucket-filter-lists { display: none; }
+  .bucket-filters .shared-filters-toggle { margin-top: 0; }
+  .bucket-filters.filters-open .bucket-filter-lists {
+    margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line);
+    max-height: min(50vh, 320px);
+    overflow-y: auto;
+  }
+  .churn-explain {
+    font-size: 13px; line-height: 1.5; color: var(--ink);
+    max-width: 54em; margin: 0;
+  }
+  .churn-explain p { margin: 0 0 0.7em; }
+  .churn-explain ol { margin: 0 0 0.7em; padding-left: 1.35em; }
+  .churn-explain li { margin: 0 0 0.5em; }
+  .churn-explain li:last-child { margin-bottom: 0; }
+  .churn-explain p:last-child { margin-bottom: 0; }
+  .churn-explain a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: rgba(31,36,48,0.28);
+  }
+  .churn-explain a:hover { color: var(--accent); text-decoration-color: currentColor; }
+  .churn-measure { margin: 8px 0 8px; scroll-margin-top: 16px; }
+  .churn-measure + .churn-measure {
+    margin-top: 18px; padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+  .churn-measure-head { margin: 0 0 12px; }
+  .churn-measure-title {
+    display: flex; align-items: baseline; gap: 8px;
+    font-size: 14px; font-weight: 700; margin: 0; line-height: 1.3;
+  }
+  .churn-measure-num { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .churn-measure-kicker {
+    margin: 2px 0 0 1.55em; font-size: 12px; color: var(--muted); line-height: 1.35;
+  }
+  .due-plots { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+  .due-plots > * { min-width: 0; }
+  .due-block { position: relative; margin-bottom: 8px; }
+  .due-block > .due-plots { margin-bottom: 0; }
+  .due-block[data-clock="both"] > .due-plots,
+  .due-block[data-clock="recert"] > .due-plots,
+  .due-block[data-clock="sar7"] > .due-plots,
+  .due-folds[data-clock="both"] > .due-plots,
+  .due-folds[data-clock="recert"] > .due-plots,
+  .due-folds[data-clock="sar7"] > .due-plots { grid-template-columns: 1fr; }
+  .due-block[data-clock="both"] .plot-recert,
+  .due-block[data-clock="both"] .plot-sar7,
+  .due-folds[data-clock="both"] .plot-recert,
+  .due-folds[data-clock="both"] .plot-sar7,
+  .due-block[data-clock="side"] .plot-combined,
+  .due-block[data-clock="recert"] .plot-combined,
+  .due-block[data-clock="sar7"] .plot-combined,
+  .due-folds[data-clock="side"] .plot-combined,
+  .due-folds[data-clock="recert"] .plot-combined,
+  .due-folds[data-clock="sar7"] .plot-combined,
+  .due-block[data-clock="recert"] .plot-sar7,
+  .due-folds[data-clock="recert"] .plot-sar7,
+  .due-block[data-clock="sar7"] .plot-recert,
+  .due-folds[data-clock="sar7"] .plot-recert { display: none; }
+  .churn-callout[data-clock="recert"] .lost-sar7,
+  .churn-callout[data-clock="sar7"] .lost-recert { display: none; }
+  .churn-callout[data-clock="recert"] .due-plots,
+  .churn-callout[data-clock="sar7"] .due-plots { grid-template-columns: 1fr; }
+  .due-plots .chart-holder { height: 280px; }
+  .due-folds { margin: 0 0 18px; }
+  .due-folds .due-plots { margin-bottom: 4px; }
+  .due-folds .due-plots[hidden],
+  .due-folds #lostFold[hidden] { display: none !important; }
+  .due-folds .chart-holder { height: 170px; }
+  .outcome-row-toggle {
+    display: flex; align-items: center; gap: 6px;
+    width: auto; max-width: none; min-width: 0;
+    margin: 0; padding: 8px 0 4px;
+    border: 0; background: transparent; cursor: pointer;
+    font-family: inherit; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em;
+    color: var(--muted); text-align: left; line-height: 1.25;
+  }
+  .outcome-row-head {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    width: 100%; min-width: 0;
+    margin: 0; padding: 4px 0 2px;
+    border-top: 1px solid var(--line);
+  }
+  .outcome-row-head .outcome-row-toggle { flex: 1 1 auto; padding: 8px 0; }
+  .outcome-row-head .outcome-row-toggle[aria-expanded="true"] { padding-bottom: 2px; }
+  .outcome-row-toggle:hover, .outcome-row-toggle:focus-visible { color: var(--ink); outline: none; }
+  .outcome-row-toggle[aria-expanded="true"] { color: var(--ink); }
+  .outcome-row-toggle .filters-toggle-mark { margin: 0; color: currentColor; }
+  .outcome-row-toggle[aria-expanded="true"] .filters-toggle-mark::after { display: none; }
+  .outcome-row-head > .info-tip { margin-left: auto; flex-shrink: 0; }
+  .due-folds .churn-callout { margin: 0 0 10px; }
+  .outcome-row-unit {
+    display: flex; align-items: center; gap: 4px;
+    margin-left: auto;
+  }
+  .outcome-row-unit .range-btn {
+    min-width: 2.1em; padding: 2px 8px;
+    font-size: 12px; font-weight: 700; text-transform: none; letter-spacing: 0;
+  }
+  .nested-plot { margin-top: 4px; }
+  .nested-plot .chart-plot-title {
+    font-size: 12px; font-weight: 700; color: var(--ink); margin: 0 0 2px;
+    line-height: 1.35; max-width: 100%;
+  }
+  .nested-plot .chart-plot-metric { font-weight: 700; }
+  .nested-plot .chart-plot-place {
+    font-size: 11px; font-weight: 600; color: var(--muted); line-height: 1.3;
+  }
+  .snapshot-holder { height: 260px; }
+  .churn-callout {
+    margin: 0 0 18px; padding: 12px 14px 10px;
+    border: 1px solid var(--line); border-left: 4px solid #4BA5BA;
+    border-radius: 8px; background: #f7fbfb;
+  }
+  .churn-callout-head { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; }
+  .churn-callout-head h3 { font-size: 13px; font-weight: 700; margin: 0; }
+  .churn-lost-total { margin: 0 0 12px; }
+  .churn-lost-total .churn-stat-v { font-size: 26px; }
+  .churn-dollars dt.is-total, .churn-dollars dd.is-total {
+    border-top: 1px solid var(--line); padding-top: 4px; margin-top: 2px;
+  }
+  .churn-callout .due-plots { margin-bottom: 8px; gap: 16px; }
+  .churn-stat-k {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .03em; color: var(--muted); margin: 0 0 2px;
+  }
+  .churn-stat-v { font-size: 22px; font-weight: 700; line-height: 1.2; margin: 0 0 2px; }
+  .churn-stat-sub { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+  .churn-dollars { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 13px; }
+  .churn-dollars dt { color: var(--muted); margin: 0; }
+  .churn-dollars dd { margin: 0; font-weight: 700; text-align: right; }
+  .churn-callout-note { font-size: 12px; color: var(--muted); margin: 0; line-height: 1.45; }
+  .churn-callout-note + .churn-callout-note { margin-top: 8px; }
+  .groupby-control { display: flex; align-items: center; gap: 8px; margin: 4px 0 14px; flex-wrap: wrap; }
+  .groupby-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .groupby-control select {
+    font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line);
+    background: #fff; min-width: 160px; max-width: 240px;
+  }
+  .chart-legend { display: flex; gap: 16px; margin-left: auto; font-size: 11px; color: var(--muted); align-items: center; flex-wrap: wrap; }
+  .legend-item { display: inline-flex; align-items: center; }
+  .legend-swatch { display: inline-block; width: 18px; height: 0; margin-right: 5px; }
+  .legend-swatch.dashed { border-top: 1.5px dashed #111; }
+  .legend-swatch.dashed-group { border-top: 1.5px dashed #555; }
+  .groupby-control .layer-toggle { padding: 4px 8px; font-size: 12px; }
+  #countyChartHolder, #whoCountyChartHolder { height: 420px; overflow-x: auto; }
+  .time-range-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .time-range-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .time-range-label strong { color: var(--ink); font-weight: 700; text-transform: none; letter-spacing: 0; margin-left: 4px; }
+  .range-btn { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--ink); }
+  .range-btn:hover { background: #f2f2f2; }
+  .range-btn.active { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .drill-toggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; margin-top: 0; padding: 5px 8px;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    cursor: pointer; color: var(--ink); font-size: 12px; text-align: left; font-family: inherit;
+  }
+  .drill-toggle:hover:not(:disabled) { background: #f2f2f2; }
+  .drill-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+  .drill-toggle[aria-pressed="true"] { background: #fff7f0; border-color: var(--accent2); }
+  .drill-toggle-switch {
+    flex: 0 0 32px; width: 32px; height: 18px; border-radius: 9px;
+    background: #d1d5db; position: relative;
+  }
+  .drill-toggle[aria-pressed="true"] .drill-toggle-switch { background: var(--accent2); }
+  .drill-toggle-knob {
+    position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(31,36,48,0.25);
+    transition: left 0.15s ease;
+  }
+  .drill-toggle[aria-pressed="true"] .drill-toggle-knob { left: 16px; }
+  .range-slider { position: relative; height: 28px; margin: 0 4px; }
+  .range-track { position: absolute; top: 50%; left: 0; right: 0; height: 6px; margin-top: -3px; background: var(--grid); border-radius: 3px; pointer-events: none; }
+  .range-track-fill {
+    position: absolute; top: 0; height: 100%; border-radius: 3px;
+    background: var(--accent2); opacity: 0.85; pointer-events: none;
+  }
+  .range-hint { margin: 6px 4px 0; font-size: 11px; color: var(--muted); }
+  .range-input {
+    position: absolute; top: 0; left: 0; width: 100%; margin: 0; height: 28px;
+    background: transparent; pointer-events: none; -webkit-appearance: none; appearance: none;
+  }
+  .range-input::-webkit-slider-runnable-track { background: transparent; }
+  .range-input::-moz-range-track { background: transparent; }
+  .range-input::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; pointer-events: auto;
+    width: 18px; height: 18px; border-radius: 50%; background: var(--accent2);
+    border: 2px solid #fff; box-shadow: 0 1px 3px rgba(31,36,48,0.28); cursor: grab; margin-top: 5px;
+  }
+  .range-input::-moz-range-thumb {
+    pointer-events: auto; width: 18px; height: 18px; border-radius: 50%; background: var(--accent2);
+    border: 2px solid #fff; box-shadow: 0 1px 3px rgba(31,36,48,0.28); cursor: grab;
+  }
+  .bucket-filter-head {
+    flex-basis: 100%;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .bucket-filter-head .filter-hint { max-width: none; }
+  .bucket-filter-head .range-btn { margin-left: auto; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 10px; margin-bottom: 22px; }
+  .card h2 { font-size: 15px; margin: 0 0 8px; }
+  .card-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
+  .card-title-row h2 { margin: 0; }
+  .card-title-row .info-tip-bubble { width: 320px; }
+  .card p.caption { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+  .chart-plot { position: relative; margin-top: 2px; overflow: visible; --plot-title-inset: 0px; }
+  .chart-plot-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; line-height: 1.25; }
+  .chart-plot-metric, .chart-plot-place { display: block; }
+  .chart-plot-place { font-size: 12px; font-weight: 600; color: var(--muted); line-height: 1.3; }
+  .outcome-grid .outcome-cell > .chart-plot > .chart-plot-title { min-height: calc(1.25em + 1.12em); }
+  .chart-plot > h2, .chart-plot > h3, .chart-plot > .caption, .chart-plot > .chart-plot-title {
+    padding-left: var(--plot-title-inset);
+  }
+  .chart-hover {
+    display: none; position: fixed; z-index: 30; left: 0; top: 0;
+    pointer-events: none; width: max-content;
+    max-width: min(320px, calc(100vw - 16px));
+    font-size: 12px; line-height: 1.35; padding: 8px 10px;
+    border-radius: 6px; background: rgba(24, 27, 36, 0.97); color: #fff;
+  }
+  .chart-hover.is-active { display: block; }
+  .chart-hover-title { font-weight: 700; margin-bottom: 2px; }
+  .chart-hover-note { opacity: 0.92; margin-bottom: 6px; font-style: italic; }
+  .chart-hover-row + .chart-hover-note { margin-top: 6px; margin-bottom: 0; }
+  .chart-hover-row { display: flex; align-items: flex-start; gap: 6px; }
+  .chart-hover-row.is-nested { padding-left: 16px; }
+  .chart-hover-row.is-group {
+    margin-top: 6px; padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.22);
+  }
+  .chart-hover.is-prose { max-width: min(380px, calc(100vw - 16px)); }
+  .chart-hover.is-prose .chart-hover-row + .chart-hover-row { margin-top: 6px; }
+  .chart-hover-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; margin-top: 3px; }
+  .chart-holder { position: relative; height: 280px; min-width: 0; }
+  .outcome-grid {
+    display: grid; gap: 6px 16px; overflow-x: auto; margin: 0 0 12px; align-items: start;
+  }
+  .outcome-cell { min-width: 260px; }
+  .outcome-grid .chart-holder { height: 240px; }
+  .outcome-cell .chart-plot { margin-top: 0; }
+  footer.source-note { margin-top: 34px; font-size: 11.5px; color: var(--muted); line-height: 1.6; border-top: 1px solid var(--line); padding-top: 14px; }
+  footer.source-note a { color: var(--accent); }
+  footer.source-note .footer-section-label {
+    display: block; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--ink); font-size: 10.5px; margin: 14px 0 4px;
+  }
+  footer.source-note .footer-section-label:first-child { margin-top: 0; }
+  footer.source-note .footer-notes { margin: 0; padding-left: 1.2em; }
+  footer.source-note .footer-notes li { margin: 0 0 0.55em; }
+  footer.source-note .footer-notes li:last-child { margin-bottom: 0; }
+  footer.source-note .footer-notes ul { margin: 0.35em 0 0; padding-left: 1.2em; }
+  footer.source-note .footer-methods { margin-top: 14px; }
+  footer.source-note .footer-methods > summary {
+    list-style: none; cursor: pointer;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--ink); font-size: 10.5px; margin: 0 0 4px;
+  }
+  footer.source-note .footer-methods > summary::-webkit-details-marker { display: none; }
+  footer.source-note .footer-methods > summary .filters-toggle-mark { margin: 0 0 0 5px; color: var(--muted); }
+  footer.source-note .footer-methods[open] > summary .filters-toggle-mark::after { display: none; }
+  footer.source-note .footer-methods > summary:hover .filters-toggle-mark,
+  footer.source-note .footer-methods > summary:focus-visible .filters-toggle-mark { color: var(--ink); }
+  footer.source-note .footer-methods > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  footer.source-note .footer-wonk-h {
+    font-size: 11.5px; font-weight: 700; color: var(--ink);
+    margin: 12px 0 4px; letter-spacing: 0; text-transform: none;
+  }
+  footer.source-note .footer-wonk-h:first-of-type { margin-top: 8px; }
+  footer.source-note .footer-methods .footer-notes { margin-bottom: 2px; }
+  footer.source-note .footer-credit { margin: 16px 0 0; }
+  .live-note {
+    background: #eef6f4; border: 1px solid #c5ddd6; color: #1f4d43;
+    font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
+  }
+  .error-note { background: #fdecec; border-color: #e8b4b4; color: #6b1f1f; }
+  #dashboardMain[hidden] { display: none !important; }
+  .sr-only {
+    position: absolute !important; width: 1px !important; height: 1px !important;
+    padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+    clip: rect(0,0,0,0) !important; clip-path: inset(50%) !important;
+    white-space: nowrap !important; border: 0 !important;
+  }
+  @media (max-width: 800px) {
+    .due-plots { grid-template-columns: 1fr; }
+  }
+  @media print {
+    body { background: #fff; }
+    .card.link-a, .card.link-b, .card.link-c { background: #fff !important; }
+    .card, .section-controls { box-shadow: none; position: static; }
+    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover, .quirk-doodle, .quirk-dialog { display: none; }
+    .shared-filters { display: flex !important; border-top: 0; padding-top: 0; }
+    .filter-group.multi select { min-height: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page-head">
+    <a class="brand" href="https://www.djconsults.com" target="_blank" rel="noopener noreferrer" aria-label="Diana Jensen Consulting, djconsults.com">
+      <img src="assets/dj-logo.png" alt="" width="36" height="41">
+      <span class="brand-text">
+        <span class="brand-name">Diana Jensen</span>
+        <span class="brand-meta">Consulting · djconsults.com</span>
+      </span>
+    </a>
+    <nav class="site-nav" aria-label="Dashboard views">
+      <a href="index.html">Participation Trends</a>
+      <a href="outcomes.html">Applications</a>
+      <a href="churn.html" aria-current="page">Churn</a>
+    </nav>
+    <h1>CalFresh<span class="info-tip h1-info-tip">
+      <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="calfreshNameTip" aria-label="What CalFresh means">i</button>
+      <span id="calfreshNameTip" class="info-tip-bubble" role="tooltip">CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California.</span>
+    </span> Churn</h1>
+    <p class="sub">This is a working prototype I developed for the love of the data visualization game. All data is from public sources, hopefully a little easier to explore now.<br>Send me suggestions or corrections at <button type="button" class="copy-email" data-email="diana@djconsults.com" title="Copy email address" aria-label="Copy diana@djconsults.com">diana@djconsults.com</button>.<span class="copy-email-status" aria-live="polite"></span></p>
+  </header>
+
+  <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
+
+  <div id="dashboardMain" hidden>
+  <div class="card">
+    <div class="card-title-row">
+      <h2>What is Churn?</h2>
+    </div>
+    <div class="churn-explain">
+      <p>Sometimes CalFresh households are not able to complete their regular reporting and later come back to file a full reapplication. That cycle is <strong>churn</strong>. Households that remained eligible throughout their enrollment gap miss out on benefits. Counties must take on the extra work of processing “new” applications that could have been continued through a sometimes more streamlined recertification or SAR 7 process.</p>
+      <p>Churn is measured in two ways:</p>
+      <ol>
+        <li><a href="#churnMeasureDue"><strong>Recertification / SAR 7 Outcomes</strong></a> measures the prevalence of churn. Of households with recertifications or semi-annual reports (SAR 7s) due in a given month, this is the share that return with a new application in the months that follow.</li>
+        <li><a href="#churnMeasureApps"><strong>Applicants’ Prior CalFresh Connection</strong></a> measures the impact of churning cases on application processing work. Of applications disposed in a given month, this is the share that come from households that were recently on the caseload.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="card link-a" id="churnMeasureDue">
+    <div class="card-title-row">
+      <h2 id="churnMeasureDueTitle">Recertification / SAR 7 Outcomes</h2>
+      <span class="info-tip">
+        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="snapshotTip" aria-label="About Recertification / SAR 7 Outcomes">i</button>
+        <span id="snapshotTip" class="info-tip-bubble" role="tooltip">One month of CF 18 for the selected county. California is the default. Combined sums Recertification and SAR 7 (a household is on one clock or the other, never both). Side by side splits them. Hover on the due stack is the five bands. The orange Reapplications band is a later new application; fold-outs under the stack split that band into eligible vs ineligible, when they came back, and estimated lost benefits. Recipes in Data notes.</span>
+      </span>
+    </div>
+    <p class="churn-section-sub">“Churners” are those that reapply, shown in orange.</p>
+    <div class="groupby-control">
+      <span class="groupby-label">Month</span>
+      <select class="churn-month-select" id="churnMonthSelectDue" aria-label="Report month"></select>
+      <span class="groupby-label">County</span>
+      <select class="churn-place-select" id="churnPlaceSelectDue" aria-label="County"></select>
+    </div>
+    <div class="groupby-control" role="group" aria-label="Show combined, recertification, SAR 7, or side by side">
+        <span class="groupby-label">Show</span>
+        <button type="button" class="range-btn groupby-btn due-clock-btn active" data-due-clock="both" aria-pressed="true">Combined</button>
+        <button type="button" class="range-btn groupby-btn due-clock-btn" data-due-clock="recert" aria-pressed="false">Recertification</button>
+        <button type="button" class="range-btn groupby-btn due-clock-btn" data-due-clock="sar7" aria-pressed="false">SAR 7</button>
+        <button type="button" class="range-btn groupby-btn due-clock-btn" data-due-clock="side" aria-pressed="false">Side by side</button>
+      </div>
+    <div class="due-block" id="dueBlock" data-clock="both">
+    <div class="due-plots">
+      <div class="chart-plot plot-combined">
+        <h3 class="chart-plot-title">
+          <span class="chart-plot-metric">Recertification &amp; SAR 7 Outcomes</span>
+          <span class="chart-plot-place snapshot-place">California</span>
+        </h3>
+        <p class="caption" id="combinedCaption">Of households scheduled for recertification (RRR) or a SAR 7 that month</p>
+        <div class="chart-hover" id="combinedHover" aria-live="polite"></div>
+        <div class="chart-holder"><canvas id="combinedChart" aria-hidden="true"></canvas></div>
+      </div>
+      <div class="chart-plot plot-recert">
+        <h3 class="chart-plot-title">
+          <span class="chart-plot-metric">Recertification Outcomes</span>
+          <span class="chart-plot-place snapshot-place">California</span>
+        </h3>
+        <p class="caption" id="recertCaption">Of households scheduled for recertification (RRR) that month</p>
+        <div class="chart-hover" id="recertHover" aria-live="polite"></div>
+        <div class="chart-holder"><canvas id="recertChart" aria-hidden="true"></canvas></div>
+      </div>
+      <div class="chart-plot plot-sar7">
+        <h3 class="chart-plot-title">
+          <span class="chart-plot-metric">SAR 7 Outcomes</span>
+          <span class="chart-plot-place snapshot-place">California</span>
+        </h3>
+        <p class="caption" id="sar7Caption">Of households scheduled for a SAR 7 that month</p>
+        <div class="chart-hover" id="sar7Hover" aria-live="polite"></div>
+        <div class="chart-holder"><canvas id="sar7Chart" aria-hidden="true"></canvas></div>
+      </div>
+    </div>
+    </div>
+    <div class="due-folds" id="dueFolds" data-clock="both">
+      <div class="outcome-row-head">
+        <button type="button" class="outcome-row-toggle" id="reappOutcomesToggle"
+          aria-expanded="true" aria-controls="reappOutcomesFold">
+          <span class="filters-toggle-mark" aria-hidden="true"></span>Reapplication Outcomes
+        </button>
+      </div>
+      <div class="due-plots reapp-fold" id="reappOutcomesFold">
+        <div class="chart-plot nested-plot plot-combined">
+          <h3 class="chart-plot-title">
+            <span class="chart-plot-metric">Reapplication Outcomes</span>
+            <span class="chart-plot-place snapshot-place" data-place-prefix="Recertification &amp; SAR 7">Recertification &amp; SAR 7 · California</span>
+          </h3>
+          <p class="caption" id="combinedReappCaption">Of households who missed recertification or a SAR 7 and came back with a new application</p>
+          <div class="chart-hover" id="combinedReappHover" aria-live="polite"></div>
+          <div class="chart-holder"><canvas id="combinedReappChart" aria-hidden="true"></canvas></div>
+        </div>
+        <div class="chart-plot nested-plot plot-recert">
+          <h3 class="chart-plot-title">
+            <span class="chart-plot-metric">Reapplication Outcomes</span>
+            <span class="chart-plot-place snapshot-place" data-place-prefix="Recertification">Recertification · California</span>
+          </h3>
+          <p class="caption" id="recertReappCaption">Of households who missed recertification and came back with a new application</p>
+          <div class="chart-hover" id="recertReappHover" aria-live="polite"></div>
+          <div class="chart-holder"><canvas id="recertReappChart" aria-hidden="true"></canvas></div>
+        </div>
+        <div class="chart-plot nested-plot plot-sar7">
+          <h3 class="chart-plot-title">
+            <span class="chart-plot-metric">Reapplication Outcomes</span>
+            <span class="chart-plot-place snapshot-place" data-place-prefix="SAR 7">SAR 7 · California</span>
+          </h3>
+          <p class="caption" id="sar7ReappCaption">Of households who missed a SAR 7 and came back with a new application</p>
+          <div class="chart-hover" id="sar7ReappHover" aria-live="polite"></div>
+          <div class="chart-holder"><canvas id="sar7ReappChart" aria-hidden="true"></canvas></div>
+        </div>
+      </div>
+      <div class="outcome-row-head">
+        <button type="button" class="outcome-row-toggle collapsed" id="reappTimeToggle"
+          aria-expanded="false" aria-controls="reappTimeFold">
+          <span class="filters-toggle-mark" aria-hidden="true"></span>Time to reapply
+        </button>
+        <div class="outcome-row-unit" role="group" aria-label="Time to reapply as counts or percents">
+          <button type="button" class="range-btn groupby-btn reapp-time-unit" data-unit="count" aria-pressed="false">#</button>
+          <button type="button" class="range-btn groupby-btn reapp-time-unit active" data-unit="share" aria-pressed="true">%</button>
+        </div>
+      </div>
+      <div class="due-plots reapp-fold" id="reappTimeFold" hidden>
+        <div class="chart-plot nested-plot plot-combined">
+          <h3 class="chart-plot-title">
+            <span class="chart-plot-metric">Time to reapply</span>
+            <span class="chart-plot-place snapshot-place" data-place-prefix="Recertification &amp; SAR 7">Recertification &amp; SAR 7 · California</span>
+          </h3>
+          <p class="caption" id="combinedTimeCaption">Calendar months after the due month</p>
+          <div class="chart-hover" id="combinedTimeHover" aria-live="polite"></div>
+          <div class="chart-holder"><canvas id="combinedTimeChart" aria-hidden="true"></canvas></div>
+        </div>
+        <div class="chart-plot nested-plot plot-recert">
+          <h3 class="chart-plot-title">
+            <span class="chart-plot-metric">Time to reapply</span>
+            <span class="chart-plot-place snapshot-place" data-place-prefix="Recertification">Recertification · California</span>
+          </h3>
+          <p class="caption" id="recertTimeCaption">Calendar months after the due month</p>
+          <div class="chart-hover" id="recertTimeHover" aria-live="polite"></div>
+          <div class="chart-holder"><canvas id="recertTimeChart" aria-hidden="true"></canvas></div>
+        </div>
+        <div class="chart-plot nested-plot plot-sar7">
+          <h3 class="chart-plot-title">
+            <span class="chart-plot-metric">Time to reapply</span>
+            <span class="chart-plot-place snapshot-place" data-place-prefix="SAR 7">SAR 7 · California</span>
+          </h3>
+          <p class="caption" id="sar7TimeCaption">Calendar months after the due month</p>
+          <div class="chart-hover" id="sar7TimeHover" aria-live="polite"></div>
+          <div class="chart-holder"><canvas id="sar7TimeChart" aria-hidden="true"></canvas></div>
+        </div>
+      </div>
+      <div class="outcome-row-head">
+        <button type="button" class="outcome-row-toggle collapsed" id="lostToggle"
+          aria-expanded="false" aria-controls="lostFold">
+          <span class="filters-toggle-mark" aria-hidden="true"></span>Estimated Lost Benefits
+        </button>
+        <span class="info-tip">
+          <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="lostTip" aria-label="About lost-benefit estimates">i</button>
+          <span id="lostTip" class="info-tip-bubble" role="tooltip">Dollar figures are estimates, not a CDSS cell. The total is late with loss plus eligible reapplications. Late with loss uses Item 7 days ÷ 30 × Item 6b households × average issuance. Eligible reapplications use 1, 2, 3, or 4 months of lag. Does not include no-return or ineligible reapplications. Average days lost is Item 7, for households late with a loss.</span>
+        </span>
+      </div>
+      <div id="lostFold" hidden>
+        <aside class="churn-callout" id="lostCallout" data-clock="both" aria-label="Estimated Lost Benefits for this Report-Month Cohort">
+          <div class="churn-lost-total">
+            <p class="churn-stat-k">Estimated total</p>
+            <p class="churn-stat-v" id="lostTotal">n/a</p>
+            <p class="churn-stat-sub" id="lostTotalSub"></p>
+          </div>
+          <div class="due-plots">
+            <div class="lost-recert">
+              <p class="churn-stat-k">Recertification — average days lost</p>
+              <p class="churn-stat-v" id="recertDaysLost">n/a</p>
+              <p class="churn-stat-sub" id="recertDaysLostSub"></p>
+              <dl class="churn-dollars">
+                <dt>Late with loss</dt><dd id="recertLateDollars">n/a</dd>
+                <dt>Reapplied — eligible</dt><dd id="recertReappDollars">n/a</dd>
+                <dt class="is-total">Total</dt><dd class="is-total" id="recertLostTotal">n/a</dd>
+              </dl>
+            </div>
+            <div class="lost-sar7">
+              <p class="churn-stat-k">SAR 7 — average days lost</p>
+              <p class="churn-stat-v" id="sar7DaysLost">n/a</p>
+              <p class="churn-stat-sub" id="sar7DaysLostSub"></p>
+              <dl class="churn-dollars">
+                <dt>Late with loss</dt><dd id="sar7LateDollars">n/a</dd>
+                <dt>Reapplied — eligible</dt><dd id="sar7ReappDollars">n/a</dd>
+                <dt class="is-total">Total</dt><dd class="is-total" id="sar7LostTotal">n/a</dd>
+              </dl>
+            </div>
+          </div>
+          <p class="churn-callout-note">These estimates do not include lost benefits for any households that did not reapply following an incomplete report but remained eligible.</p>
+          <p class="churn-callout-note" id="lostBenefitsNote"></p>
+        </aside>
+      </div>
+    </div>
+    <table class="sr-only" id="combinedTable">
+      <caption>Recertification and SAR 7 outcomes as a share of households scheduled that month</caption>
+      <thead><tr><th scope="col">Band</th><th scope="col">Share</th><th scope="col">Households</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <table class="sr-only" id="recertTable">
+      <caption>Recertification outcomes as a share of households scheduled that month</caption>
+      <thead><tr><th scope="col">Band</th><th scope="col">Share</th><th scope="col">Households</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <table class="sr-only" id="sar7Table">
+      <caption>SAR 7 outcomes as a share of households scheduled that month</caption>
+      <thead><tr><th scope="col">Band</th><th scope="col">Share</th><th scope="col">Households</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <table class="sr-only" id="reappTable">
+      <caption>Reapplications after a missed recertification or SAR 7, eligible versus ineligible</caption>
+      <thead><tr><th scope="col">Clock</th><th scope="col">Eligible (churn)</th><th scope="col">Ineligible</th><th scope="col">Reapplications</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <table class="sr-only" id="reappTimeTable">
+      <caption>Reapplications by calendar months after the due month, eligible versus ineligible</caption>
+      <thead><tr>
+        <th scope="col">Clock</th>
+        <th scope="col">Lag</th>
+        <th scope="col">Eligible (churn)</th>
+        <th scope="col">Ineligible</th>
+        <th scope="col">Reapplications</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card link-c" id="churnMeasureApps">
+    <div class="card-title-row">
+      <h2 id="churnMeasureAppsTitle">Applicants’ Prior CalFresh Connection</h2>
+      <span class="info-tip">
+        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="whoTip" aria-label="About Applicants’ Prior CalFresh Connection">i</button>
+        <span id="whoTip" class="info-tip-bubble" role="tooltip">Of applications disposed that month, not households due. Purple is recertification or SAR 7 churn — a different clock from the orange reapplications above. Recipes in Data notes.</span>
+      </span>
+    </div>
+    <p class="churn-section-sub">“Churners” are those with recent recertification or SAR 7 due, shown in purple.</p>
+    <div class="groupby-control">
+      <span class="groupby-label">Month</span>
+      <select class="churn-month-select" id="churnMonthSelectApps" aria-label="Report month"></select>
+      <span class="groupby-label">County</span>
+      <select class="churn-place-select" id="churnPlaceSelectApps" aria-label="County"></select>
+    </div>
+    <div class="chart-plot">
+      <h3 class="chart-plot-title">
+        <span class="chart-plot-metric" id="whoMetric">Who applied that month</span>
+        <span class="chart-plot-place snapshot-place">California</span>
+      </h3>
+      <p class="caption" id="whoCaption">Of CalFresh and CFAP applications disposed that month</p>
+      <div class="chart-hover" id="whoHover" aria-live="polite"></div>
+      <div class="chart-holder snapshot-holder"><canvas id="whoChart" aria-hidden="true"></canvas></div>
+    </div>
+    <table class="sr-only" id="whoTable">
+      <caption>Who applied that month as a share of applications disposed</caption>
+      <thead><tr><th scope="col">Band</th><th scope="col">Share</th><th scope="col">Applications</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card link-b" id="dueRankCard">
+    <div class="card-title-row">
+      <h2>Recertification / SAR 7 Outcomes by County</h2>
+      <span class="info-tip">
+        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="countyTip" aria-label="About Recertification / SAR 7 Outcomes by County">i</button>
+        <span id="countyTip" class="info-tip-bubble" role="tooltip">Same five-band Recertification / SAR 7 stack as Recertification / SAR 7 Outcomes, one bar per county. Sort by is No loss, No return, or Reapplications (default no return, highest first). The dashed California line and group lines are combined counts of that sorted band, placed on the band, not an average of percentages. Hover includes that group’s combined Sort-by rate. Counties with a starred Item 1 or parts that overshoot Item 1 are blank.</span>
+      </span>
+    </div>
+    <div class="groupby-control" role="group" aria-label="Clock">
+      <span class="groupby-label">Clock</span>
+      <button type="button" class="range-btn groupby-btn clock-btn active" data-clock="recert" aria-pressed="true">Recertification</button>
+      <button type="button" class="range-btn groupby-btn clock-btn" data-clock="sar7" aria-pressed="false">SAR 7</button>
+    </div>
+    <div class="groupby-control" role="group" aria-label="Sort by">
+      <span class="groupby-label">Sort by</span>
+      <button type="button" class="range-btn groupby-btn sort-btn" data-sort="noLoss" aria-pressed="false">No loss</button>
+      <button type="button" class="range-btn groupby-btn sort-btn active" data-sort="noReturn" aria-pressed="true">No return</button>
+      <button type="button" class="range-btn groupby-btn sort-btn" data-sort="reapp" aria-pressed="false">Reapplications</button>
+    </div>
+    <div class="groupby-control">
+      <span class="groupby-label">Group by</span>
+      <button type="button" class="range-btn groupby-btn groupby-btn-mode active" data-groupby="size">County size</button>
+      <button type="button" class="range-btn groupby-btn groupby-btn-mode" data-groupby="region">Region</button>
+      <button type="button" class="range-btn groupby-btn groupby-btn-mode" data-groupby="none">None (all counties)</button>
+      <div class="chart-legend" id="countyLineLegend">
+        <span class="legend-item"><span class="legend-swatch dashed"></span>California</span>
+        <span class="legend-item" id="groupLineLegendItem"><span class="legend-swatch dashed-group"></span><span id="groupLineLegendLabel">Aggregate by group</span></span>
+      </div>
+    </div>
+    <div class="bucket-filters" id="countyFilters">
+      <button type="button" id="countyFiltersToggle" class="shared-filters-toggle"
+        aria-expanded="false" aria-controls="countyFilterLists">
+        <span class="shared-filters-toggle-text">
+          <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
+          <span class="shared-filters-summary" id="countyFiltersSummary">All counties</span>
+        </span>
+      </button>
+      <div class="card-filters bucket-filter-lists" id="countyFilterLists">
+        <div class="bucket-filter-head">
+          <div class="filter-hint">Click a name to add or remove it. Leave empty to include all.</div>
+          <button type="button" id="clearCountyFiltersBtn" class="range-btn">Clear all filters</button>
+        </div>
+        <div class="filter-group multi">
+          <label for="regionFilter">Region</label>
+          <select id="regionFilter" multiple></select>
+        </div>
+        <div class="filter-group multi">
+          <div class="filter-label-row">
+            <label for="sizeFilter">County size</label>
+            <span class="info-tip">
+              <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeTip" aria-label="About county size groups">i</button>
+              <span id="sizeTip" class="info-tip-bubble" role="tooltip">X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000.</span>
+            </span>
+          </div>
+          <select id="sizeFilter" multiple></select>
+        </div>
+        <div class="filter-group multi">
+          <label for="countyFilterMulti">County</label>
+          <select id="countyFilterMulti" multiple></select>
+        </div>
+      </div>
+    </div>
+    <div class="chart-plot">
+      <h3 class="chart-plot-title">
+        <span class="chart-plot-metric" id="countyPlotTitle">Recertification Outcomes by county</span>
+        <span class="chart-plot-place" id="countySub"></span>
+      </h3>
+      <p class="caption" id="countyCaption">Sorted by No return, highest first. Of households scheduled that month.</p>
+      <div class="chart-hover" id="countyChartHover" aria-live="polite"></div>
+      <div class="chart-holder" id="countyChartHolder"><canvas id="countyChart" aria-hidden="true"></canvas></div>
+    </div>
+    <table class="sr-only" id="countyChartTable">
+      <caption>County lineup of recertification or SAR 7 outcomes</caption>
+      <thead><tr>
+        <th scope="col">County</th>
+        <th scope="col" id="countyGroupColHeader">Size group</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card link-c" id="whoRankCard">
+    <div class="card-title-row">
+      <h2>Applicants’ Prior CalFresh Connection by County</h2>
+      <span class="info-tip">
+        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="whoCountyTip" aria-label="About Applicants’ Prior CalFresh Connection by County">i</button>
+        <span id="whoCountyTip" class="info-tip-bubble" role="tooltip">Same four-band Who applied stack as Applicants’ Prior CalFresh Connection, one bar per county. Sort by Recert &amp; SAR 7 churn (sum of those two bands), Recently on, or New (default Recert &amp; SAR 7 churn, highest first). The dashed California line and group lines are combined counts of that sorted band, placed on the band, not an average of percentages. Hover includes that group’s combined Sort-by rate. Counties with a starred Item 17 are blank.</span>
+      </span>
+    </div>
+    <div class="groupby-control" role="group" aria-label="Sort by">
+      <span class="groupby-label">Sort by</span>
+      <button type="button" class="range-btn groupby-btn who-sort-btn active" data-sort="churn" aria-pressed="true">Recert &amp; SAR 7 churn (sum)</button>
+      <button type="button" class="range-btn groupby-btn who-sort-btn" data-sort="recentNoDue" aria-pressed="false">Recently on</button>
+      <button type="button" class="range-btn groupby-btn who-sort-btn" data-sort="new" aria-pressed="false">New</button>
+    </div>
+    <div class="groupby-control">
+      <span class="groupby-label">Group by</span>
+      <button type="button" class="range-btn groupby-btn who-groupby-btn active" data-groupby="size">County size</button>
+      <button type="button" class="range-btn groupby-btn who-groupby-btn" data-groupby="region">Region</button>
+      <button type="button" class="range-btn groupby-btn who-groupby-btn" data-groupby="none">None (all counties)</button>
+      <div class="chart-legend" id="whoCountyLineLegend">
+        <span class="legend-item"><span class="legend-swatch dashed"></span>California</span>
+        <span class="legend-item" id="whoGroupLineLegendItem"><span class="legend-swatch dashed-group"></span><span id="whoGroupLineLegendLabel">Aggregate by group</span></span>
+      </div>
+    </div>
+    <div class="bucket-filters" id="whoCountyFilters">
+      <button type="button" id="whoCountyFiltersToggle" class="shared-filters-toggle"
+        aria-expanded="false" aria-controls="whoCountyFilterLists">
+        <span class="shared-filters-toggle-text">
+          <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
+          <span class="shared-filters-summary" id="whoCountyFiltersSummary">All counties</span>
+        </span>
+      </button>
+      <div class="card-filters bucket-filter-lists" id="whoCountyFilterLists">
+        <div class="bucket-filter-head">
+          <div class="filter-hint">Click a name to add or remove it. Leave empty to include all.</div>
+          <button type="button" id="whoClearCountyFiltersBtn" class="range-btn">Clear all filters</button>
+        </div>
+        <div class="filter-group multi">
+          <label for="whoRegionFilter">Region</label>
+          <select id="whoRegionFilter" multiple></select>
+        </div>
+        <div class="filter-group multi">
+          <div class="filter-label-row">
+            <label for="whoSizeFilter">County size</label>
+            <span class="info-tip">
+              <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="whoSizeTip" aria-label="About county size groups">i</button>
+              <span id="whoSizeTip" class="info-tip-bubble" role="tooltip">X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000.</span>
+            </span>
+          </div>
+          <select id="whoSizeFilter" multiple></select>
+        </div>
+        <div class="filter-group multi">
+          <label for="whoCountyFilterMulti">County</label>
+          <select id="whoCountyFilterMulti" multiple></select>
+        </div>
+      </div>
+    </div>
+    <div class="chart-plot">
+      <h3 class="chart-plot-title">
+        <span class="chart-plot-metric" id="whoCountyPlotTitle">Who applied by county</span>
+        <span class="chart-plot-place" id="whoCountySub"></span>
+      </h3>
+      <p class="caption" id="whoCountyCaption">Sorted by Recertification churn, highest first. Of applications disposed that month.</p>
+      <div class="chart-hover" id="whoCountyChartHover" aria-live="polite"></div>
+      <div class="chart-holder" id="whoCountyChartHolder"><canvas id="whoCountyChart" aria-hidden="true"></canvas></div>
+    </div>
+    <table class="sr-only" id="whoCountyChartTable">
+      <caption>County lineup of who applied</caption>
+      <thead><tr>
+        <th scope="col">County</th>
+        <th scope="col" id="whoCountyGroupColHeader">Size group</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <footer class="source-note">
+    <span class="footer-section-label">Sources</span>
+    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-tables/cf-18">CF 18 CalFresh Churn Monthly Report</a> (<a href="https://www.cdss.ca.gov/portals/9/acl/2018/18-117.pdf">ACL 18-117</a>). County size groups use the latest month of the CDSS Data Dashboard Monthly tab.
+
+    <span class="footer-section-label">Definitions</span>
+    County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000.
+
+    <span class="footer-section-label">Data notes</span>
+    <ul class="footer-notes">
+      <li>The two California sections share one report month and one county (California is the default). Recertification / SAR 7 Outcomes follows households scheduled in that month (Measurement 1). Combined sums Recertification and SAR 7 counts; Side by side shows the two clocks. Applicants’ Prior CalFresh Connection (Who applied) follows applications disposed in that same report month (Measurement 2). Same report row, different clocks — the series are not shifted to line up. Each county lineup keeps its own filters.</li>
+      <li>User-facing names are <strong>SAR 7</strong> and <strong>recertification (RRR)</strong>. Source name is CF 18 CalFresh Churn Monthly Report.</li>
+      <li>Orange on Recertification and SAR 7 is a later new application after a missed recert or SAR 7, not a procedural denial. Eligible reapplications are churn; ineligible includes withdrawals. Grey Ineligible is the recert or SAR 7 itself. Who applied uses a forest / olive / wine / rose palette so those bands cannot be read as the due-chart colors. Average days lost (Item 7) and the dollar estimates are in the Estimated Lost Benefits fold-out. Days to approval stays on Applications.</li>
+      <li>CDSS hides small numbers with an asterisk. Those slices are plotted as 5 and hover percents start with ~. Item 1 (households scheduled) and Item 17 (applications disposed) are not plotted as 5 — if those totals are starred, the month is blank.</li>
+      <li>Recertification / SAR 7 Outcomes by County is the same Recertification / SAR 7 stack as the snapshot section. Sort by is No loss, No return, or Reapplications (default no return, highest first). Applicants’ Prior CalFresh Connection by County is the Who applied stack. Sort by is Recert &amp; SAR 7 churn (sum of Recertification churn and SAR 7 churn), Recently on, or New (default Recert &amp; SAR 7 churn, highest first). California is the dashed statewide combined rate of that band, drawn on the band. Group lines use combined counts, not an average of percentages. Hover includes that group’s combined Sort-by rate. Full CF18 history is in the month picker (FY2020–21 onward). Pre-CalSAWS months may reflect differing calculation methods across the old C-IV / CalWIN / LRS systems. <a href="#methods">See wonky &amp; math-y details</a>.</li>
+    </ul>
+    <details class="footer-methods" id="methods">
+      <summary>
+        Wonky &amp; math-y details
+        <span class="filters-toggle-mark" aria-hidden="true"></span>
+      </summary>
+      <h3 class="footer-wonk-h">Measurement 1 (recertification and SAR 7 due)</h3>
+      <ul class="footer-notes">
+        <li>100% = Item 1 (C2 recertification / C1 SAR 7): households scheduled that Data Cohort Month. A household is in one column or the other, never both (ACL 18-117). Combined sums the two columns. Side by side (and Recertification / SAR 7) show each clock on its own.</li>
+        <li>No loss of benefits = Items 2 + 4 + 6a (timely eligible, untimely eligible, late with no loss).</li>
+        <li>Late with loss = Item 6b. Item 6 = 6a + 6b exactly; the chart uses the split, not Item 6. Item 7 (average days of lost benefits for those households) is in the Estimated Lost Benefits fold-out, and is still on hover.</li>
+        <li>Reapplications = Items 9–16 (new application in the next 1–4 calendar months). That band sits on top of the stack. Fold-outs under the due chart split that same band: Reapplication Outcomes (eligible vs ineligible) and Time to reapply (when they came back). Combined fold-outs sum Recertification and SAR 7 reapplications. Lag months are calendar months after the due month, not 1–30 / 31–90 days.</li>
+        <li>Recertification ineligible / SAR 7 ineligible (dark grey) = Items 3 + 5 + 8 (timely, untimely, and late ineligible). That is the recertification or SAR 7 determination, not a later new application.</li>
+        <li>Stack bottom→top: no loss, late with loss, recert/SAR 7 ineligible, no renewal and no return, reapplications. Snapshot due-chart hover and Recertification / SAR 7 Outcomes by County hover list those bands top-to-bottom as drawn (no nested splits — those live in the reapplication fold-outs). County hover also trails the group’s combined Sort-by rate.</li>
+        <li>No renewal and no return within 4 months = Item 1 minus the bands above. Item 1 is not an auto-sum of the outcome cells; the leftover is this grey band (often ~20% statewide). If the parts overshoot Item 1, that month is left blank rather than drawing a negative leftover.</li>
+        <li>The reapplication fold-outs are of Items 9–16 only (households who missed and came back), not of Item 1. They match the orange band on the stack above. Reapplication Outcomes is eligible vs ineligible of those reapplications. Time to reapply is when they came back: four bars (Next month / 2 / 3 / 4 months later). % is of those reapplications (the four bars sum to 100%). Hover is plain language: of the reapplications, X% (count) came back that month; then eligible vs ineligible of that month.</li>
+        <li>Dollar estimates are not a CF18 cell. The call-out total is late-with-loss plus eligible-reapplication dollars. Late-with-loss dollars = Item 6b households × (Item 7 days ÷ 30) × average issuance per household. Eligible-reapplication dollars = Items 9+11+13+15 households × 1/2/3/4 months of lag × the same rate. Average issuance is California Total Issuances ÷ CalFresh Households from the CDSS Data Dashboard Monthly tab for that month (or the latest month at or before it). If that is missing, $198 per household-month is the fallback. The estimate does not include no-return or ineligible reapplications.</li>
+      </ul>
+      <h3 class="footer-wonk-h">Measurement 2 (who applied)</h3>
+      <ul class="footer-notes">
+        <li>100% = Item 17 (C37): all CalFresh/CFAP applications disposed that month.</li>
+        <li>New / not recently on = Item 17 − Item 18.</li>
+        <li>Recently on, no SAR 7 or recert due = Item 18 − Item 19. Item 18 is participated in the prior four months, not necessarily a missed report.</li>
+        <li>SAR 7 churn = C39. Recertification churn = C40. Hover nests restoration and lag 1 vs 2–4 months (approved vs denied) under each churn band. Applicants’ Prior CalFresh Connection by County uses this same stack. Sort by Recert &amp; SAR 7 churn is C39 + C40 (combined counts, not an average of the two rates). Counties with a starred Item 17 are blank.</li>
+        <li>This mix uses a forest / olive / wine / rose palette. It is not the due-chart orange and blue.</li>
+      </ul>
+      <h3 class="footer-wonk-h">Small cells (*)</h3>
+      <ul class="footer-notes">
+        <li>Starred part cells under 11 are plotted as 5. Hover percents then start with ~.</li>
+        <li>Do not impute 5 on a starred Item 1 or Item 17 total — those stars are often complementary large cells. The month stays blank.</li>
+      </ul>
+      <h3 class="footer-wonk-h">CalSAWS</h3>
+      <ul class="footer-notes">
+        <li>Consortia (C-IV / CalWIN / LRS) are obsolete as a filter. The month picker shows full CF18 history with a caveat that pre-consolidation months may not be strictly comparable.</li>
+      </ul>
+    </details>
+    <p class="footer-credit">Designed by Diana Jensen, built with help from Cursor.</p>
+  </footer>
+  </div>
+</div>
+
+<script>
+const COUNTY_REGIONS = {
+  'Alameda': 'Bay Area', 'Contra Costa': 'Bay Area', 'Marin': 'Bay Area', 'Napa': 'Bay Area',
+  'San Francisco': 'Bay Area', 'San Mateo': 'Bay Area', 'Santa Clara': 'Bay Area', 'Solano': 'Bay Area', 'Sonoma': 'Bay Area',
+  'Monterey': 'Central Coast', 'San Benito': 'Central Coast', 'San Luis Obispo': 'Central Coast',
+  'Santa Barbara': 'Central Coast', 'Santa Cruz': 'Central Coast', 'Ventura': 'Central Coast',
+  'Alpine': 'Central Sierra', 'Amador': 'Central Sierra', 'Calaveras': 'Central Sierra', 'Inyo': 'Central Sierra',
+  'Mariposa': 'Central Sierra', 'Mono': 'Central Sierra', 'Tuolumne': 'Central Sierra',
+  'Riverside': 'Inland Empire', 'San Bernardino': 'Inland Empire',
+  'Los Angeles': 'Los Angeles',
+  'Butte': 'Northern', 'Colusa': 'Northern', 'Del Norte': 'Northern', 'Glenn': 'Northern', 'Humboldt': 'Northern',
+  'Lake': 'Northern', 'Lassen': 'Northern', 'Mendocino': 'Northern', 'Modoc': 'Northern', 'Nevada': 'Northern',
+  'Plumas': 'Northern', 'Shasta': 'Northern', 'Siskiyou': 'Northern', 'Sierra': 'Northern', 'Tehama': 'Northern', 'Trinity': 'Northern',
+  'Imperial': 'Other Southern CA', 'Orange': 'Other Southern CA', 'San Diego': 'Other Southern CA',
+  'El Dorado': 'Sacramento Area', 'Placer': 'Sacramento Area', 'Sacramento': 'Sacramento Area',
+  'Sutter': 'Sacramento Area', 'Yolo': 'Sacramento Area', 'Yuba': 'Sacramento Area',
+  'Fresno': 'San Joaquin Valley', 'Kern': 'San Joaquin Valley', 'Kings': 'San Joaquin Valley', 'Madera': 'San Joaquin Valley',
+  'Merced': 'San Joaquin Valley', 'San Joaquin': 'San Joaquin Valley', 'Stanislaus': 'San Joaquin Valley', 'Tulare': 'San Joaquin Valley'
+};
+const REGION_ORDER = ['Bay Area', 'Central Coast', 'Central Sierra', 'Inland Empire', 'Los Angeles', 'Northern', 'Other Southern CA', 'Sacramento Area', 'San Joaquin Valley'];
+const BUCKET_ORDER = ['X-Large', 'Large', 'Medium', 'Small'];
+const SIZE_DISPLAY = {
+  'X-Large': 'X-Large (6 largest)',
+  'Large': 'Large',
+  'Medium': 'Medium',
+  'Small': 'Small'
+};
+const DUE_NEST = {
+  noLoss: [
+    { key: 'timelyElig', label: 'Timely, eligible' },
+    { key: 'untimelyElig', label: 'Untimely, eligible' },
+    { key: 'lateNoLoss', label: 'Late, no loss' }
+  ],
+  reapp: [
+    { key: 'new1Elig', label: 'Eligible, next month' },
+    { key: 'new1Inelig', label: 'Ineligible, next month' },
+    { key: 'new2Elig', label: 'Eligible, 2 months later' },
+    { key: 'new2Inelig', label: 'Ineligible, 2 months later' },
+    { key: 'new3Elig', label: 'Eligible, 3 months later' },
+    { key: 'new3Inelig', label: 'Ineligible, 3 months later' },
+    { key: 'new4Elig', label: 'Eligible, 4 months later' },
+    { key: 'new4Inelig', label: 'Ineligible, 4 months later' }
+  ],
+  ineligible: [
+    { key: 'timelyInelig', label: 'Timely, ineligible' },
+    { key: 'untimelyInelig', label: 'Untimely, ineligible' },
+    { key: 'lateInelig', label: 'Late, ineligible' }
+  ]
+};
+const APP_CHURN_NEST = [
+  { key: 'restore', label: 'Restoration' },
+  { key: 'd1app', label: '1 month later, approved' },
+  { key: 'd1den', label: '1 month later, denied' },
+  { key: 'laterApp', label: '2–4 months later, approved' },
+  { key: 'laterDen', label: '2–4 months later, denied' }
+];
+
+function fmtMonth(m) {
+  const [y, mo] = m.split('-');
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return names[parseInt(mo,10)-1] + ' ' + y;
+}
+function fmtMonthLong(m) {
+  if (!m) return '';
+  const [y, mo] = m.split('-');
+  const names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return names[parseInt(mo,10)-1] + ' ' + y;
+}
+function fmtPct(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  return v.toFixed(1) + '%';
+}
+function fmtCount(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  return Math.round(v).toLocaleString('en-US');
+}
+function fmtDays(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  return v.toFixed(1);
+}
+function fmtMoney(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  const abs = Math.abs(v);
+  if (abs >= 1e6) return '$' + (v / 1e6).toFixed(1) + ' million';
+  return '$' + Math.round(v).toLocaleString('en-US');
+}
+function shareOf(part, total) {
+  if (part == null || total == null || total <= 0) return null;
+  return 100 * part / total;
+}
+function hexAlpha(hex, a) {
+  const h = hex.replace('#','');
+  const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
+function formatHoverRaw(p, approx) {
+  let text;
+  if (typeof p.raw !== 'number') text = String(p.raw);
+  else if (p.dataset.valueKind === 'count') text = fmtCount(p.raw);
+  else text = p.raw.toFixed(1) + '%';
+  const pointApprox = approx || (p.dataset.estimatedFlags && p.dataset.estimatedFlags[p.dataIndex]);
+  if (pointApprox && text && text !== 'n/a') text = '~' + text;
+  return text;
+}
+function fmtHoverPct(v, approx) {
+  const text = fmtPct(v);
+  if (approx && text !== 'n/a') return '~' + text;
+  return text;
+}
+function nestedHoverRows(parts, hover, denom, approx) {
+  const kids = [];
+  parts.forEach(part => {
+    const v = hover && hover[part.key];
+    if (v == null || v === 0) return;
+    kids.push({ nested: true, text: part.label + ': ' + fmtHoverPct(shareOf(v, denom), approx) });
+  });
+  return kids;
+}
+function clearHoverTooltip(el) {
+  if (!el) return;
+  el.replaceChildren();
+  el.classList.remove('is-active', 'is-prose');
+}
+function renderHoverTooltip(el, tooltip) {
+  el.replaceChildren();
+  const title = document.createElement('div');
+  title.className = 'chart-hover-title';
+  title.textContent = tooltip.title || '';
+  el.appendChild(title);
+  if (tooltip.note) {
+    const note = document.createElement('div');
+    note.className = 'chart-hover-note';
+    note.textContent = tooltip.note;
+    el.appendChild(note);
+  }
+  (tooltip.rows || []).forEach(row => {
+    const line = document.createElement('div');
+    line.className = 'chart-hover-row' + (row.nested ? ' is-nested' : '') + (row.group ? ' is-group' : '');
+    if (row.color && !row.nested) {
+      const sw = document.createElement('span');
+      sw.className = 'chart-hover-swatch';
+      sw.style.background = row.color;
+      line.appendChild(sw);
+    }
+    const txt = document.createElement('span');
+    txt.textContent = row.text;
+    line.appendChild(txt);
+    el.appendChild(line);
+  });
+  if (tooltip.footer) {
+    const footer = document.createElement('div');
+    footer.className = 'chart-hover-note';
+    footer.textContent = tooltip.footer;
+    el.appendChild(footer);
+  }
+  el.classList.add('is-active');
+}
+function hoverTooltipExternal(hoverId, placement, getNote) {
+  return function(context) {
+    const el = document.getElementById(hoverId);
+    if (!el) return;
+    const tooltip = context.tooltip;
+    if (!tooltip || tooltip.opacity === 0 || !tooltip.dataPoints || !tooltip.dataPoints.length) {
+      clearHoverTooltip(el);
+      return;
+    }
+    const items = tooltip.dataPoints.filter(p => {
+      if (p.raw === null || p.raw === undefined) return false;
+      if (p.dataset.hideZeroHover && p.raw === 0) return false;
+      return true;
+    });
+    if (!items.length) { clearHoverTooltip(el); return; }
+    if (items.length && context.chart.options && context.chart.options.plugins &&
+        context.chart.options.plugins.stackBandLabels) {
+      items.reverse();
+    }
+    const label = context.chart.data.labels[items[0].dataIndex];
+    let title = (tooltip.title && tooltip.title.length)
+      ? tooltip.title.join(' ')
+      : (/^\d{4}-\d{2}$/.test(String(label)) ? fmtMonth(label) : String(label || ''));
+    let note = null;
+    let footer = null;
+    let approx = false;
+    let nestedByBand = null;
+    let customRows = null;
+    let trail = null;
+    if (typeof getNote === 'function') {
+      const extra = getNote(items[0].dataIndex, context);
+      if (extra && typeof extra === 'object') {
+        if (extra.title) title = extra.title;
+        note = extra.note || null;
+        footer = extra.footer || null;
+        approx = !!extra.approx;
+        nestedByBand = extra.nested || null;
+        if (extra.rows) customRows = extra.rows;
+        if (extra.trail) trail = extra.trail;
+      } else if (typeof extra === 'string') {
+        note = extra;
+      }
+    }
+    const rows = customRows || [];
+    if (!customRows) {
+      items.forEach(p => {
+        const isPie = context.chart.getDatasetMeta(0) && context.chart.getDatasetMeta(0).type === 'pie';
+        const name = (isPie && context.chart.data.labels && context.chart.data.labels[p.dataIndex] != null)
+          ? context.chart.data.labels[p.dataIndex]
+          : p.dataset.label;
+        const bg = p.dataset.backgroundColor;
+        const bd = p.dataset.borderColor;
+        const color = Array.isArray(bd) ? bd[p.dataIndex] : (Array.isArray(bg) ? bg[p.dataIndex] : (bd || bg));
+        rows.push({
+          color: color,
+          text: name + ': ' + formatHoverRaw(p, approx)
+        });
+        const key = p.dataset.bandKey;
+        const kids = nestedByBand && key ? nestedByBand[key] : null;
+        if (kids && kids.length) kids.forEach(row => rows.push(row));
+      });
+    }
+    if (trail && trail.length) trail.forEach(row => rows.push(row));
+    el.classList.toggle('is-prose', !!customRows);
+    renderHoverTooltip(el, { title, note, rows, footer });
+    const canvas = context.chart.canvas;
+    const plot = canvas.closest('.chart-plot');
+    if (!plot) return;
+    const plotRect = plot.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    const caretX = canvasRect.left + tooltip.caretX;
+    const tipW = el.offsetWidth;
+    const tipH = el.offsetHeight;
+    let left = Math.max(plotRect.left + 8, Math.min(caretX - tipW / 2, plotRect.right - tipW - 8));
+    let top = canvasRect.top - tipH - 8;
+    const card = plot.closest('.card');
+    const minTop = card ? card.getBoundingClientRect().top + 8 : 8;
+    if (top < minTop) top = minTop;
+    if (top < 8) top = 8;
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+  };
+}
+function optionFromPointer(select, e) {
+  const t = e.target;
+  if (t && t.tagName === 'OPTION' && select.contains(t)) return t;
+  const hit = document.elementFromPoint(e.clientX, e.clientY);
+  if (hit && hit.tagName === 'OPTION' && select.contains(hit)) return hit;
+  return null;
+}
+function enablePlainClickToggle(select) {
+  select.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const option = optionFromPointer(select, e);
+    if (!option) return;
+    e.preventDefault();
+    const next = !option.selected;
+    const scroll = select.scrollTop;
+    option.selected = next;
+    select.focus();
+    select.scrollTop = scroll;
+    requestAnimationFrame(() => {
+      option.selected = next;
+      select.scrollTop = scroll;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+}
+function renderAccessibleTable(tbodyEl, rows) {
+  tbodyEl.innerHTML = '';
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    row.forEach(cell => {
+      const td = document.createElement('td');
+      td.textContent = cell;
+      tr.appendChild(td);
+    });
+    tbodyEl.appendChild(tr);
+  });
+}
+function monthAbbrev(mo) {
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return names[parseInt(mo, 10) - 1];
+}
+const monthYearAxisPlugin = {
+  id: 'monthYearAxis',
+  afterDraw(chart) {
+    if (!chart.options.plugins || !chart.options.plugins.monthYearAxis) return;
+    const labels = chart.data.labels;
+    if (!labels || !labels.length) return;
+    if (!/^\d{4}-\d{2}$/.test(String(labels[0]))) return;
+    const { ctx, chartArea, scales: { x } } = chart;
+    if (!chartArea) return;
+    const quarterIdx = [];
+    labels.forEach((m, i) => {
+      const mo = m.split('-')[1];
+      if (i === 0 || mo === '01' || mo === '04' || mo === '07' || mo === '10') quarterIdx.push(i);
+    });
+    const availWidth = chartArea.right - chartArea.left;
+    const minPxPerTick = 30;
+    const maxTicks = Math.max(1, Math.floor(availWidth / minPxPerTick));
+    const quarterStep = Math.max(1, Math.ceil(quarterIdx.length / maxTicks));
+    const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+    const axisTop = chartArea.bottom;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    let lastYearShown = null;
+    if (quarterStep >= 4) {
+      const yearIdx = [];
+      labels.forEach((m, i) => {
+        if (i === 0 || m.split('-')[1] === '01') yearIdx.push(i);
+      });
+      const yearStep = Math.max(1, Math.ceil(yearIdx.length / maxTicks));
+      const shownYearIdx = yearIdx.filter((_, yi) => yi % yearStep === 0);
+      const lastYearIdx = yearIdx[yearIdx.length - 1];
+      if (shownYearIdx[shownYearIdx.length - 1] !== lastYearIdx) shownYearIdx.push(lastYearIdx);
+      shownYearIdx.forEach(i => {
+        const y = labels[i].split('-')[0];
+        ctx.font = 'bold 10px ' + fontStack;
+        ctx.fillStyle = '#333';
+        ctx.fillText(y, x.getPixelForValue(i), axisTop + 6);
+      });
+    } else {
+      const shownIdx = quarterIdx.filter((_, qi) => qi % quarterStep === 0);
+      const lastQuarterIdx = quarterIdx[quarterIdx.length - 1];
+      if (shownIdx[shownIdx.length - 1] !== lastQuarterIdx) shownIdx.push(lastQuarterIdx);
+      shownIdx.forEach(i => {
+        const [y, mo] = labels[i].split('-');
+        const px = x.getPixelForValue(i);
+        ctx.font = '10px ' + fontStack;
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText(monthAbbrev(mo), px, axisTop + 6);
+        if ((mo === '01' || i === 0) && y !== lastYearShown) {
+          ctx.font = 'bold 10px ' + fontStack;
+          ctx.fillStyle = '#333';
+          ctx.fillText(y, px, axisTop + 19);
+          lastYearShown = y;
+        }
+      });
+    }
+    ctx.restore();
+  }
+};
+Chart.register(monthYearAxisPlugin);
+function contrastInk(color) {
+  let r = 0, g = 0, b = 0;
+  const hex = String(color || '').replace('#', '');
+  const rgb = String(color || '').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (rgb) { r = +rgb[1]; g = +rgb[2]; b = +rgb[3]; }
+  else if (hex.length === 3) {
+    r = parseInt(hex[0] + hex[0], 16);
+    g = parseInt(hex[1] + hex[1], 16);
+    b = parseInt(hex[2] + hex[2], 16);
+  } else if (hex.length >= 6) {
+    r = parseInt(hex.slice(0, 2), 16);
+    g = parseInt(hex.slice(2, 4), 16);
+    b = parseInt(hex.slice(4, 6), 16);
+  }
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return lum > 0.58 ? '#1f2430' : '#fff';
+}
+const stackBandLabelPlugin = {
+  id: 'stackBandLabels',
+  afterDatasetsDraw(chart) {
+    const cfg = chart.options.plugins && chart.options.plugins.stackBandLabels;
+    if (!cfg) return;
+    const minH = cfg.minHeight || 13;
+    const x = chart.scales.x;
+    const y = chart.scales.y;
+    const { ctx, chartArea, data } = chart;
+    if (!x || !y || !chartArea) return;
+    const stacked = data.datasets.filter((d, i) => {
+      if (!chart.isDatasetVisible(i)) return false;
+      if (d.yAxisID && d.yAxisID !== 'y') return false;
+      return d.fill;
+    });
+    const n = data.labels.length;
+    ctx.save();
+    ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+    if (stacked.length && n) {
+      function monthComplete(i) {
+        if (stacked.some(d => d.data[i] == null)) return false;
+        const prevMissing = i === 0 || stacked.every(d => d.data[i - 1] == null);
+        const nextMissing = i === n - 1 || stacked.every(d => d.data[i + 1] == null);
+        return !(prevMissing && nextMissing);
+      }
+      function labelableCount(i) {
+        let pos = 0, nLabel = 0;
+        stacked.forEach(d => {
+          const v = d.data[i];
+          if (v == null || v === 0) return;
+          const from = pos;
+          const to = from + v;
+          pos = to;
+          if (Math.abs(y.getPixelForValue(from) - y.getPixelForValue(to)) >= minH) nLabel++;
+        });
+        return nLabel;
+      }
+      let bestIdx = -1;
+      let bestScore = -1;
+      const start = Math.floor(n * 0.42);
+      for (let i = start; i < n; i++) {
+        if (!monthComplete(i)) continue;
+        const score = labelableCount(i);
+        if (score >= bestScore) { bestScore = score; bestIdx = i; }
+      }
+      if (bestIdx === -1) {
+        for (let i = n - 1; i >= 0; i--) {
+          if (stacked.every(d => d.data[i] != null)) { bestIdx = i; break; }
+        }
+      }
+      if (bestIdx === -1) { ctx.restore(); return; }
+
+      if (cfg.values) {
+        const items = [];
+        stacked.forEach(d => {
+          const v = d.data[bestIdx];
+          if (v == null || v === 0) return;
+          const dsIndex = data.datasets.indexOf(d);
+          const el = chart.getDatasetMeta(dsIndex).data[bestIdx];
+          if (!el) return;
+          const yTop = Math.min(el.y, el.base);
+          const yBot = Math.max(el.y, el.base);
+          const name = d.bandLabel || d.label;
+          items.push({
+            text: name + '  ' + v.toFixed(1) + '%',
+            h: yBot - yTop,
+            midY: (yTop + yBot) / 2,
+            barRight: el.x + el.width / 2,
+            barLeft: el.x - el.width / 2,
+            color: d.borderColor || d.backgroundColor,
+            inside: (yBot - yTop) >= minH && d.bandKey !== 'reapp'
+          });
+        });
+        const outside = items.filter(it => !it.inside).sort((a, b) => a.midY - b.midY);
+        const lineH = 15;
+        let lastY = chartArea.top - 4;
+        outside.forEach(it => {
+          let ty = it.midY;
+          if (ty < lastY + lineH) ty = lastY + lineH;
+          if (ty > chartArea.bottom) ty = chartArea.bottom;
+          it.labelY = ty;
+          lastY = ty;
+        });
+        items.forEach(it => {
+          if (it.inside) {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = contrastInk(it.color);
+            ctx.fillText(it.text, (it.barLeft + it.barRight) / 2, it.midY);
+            return;
+          }
+          const lx = it.barRight + 8;
+          ctx.strokeStyle = it.color;
+          ctx.lineWidth = 1.25;
+          ctx.beginPath();
+          ctx.moveTo(it.barRight + 1, it.midY);
+          ctx.lineTo(lx, it.labelY);
+          ctx.stroke();
+          ctx.fillStyle = '#1f2430';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(it.text, lx + 5, it.labelY);
+        });
+      } else if (stacked.length >= 2) {
+        let pos = 0;
+        stacked.forEach(d => {
+          const v = d.data[bestIdx];
+          if (v == null) return;
+          const from = pos;
+          const to = from + v;
+          pos = to;
+          const label = d.bandLabel || d.label;
+          if (!label || v === 0) return;
+          const y0 = y.getPixelForValue(from);
+          const y1 = y.getPixelForValue(to);
+          if (Math.abs(y1 - y0) < minH) return;
+          const midY = (y0 + y1) / 2;
+          const px = x.getPixelForValue(bestIdx);
+          const textW = ctx.measureText(label).width;
+          ctx.textAlign = 'right';
+          let tx = px - 4;
+          if (tx - textW < chartArea.left + 4) {
+            ctx.textAlign = 'left';
+            tx = Math.min(px + 4, chartArea.right - textW - 4);
+          }
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = contrastInk(d.borderColor || d.backgroundColor);
+          ctx.fillText(label, tx, midY);
+        });
+      }
+    }
+    ctx.restore();
+  }
+};
+Chart.register(stackBandLabelPlugin);
+const plotTitleAlignPlugin = {
+  id: 'plotTitleAlign',
+  afterLayout(chart) {
+    const plot = chart.canvas && chart.canvas.closest('.chart-plot');
+    const area = chart.chartArea;
+    if (!plot || !area) return;
+    const next = Math.max(0, Math.round(area.left)) + 'px';
+    if (plot.style.getPropertyValue('--plot-title-inset') !== next) {
+      plot.style.setProperty('--plot-title-inset', next);
+    }
+  }
+};
+Chart.register(plotTitleAlignPlugin);
+function lockYAxisWidth(axis) { axis.width = 72; }
+
+const groupDividerPlugin = {
+  id: 'groupDividers',
+  afterDraw(chart) {
+    const barDs = chart.data.datasets.find(d => d._groupRanges);
+    if (!barDs) return;
+    const groups = barDs._groupRanges;
+    const { ctx, chartArea, scales: { x, y } } = chart;
+    if (!chartArea || !x || !y) return;
+    const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+
+    groups.forEach((g, gi) => {
+      const midIdx = (g.start + g.end) / 2;
+      const midX = x.getPixelForValue(midIdx);
+      ctx.save();
+      ctx.font = '11px ' + fontStack;
+      ctx.fillStyle = '#333';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.translate(midX, chartArea.top - 10);
+      ctx.rotate(-Math.PI / 4);
+      ctx.fillText(g.name, 0, 0);
+      ctx.restore();
+
+      if (gi > 0) {
+        const boundaryX = x.getPixelForValue(g.start - 0.5);
+        ctx.save();
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(boundaryX, chartArea.top);
+        ctx.lineTo(boundaryX, chartArea.bottom);
+        ctx.stroke();
+        ctx.restore();
+      }
+      if (g.end > g.start && g.lineMarks && g.lineMarks.length) {
+        const leftX = x.getPixelForValue(g.start - 0.5) + 4;
+        g.lineMarks.forEach(m => {
+          const markY = y.getPixelForValue(m.plotY);
+          const band = m.bandColor || m.color || '#111';
+          ctx.save();
+          ctx.font = '600 11px ' + fontStack;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          const padX = 5;
+          const boxH = 17;
+          const boxW = ctx.measureText(m.text).width + padX * 2;
+          let bx = leftX;
+          let by = markY - boxH / 2;
+          if (bx + boxW > chartArea.right - 2) {
+            bx = Math.max(chartArea.left + 2, chartArea.right - 2 - boxW);
+          }
+          if (by < chartArea.top + 1) by = chartArea.top + 1;
+          if (by + boxH > chartArea.bottom - 1) by = chartArea.bottom - 1 - boxH;
+          ctx.beginPath();
+          if (typeof ctx.roundRect === 'function') ctx.roundRect(bx, by, boxW, boxH, 3);
+          else ctx.rect(bx, by, boxW, boxH);
+          ctx.fillStyle = 'rgba(255,255,255,0.96)';
+          ctx.fill();
+          ctx.strokeStyle = band;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = '#1f2430';
+          ctx.fillText(m.text, bx + padX, by + boxH / 2);
+          ctx.restore();
+        });
+      }
+    });
+  }
+};
+Chart.register(groupDividerPlugin);
+
+function initDashboard() {
+const DUE_STACK = DATA.due_stack;
+const APP_STACK = DATA.app_stack;
+const SORT_OPTS = [
+  { key: 'noLoss', label: 'No loss', shortLabel: 'No loss' },
+  { key: 'noReturn', label: 'No return', shortLabel: 'No return' },
+  { key: 'reapp', label: 'Reapplications', shortLabel: 'Reapps' }
+];
+const WHO_SORT_OPTS = [
+  { key: 'churn', label: 'Recert & SAR 7 churn', shortLabel: 'Recert + SAR 7' },
+  { key: 'recentNoDue', label: 'Recently on', shortLabel: 'Recently on' },
+  { key: 'new', label: 'New', shortLabel: 'New' }
+];
+const GROUP_LINE_COLOR = '#111';
+const REAPP_OUTCOME_STACK = [
+  { key: 'elig', label: 'Eligible (churn)', shortLabel: 'Eligible', color: '#FB7906' },
+  { key: 'inelig', label: 'Ineligible (includes withdrawals)', shortLabel: 'Ineligible', color: '#F4A261' }
+];
+const REAPP_LAGS = [
+  { lag: 1, label: 'Next month', when: 'in the next month', those: 'those next month reapplications' },
+  { lag: 2, label: '2 months', when: '2 months later', those: 'those 2-month reapplications' },
+  { lag: 3, label: '3 months', when: '3 months later', those: 'those 3-month reapplications' },
+  { lag: 4, label: '4 months', when: '4 months later', those: 'those 4-month reapplications' }
+];
+function dueStackFor(kind) {
+  return DUE_STACK.map(s => {
+    if (s.key !== 'ineligible') return s;
+    if (kind === 'recert') {
+      return Object.assign({}, s, {
+        label: 'Recertification ineligible',
+        shortLabel: 'Recert ineligible'
+      });
+    }
+    if (kind === 'sar7') {
+      return Object.assign({}, s, {
+        label: 'SAR 7 ineligible',
+        shortLabel: 'SAR 7 ineligible'
+      });
+    }
+    return s;
+  });
+}
+function sortBandKey(key) {
+  return key === 'newApp' ? 'reapp' : key;
+}
+function sortBandKeys(key) {
+  const k = sortBandKey(key);
+  if (k === 'churn') return ['sar7Churn', 'recertChurn'];
+  return [k];
+}
+function sortLabel(key) {
+  const opt = SORT_OPTS.find(s => s.key === sortBandKey(key));
+  return opt ? opt.label : key;
+}
+function sortShort(key) {
+  const opt = SORT_OPTS.find(s => s.key === sortBandKey(key));
+  return opt ? (opt.shortLabel || opt.label) : key;
+}
+function whoSortLabel(key) {
+  const opt = WHO_SORT_OPTS.find(s => s.key === key);
+  return opt ? opt.label : key;
+}
+function whoSortShort(key) {
+  const opt = WHO_SORT_OPTS.find(s => s.key === key);
+  return opt ? (opt.shortLabel || opt.label) : key;
+}
+function withGroupHover(baseFn) {
+  return rec => {
+    const extra = baseFn(rec) || {};
+    if (rec.groupSortRate == null) return extra;
+    extra.trail = [{
+      group: true,
+      color: GROUP_LINE_COLOR,
+      text: rec.groupName + ' ' + rec.groupSortName + ': ' + fmtHoverPct(rec.groupSortRate, rec.groupEstimated)
+    }];
+    return extra;
+  };
+}
+
+let selectedMonth = DATA.latest_complete_month || DATA.months[DATA.months.length - 1];
+let selectedPlace = 'Statewide';
+let dueClock = 'both';
+let countyClock = 'recert';
+let countySort = 'noReturn';
+let groupByMode = 'size';
+let whoCountySort = 'churn';
+let whoGroupByMode = 'size';
+let recertChart = null;
+let sar7Chart = null;
+let combinedChart = null;
+let whoChart = null;
+let recertReappChart = null;
+let sar7ReappChart = null;
+let combinedReappChart = null;
+let recertTimeChart = null;
+let sar7TimeChart = null;
+let combinedTimeChart = null;
+let countyChart = null;
+let whoCountyChart = null;
+let countyHoverRows = [];
+let whoCountyHoverRows = [];
+let reappTimeUnit = 'share';
+let lostTotals = { recert: null, sar7: null };
+
+const monthSels = document.querySelectorAll('.churn-month-select');
+function fillMonthSelects() {
+  const months = DATA.months.slice().reverse();
+  monthSels.forEach(sel => {
+    sel.replaceChildren();
+    months.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = fmtMonth(m);
+      sel.appendChild(opt);
+    });
+    if (selectedMonth) sel.value = selectedMonth;
+  });
+}
+fillMonthSelects();
+
+const placeSels = document.querySelectorAll('.churn-place-select');
+function placeName() {
+  return selectedPlace === 'Statewide' ? 'California' : selectedPlace;
+}
+function fillPlaceSelects() {
+  placeSels.forEach(sel => {
+    sel.replaceChildren();
+    const ca = document.createElement('option');
+    ca.value = 'Statewide';
+    ca.textContent = 'California';
+    sel.appendChild(ca);
+    DATA.all_counties.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      sel.appendChild(opt);
+    });
+    sel.value = selectedPlace;
+  });
+}
+fillPlaceSelects();
+
+const regionFilterEl = document.getElementById('regionFilter');
+const sizeFilterEl = document.getElementById('sizeFilter');
+const countyFilterEl = document.getElementById('countyFilterMulti');
+REGION_ORDER.forEach(r => {
+  const opt = document.createElement('option');
+  opt.value = r;
+  opt.textContent = r;
+  regionFilterEl.appendChild(opt);
+});
+BUCKET_ORDER.forEach(s => {
+  const opt = document.createElement('option');
+  opt.value = s;
+  opt.textContent = SIZE_DISPLAY[s] || s;
+  sizeFilterEl.appendChild(opt);
+});
+DATA.all_counties.forEach(c => {
+  const opt = document.createElement('option');
+  opt.value = c;
+  opt.textContent = c;
+  countyFilterEl.appendChild(opt);
+});
+const whoRegionFilterEl = document.getElementById('whoRegionFilter');
+const whoSizeFilterEl = document.getElementById('whoSizeFilter');
+const whoCountyFilterEl = document.getElementById('whoCountyFilterMulti');
+function copySelectOptions(from, to) {
+  to.replaceChildren();
+  Array.from(from.options).forEach(o => to.appendChild(o.cloneNode(true)));
+}
+copySelectOptions(regionFilterEl, whoRegionFilterEl);
+copySelectOptions(sizeFilterEl, whoSizeFilterEl);
+copySelectOptions(countyFilterEl, whoCountyFilterEl);
+
+function placeRow(kind) {
+  const s = DATA.series[selectedPlace];
+  if (!s) return null;
+  if (kind === 'apps') return s.apps[selectedMonth] || null;
+  return (s[kind] && s[kind][selectedMonth]) || null;
+}
+function dueRowFor(kind) {
+  if (kind === 'combined') return sumDueRows([placeRow('recert'), placeRow('sar7')]);
+  return placeRow(kind);
+}
+
+function dueNestedHover(kind, row, opts) {
+  if (!row) return null;
+  const extra = {
+    note: 'Of ' + fmtCount(row.scheduled) + ' households scheduled',
+    approx: !!row.estimated
+  };
+  if (!opts || opts.splits !== false) {
+    const nested = {};
+    dueStackFor(kind).forEach(s => {
+      if (s.key === 'reapp') {
+        nested[s.key] = reappHoverRows(row);
+        return;
+      }
+      const parts = DUE_NEST[s.key];
+      if (!parts) return;
+      nested[s.key] = nestedHoverRows(parts, row.hover, row.scheduled, row.estimated);
+    });
+    extra.nested = nested;
+  }
+  if (row.daysLost != null && row.lateLoss > 0) {
+    extra.footer = 'Average days of lost benefits: ' + fmtDays(row.daysLost);
+  }
+  return extra;
+}
+function dueHoverExtra(kind, opts) {
+  return function() {
+    return dueNestedHover(kind, dueRowFor(kind), opts);
+  };
+}
+function reappHoverRows(row) {
+  const hover = row.hover || {};
+  const denom = row.scheduled;
+  const approx = row.estimated;
+  let elig = 0;
+  let inelig = 0;
+  ['new1Elig', 'new2Elig', 'new3Elig', 'new4Elig'].forEach(k => { elig += hover[k] || 0; });
+  ['new1Inelig', 'new2Inelig', 'new3Inelig', 'new4Inelig'].forEach(k => { inelig += hover[k] || 0; });
+  const kids = [
+    { nested: true, text: 'Eligible (churn): ' + fmtHoverPct(shareOf(elig, denom), approx) },
+    { nested: true, text: 'Ineligible (includes withdrawals): ' + fmtHoverPct(shareOf(inelig, denom), approx) }
+  ];
+  return kids.concat(nestedHoverRows(DUE_NEST.reapp, hover, denom, approx));
+}
+
+function appHoverExtra() {
+  return appsNestedHover(placeRow('apps'));
+}
+function appsNestedHover(row) {
+  if (!row) return null;
+  const nested = {};
+  ['sar7Churn', 'recertChurn'].forEach(band => {
+    const kind = band === 'sar7Churn' ? 'sar7' : 'recert';
+    const h = row.hover && row.hover[kind];
+    if (!h) return;
+    const packed = {
+      restore: h.restore || 0,
+      d1app: h.d1app || 0,
+      d1den: h.d1den || 0,
+      laterApp: (h.d2app || 0) + (h.d3app || 0) + (h.d4app || 0),
+      laterDen: (h.d2den || 0) + (h.d3den || 0) + (h.d4den || 0)
+    };
+    nested[band] = nestedHoverRows(APP_CHURN_NEST, packed, row.all, row.estimated);
+  });
+  return {
+    note: 'Of ' + fmtCount(row.all) + ' applications disposed',
+    nested: nested,
+    approx: !!row.estimated
+  };
+}
+
+function stackDatasets(stack, row, denomKey) {
+  const denom = row ? row[denomKey] : 0;
+  return stack.map(s => ({
+    label: s.label,
+    bandKey: s.key,
+    bandLabel: s.shortLabel || s.label,
+    data: [row ? shareOf(row[s.key], denom) : null],
+    backgroundColor: hexAlpha(s.color, 0.92),
+    borderColor: s.color,
+    borderWidth: 0,
+    stack: 'mix',
+    fill: true,
+    hideZeroHover: true,
+    estimatedFlags: [row && row.estimated]
+  }));
+}
+
+function renderMixTable(tbodyId, stack, row, denomKey) {
+  const tbody = document.querySelector('#' + tbodyId + ' tbody');
+  const denom = row ? row[denomKey] : 0;
+  const rows = stack.map(s => [
+    s.label,
+    row ? fmtPct(shareOf(row[s.key], denom)) : 'n/a',
+    row ? fmtCount(row[s.key]) : 'n/a'
+  ]);
+  renderAccessibleTable(tbody, rows);
+}
+
+function buildStackChart(canvasId, hoverId, stack, row, denomKey, getNote, extra) {
+  extra = extra || {};
+  const canvas = document.getElementById(canvasId);
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+  clearHoverTooltip(document.getElementById(hoverId));
+  return new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: [fmtMonth(selectedMonth)],
+      datasets: stackDatasets(stack, row, denomKey)
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      layout: { padding: { top: extra.leaders ? 10 : 8, right: extra.leaders ? 128 : 8 } },
+      plugins: {
+        legend: { display: false },
+        stackBandLabels: extra.leaders
+          ? { values: true, leaders: true, minHeight: 22 }
+          : { minHeight: 13 },
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal(hoverId, 'above', getNote),
+          filter: (item) => item.raw !== null && item.raw !== undefined && item.raw !== 0
+        }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { display: false } },
+        y: {
+          stacked: true, min: 0, max: 100,
+          ticks: { callback: v => v + '%' },
+          grid: { color: '#f0f0f0' },
+          afterFit: lockYAxisWidth
+        }
+      }
+    }
+  });
+}
+
+function updateSnapshotCopy() {
+  const m = fmtMonthLong(selectedMonth);
+  const place = placeName();
+  const set = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  document.querySelectorAll('.snapshot-place').forEach(el => {
+    const prefix = el.getAttribute('data-place-prefix');
+    el.textContent = prefix ? prefix + ' · ' + place : place;
+  });
+  set('combinedCaption', 'Of households scheduled for recertification (RRR) or a SAR 7 in ' + m);
+  set('recertCaption', 'Of households scheduled for recertification (RRR) in ' + m);
+  set('sar7Caption', 'Of households scheduled for a SAR 7 in ' + m);
+  set('whoMetric', 'Who applied in ' + m);
+  set('whoCaption', 'Of CalFresh and CFAP applications disposed in ' + m);
+  const timeCap = reappTimeUnit === 'count'
+    ? 'Reapplications after ' + m + ', by when they came back'
+    : 'Share of reapplications after ' + m + ', by when they came back';
+  set('combinedTimeCaption', timeCap);
+  set('recertTimeCaption', timeCap);
+  set('sar7TimeCaption', timeCap);
+  const combinedCap = document.querySelector('#combinedTable caption');
+  const recertCap = document.querySelector('#recertTable caption');
+  const sar7Cap = document.querySelector('#sar7Table caption');
+  const whoCap = document.querySelector('#whoTable caption');
+  if (combinedCap) combinedCap.textContent = 'Recertification and SAR 7 outcomes as a share of households scheduled in ' + m;
+  if (recertCap) recertCap.textContent = 'Recertification outcomes as a share of households scheduled in ' + m;
+  if (sar7Cap) sar7Cap.textContent = 'SAR 7 outcomes as a share of households scheduled in ' + m;
+  if (whoCap) whoCap.textContent = 'Who applied in ' + m + ' as a share of applications disposed';
+}
+
+function buildSnapshot() {
+  const recert = placeRow('recert');
+  const sar7 = placeRow('sar7');
+  const combined = dueRowFor('combined');
+  const apps = placeRow('apps');
+  updateSnapshotCopy();
+  fillLostCallout(recert, sar7);
+  combinedChart = buildStackChart('combinedChart', 'combinedHover', dueStackFor('combined'), combined, 'scheduled', dueHoverExtra('combined', { splits: false }), { leaders: true });
+  recertChart = buildStackChart('recertChart', 'recertHover', dueStackFor('recert'), recert, 'scheduled', dueHoverExtra('recert', { splits: false }), { leaders: true });
+  sar7Chart = buildStackChart('sar7Chart', 'sar7Hover', dueStackFor('sar7'), sar7, 'scheduled', dueHoverExtra('sar7', { splits: false }), { leaders: true });
+  whoChart = buildStackChart('whoChart', 'whoHover', APP_STACK, apps, 'all', appHoverExtra);
+  combinedReappChart = buildReappOutcomeChart('combinedReappChart', 'combinedReappHover', 'combined');
+  recertReappChart = buildReappOutcomeChart('recertReappChart', 'recertReappHover', 'recert');
+  sar7ReappChart = buildReappOutcomeChart('sar7ReappChart', 'sar7ReappHover', 'sar7');
+  combinedTimeChart = buildReappTimeChart('combinedTimeChart', 'combinedTimeHover', 'combined');
+  recertTimeChart = buildReappTimeChart('recertTimeChart', 'recertTimeHover', 'recert');
+  sar7TimeChart = buildReappTimeChart('sar7TimeChart', 'sar7TimeHover', 'sar7');
+  renderMixTable('combinedTable', dueStackFor('combined'), combined, 'scheduled');
+  renderMixTable('recertTable', dueStackFor('recert'), recert, 'scheduled');
+  renderMixTable('sar7Table', dueStackFor('sar7'), sar7, 'scheduled');
+  renderMixTable('whoTable', APP_STACK, apps, 'all');
+  const combinedPack = dueReappCounts(combined, 0);
+  const recertPack = dueReappCounts(recert, 0);
+  const sar7Pack = dueReappCounts(sar7, 0);
+  renderAccessibleTable(document.querySelector('#reappTable tbody'), [
+    ['Recertification & SAR 7', combinedPack ? fmtCount(combinedPack.elig) : 'n/a', combinedPack ? fmtCount(combinedPack.inelig) : 'n/a', combinedPack ? fmtCount(combinedPack.total) : 'n/a'],
+    ['Recertification', recertPack ? fmtCount(recertPack.elig) : 'n/a', recertPack ? fmtCount(recertPack.inelig) : 'n/a', recertPack ? fmtCount(recertPack.total) : 'n/a'],
+    ['SAR 7', sar7Pack ? fmtCount(sar7Pack.elig) : 'n/a', sar7Pack ? fmtCount(sar7Pack.inelig) : 'n/a', sar7Pack ? fmtCount(sar7Pack.total) : 'n/a']
+  ]);
+  const timeRows = [];
+  [['Recertification & SAR 7', combined], ['Recertification', recert], ['SAR 7', sar7]].forEach(pair => {
+    REAPP_LAGS.forEach(lag => {
+      const pack = dueReappCounts(pair[1], lag.lag);
+      timeRows.push([
+        pair[0],
+        lag.label,
+        pack ? fmtCount(pack.elig) : 'n/a',
+        pack ? fmtCount(pack.inelig) : 'n/a',
+        pack ? fmtCount(pack.total) : 'n/a'
+      ]);
+    });
+  });
+  renderAccessibleTable(document.querySelector('#reappTimeTable tbody'), timeRows);
+  applyDueClock();
+}
+
+function applyDueClock() {
+  const block = document.getElementById('dueBlock');
+  const folds = document.getElementById('dueFolds');
+  const lost = document.getElementById('lostCallout');
+  if (block) block.setAttribute('data-clock', dueClock);
+  if (folds) folds.setAttribute('data-clock', dueClock);
+  if (lost) lost.setAttribute('data-clock', dueClock);
+  updateLostHero();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      [combinedChart, recertChart, sar7Chart, combinedReappChart, recertReappChart, sar7ReappChart, combinedTimeChart, recertTimeChart, sar7TimeChart].forEach(c => {
+        if (c && c.canvas && c.canvas.offsetParent) c.resize();
+      });
+    });
+  });
+}
+
+function fillLostCallout(recert, sar7) {
+  const benefit = benefitPerHousehold(selectedMonth, DATA.benefit_by_month || {});
+  function fillClock(prefix, row) {
+    const late = dueLateLossHouseholdMonths(row);
+    const reapp = dueReappEligHouseholdMonths(row);
+    const daysEl = document.getElementById(prefix + 'DaysLost');
+    const subEl = document.getElementById(prefix + 'DaysLostSub');
+    const lateEl = document.getElementById(prefix + 'LateDollars');
+    const reappEl = document.getElementById(prefix + 'ReappDollars');
+    const totalEl = document.getElementById(prefix + 'LostTotal');
+    const lateDollars = late ? late.householdMonths * benefit.value : null;
+    const reappDollars = (reapp && reapp.households) ? reapp.householdMonths * benefit.value : null;
+    if (!late) {
+      daysEl.textContent = 'n/a';
+      subEl.textContent = 'No late-with-loss households in this month.';
+      lateEl.textContent = 'n/a';
+    } else {
+      daysEl.textContent = fmtDays(late.days) + ' days';
+      subEl.textContent = 'Of ' + fmtCount(late.households) + ' households late with a loss';
+      lateEl.textContent = fmtMoney(lateDollars);
+    }
+    if (reappDollars == null) {
+      reappEl.textContent = 'n/a';
+    } else {
+      reappEl.textContent = fmtMoney(reappDollars);
+    }
+    const parts = [lateDollars, reappDollars].filter(v => v != null);
+    const total = parts.length ? parts.reduce((a, b) => a + b, 0) : null;
+    totalEl.textContent = fmtMoney(total);
+    lostTotals[prefix] = total;
+  }
+  fillClock('recert', recert);
+  fillClock('sar7', sar7);
+  updateLostHero();
+  const rate = Math.round(benefit.value);
+  const rateMonth = benefit.period ? fmtMonth(benefit.period) : null;
+  const live = !!(DATA.benefit_by_month && benefit.period && DATA.benefit_by_month[benefit.period] != null);
+  let note = 'Estimates use $' + rate.toLocaleString('en-US') + ' per household-month';
+  if (live) note += ' (California average issuance in ' + rateMonth + ')';
+  else note += ' (fallback; CDSS issuances were not available for this month)';
+  note += '. Late with loss converts Item 7 days to months with a 30-day month. Eligible reapplications count 1–4 months of lag. Does not include no-return or ineligible reapplications.';
+  document.getElementById('lostBenefitsNote').textContent = note;
+}
+
+function updateLostHero() {
+  const totalEl = document.getElementById('lostTotal');
+  const subEl = document.getElementById('lostTotalSub');
+  if (!totalEl || !subEl) return;
+  const recert = dueClock !== 'sar7' ? lostTotals.recert : null;
+  const sar7 = dueClock !== 'recert' ? lostTotals.sar7 : null;
+  const parts = [recert, sar7].filter(v => v != null);
+  totalEl.textContent = parts.length ? fmtMoney(parts.reduce((a, b) => a + b, 0)) : 'n/a';
+  if (dueClock === 'recert') subEl.textContent = 'Recertification. Late with loss plus eligible reapplications.';
+  else if (dueClock === 'sar7') subEl.textContent = 'SAR 7. Late with loss plus eligible reapplications.';
+  else subEl.textContent = 'Recertification and SAR 7 combined. Late with loss plus eligible reapplications.';
+}
+
+function reappHoverNote(pack) {
+  if (!pack || !pack.total) return { note: 'No reapplications in this cohort' };
+  return {
+    note: 'Of ' + fmtCount(pack.total) + ' reapplications',
+    approx: !!pack.estimated
+  };
+}
+
+function buildReappOutcomeChart(canvasId, hoverId, kind) {
+  const canvas = document.getElementById(canvasId);
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+  clearHoverTooltip(document.getElementById(hoverId));
+  const pack = dueReappCounts(dueRowFor(kind), 0);
+  const row = pack ? {
+    elig: pack.elig,
+    inelig: pack.inelig,
+    total: pack.total,
+    estimated: pack.estimated
+  } : null;
+  return new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: [fmtMonth(selectedMonth)],
+      datasets: stackDatasets(REAPP_OUTCOME_STACK, row, 'total')
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      layout: { padding: { top: 8, right: 128 } },
+      plugins: {
+        legend: { display: false },
+        stackBandLabels: { values: true, leaders: true, minHeight: 22 },
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal(hoverId, 'above', () => reappHoverNote(pack)),
+          filter: (item) => item.raw !== null && item.raw !== undefined && item.raw !== 0
+        }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { display: false } },
+        y: {
+          stacked: true, min: 0, max: 100,
+          ticks: { callback: v => v + '%' },
+          grid: { color: '#f0f0f0' },
+          afterFit: lockYAxisWidth
+        }
+      }
+    }
+  });
+}
+
+function buildReappTimeChart(canvasId, hoverId, kind) {
+  const canvas = document.getElementById(canvasId);
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+  clearHoverTooltip(document.getElementById(hoverId));
+  const row = dueRowFor(kind);
+  const all = dueReappCounts(row, 0);
+  const total = all ? all.total : 0;
+  const countMode = reappTimeUnit === 'count';
+  const labels = REAPP_LAGS.map(s => s.label);
+  const packs = REAPP_LAGS.map(s => dueReappCounts(row, s.lag));
+  const data = packs.map(pack => {
+    if (!pack) return null;
+    if (countMode) return pack.total || 0;
+    return total ? shareOf(pack.total, total) : 0;
+  });
+  return new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: countMode ? 'Households' : 'Share of reapplications',
+        bandKey: 'time',
+        data: data,
+        backgroundColor: hexAlpha('#FB7906', 0.92),
+        borderColor: '#FB7906',
+        borderWidth: 0,
+        hideZeroHover: true,
+        valueKind: countMode ? 'count' : undefined,
+        estimatedFlags: packs.map(pack => !!(pack && pack.estimated))
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      layout: { padding: { top: 8, right: 8 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal(hoverId, 'above', (idx) => {
+            const lag = REAPP_LAGS[idx];
+            const pack = packs[idx];
+            if (!all || !all.total) return { rows: [{ text: 'No reapplications in this cohort' }] };
+            if (!lag || !pack || !pack.total) {
+              return { rows: [{ text: 'No reapplications ' + (lag ? lag.when : 'in this month') + '.' }] };
+            }
+            const share = fmtHoverPct(shareOf(pack.total, all.total), pack.estimated || all.estimated);
+            const elig = fmtHoverPct(shareOf(pack.elig, pack.total), pack.estimated);
+            const inelig = fmtHoverPct(shareOf(pack.inelig, pack.total), pack.estimated);
+            return {
+              title: lag.label,
+              rows: [
+                { text: 'Of the ' + fmtCount(all.total) + ' reapplications, ' + share + ' (' + fmtCount(pack.total) + ') reapplied ' + lag.when + '.' },
+                { text: elig + ' of ' + lag.those + ' were eligible.' },
+                { text: inelig + ' were ineligible.' }
+              ]
+            };
+          }),
+          filter: (item) => item.raw !== null && item.raw !== undefined && item.raw !== 0
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 10 }, maxRotation: 0, minRotation: 0 }
+        },
+        y: {
+          min: 0,
+          max: countMode ? undefined : 100,
+          ticks: { callback: v => countMode ? fmtCount(v) : v + '%' },
+          grid: { color: '#f0f0f0' },
+          afterFit: lockYAxisWidth
+        }
+      }
+    }
+  });
+}
+
+function mixSortRate(row, key, denomKey) {
+  if (!row || row[denomKey] == null || row[denomKey] <= 0) return null;
+  const part = dueSortPart(row, sortBandKey(key));
+  if (part == null) return null;
+  return 100 * part / row[denomKey];
+}
+
+function countyDue(county) {
+  const s = DATA.series[county];
+  return s && s[countyClock] && s[countyClock][selectedMonth];
+}
+function countyApps(county) {
+  const s = DATA.series[county];
+  return s && s.apps && s.apps[selectedMonth];
+}
+
+function rankRowsForMonth(getRow, denomKey, sortKey) {
+  return DATA.all_counties.map(county => {
+    const row = getRow(county);
+    const rate = mixSortRate(row, sortKey, denomKey);
+    if (rate == null) return null;
+    const meta = DATA.county_meta[county] || {};
+    return {
+      county: county,
+      size: meta.size || 'Small',
+      region: COUNTY_REGIONS[county],
+      rate: rate,
+      row: row
+    };
+  }).filter(Boolean);
+}
+
+function computeGroups(filteredRows, mode) {
+  const byValueDesc = rows => rows.slice().sort((a, b) => b.rate - a.rate);
+  if (mode === 'region') {
+    const groups = [];
+    REGION_ORDER.forEach(region => {
+      const rows = byValueDesc(filteredRows.filter(r => r.region === region));
+      if (rows.length) groups.push({ name: region, rows });
+    });
+    return groups;
+  }
+  if (mode === 'none') {
+    const rows = byValueDesc(filteredRows);
+    return rows.length ? [{ name: 'All counties', rows }] : [];
+  }
+  const groups = [];
+  BUCKET_ORDER.forEach(bucket => {
+    const rows = byValueDesc(filteredRows.filter(r => r.size === bucket));
+    if (rows.length) groups.push({ name: SIZE_DISPLAY[bucket] || bucket, rows });
+  });
+  return groups;
+}
+
+function combinedMixRow(rows, keys, denomKey) {
+  const out = {};
+  keys.forEach(k => { out[k] = 0; });
+  let n = 0;
+  rows.forEach(r => {
+    if (!r.row || r.row[denomKey] == null) return;
+    n += 1;
+    keys.forEach(k => { out[k] += r.row[k] || 0; });
+  });
+  return n ? out : null;
+}
+
+function sortBandPlotY(row, stack, sortKey, denomKey) {
+  if (!row || !row[denomKey]) return null;
+  const keys = sortBandKeys(sortKey);
+  const inBlock = {};
+  keys.forEach(k => { inBlock[k] = true; });
+  let y0 = 0;
+  let blockStart = null;
+  let blockShare = 0;
+  let lastI = -1;
+  for (let i = 0; i < stack.length; i++) {
+    const s = stack[i];
+    const share = shareOf(row[s.key], row[denomKey]);
+    if (inBlock[s.key]) {
+      if (share == null) return null;
+      if (blockStart == null) blockStart = y0;
+      blockShare += share;
+      lastI = i;
+    } else if (blockStart != null) {
+      break;
+    }
+    if (share != null) y0 += share;
+  }
+  if (blockStart == null) return null;
+  const y1 = blockStart + blockShare;
+  const isTop = lastI === stack.length - 1 || ((blockStart + y1) / 2) >= 50;
+  if (isTop) {
+    return { plotY: blockStart, rate: blockShare, baseline: 'bottom', yOffset: -2 };
+  }
+  return { plotY: y1, rate: blockShare, baseline: 'top', yOffset: 3 };
+}
+
+function filterSummary(regionEl, sizeEl, countyEl) {
+  const names = [
+    ...Array.from(regionEl.selectedOptions).map(o => o.textContent),
+    ...Array.from(sizeEl.selectedOptions).map(o => o.textContent),
+    ...Array.from(countyEl.selectedOptions).map(o => o.textContent)
+  ];
+  return names.length ? names.join(', ') : 'All counties';
+}
+
+function filterRankRows(rows, regionEl, sizeEl, countyEl) {
+  const selectedRegions = Array.from(regionEl.selectedOptions).map(o => o.value);
+  const selectedSizes = Array.from(sizeEl.selectedOptions).map(o => o.value);
+  const selectedCounties = Array.from(countyEl.selectedOptions).map(o => o.value);
+  return rows.filter(r =>
+    (selectedRegions.length === 0 || selectedRegions.includes(r.region)) &&
+    (selectedSizes.length === 0 || selectedSizes.includes(r.size)) &&
+    (selectedCounties.length === 0 || selectedCounties.includes(r.county))
+  );
+}
+
+function buildRankChart(cfg) {
+  const stack = cfg.stack;
+  const denomKey = cfg.denomKey;
+  const sortKey = cfg.sortKey;
+  const sortName = cfg.sortName;
+  const groupMode = cfg.groupMode;
+  document.getElementById(cfg.titleId).textContent = cfg.plotTitle;
+  document.getElementById(cfg.subId).textContent = fmtMonth(selectedMonth);
+  document.getElementById(cfg.captionId).textContent = cfg.caption;
+  document.getElementById(cfg.groupLegendItemId).style.display = groupMode === 'none' ? 'none' : '';
+  const groupLegendLabel = document.getElementById(cfg.groupLegendLabelId);
+  if (groupLegendLabel) groupLegendLabel.textContent = 'Aggregate ' + sortName + ' by group';
+  const groupCol = groupMode === 'region' ? 'Region' : (groupMode === 'none' ? 'Group' : 'Size group');
+
+  const filteredRows = filterRankRows(cfg.rows, cfg.regionEl, cfg.sizeEl, cfg.countyEl);
+  const mergedLabels = [];
+  const mergedHover = [];
+  const groupRanges = [];
+  const mixKeys = stack.map(s => s.key).concat([denomKey]);
+  computeGroups(filteredRows, groupMode).forEach(g => {
+    const start = mergedLabels.length;
+    g.rows.forEach(r => {
+      mergedLabels.push(r.county);
+      mergedHover.push(r);
+    });
+    const end = mergedLabels.length - 1;
+    const skipAgg = groupMode === 'none';
+    const combined = skipAgg ? null : combinedMixRow(g.rows, mixKeys, denomKey);
+    const mark = (!skipAgg && combined && end > start) ? sortBandPlotY(combined, stack, sortKey, denomKey) : null;
+    const sortBand = stack.find(s => sortBandKeys(sortKey).indexOf(s.key) !== -1);
+    const lineMarks = [];
+    if (mark) {
+      lineMarks.push({
+        plotY: mark.plotY,
+        color: GROUP_LINE_COLOR,
+        bandColor: sortBand ? sortBand.color : '#111',
+        text: (cfg.sortShort || sortName) + ' ' + mark.rate.toFixed(0) + '%',
+        baseline: mark.baseline,
+        yOffset: mark.yOffset
+      });
+    }
+    groupRanges.push({
+      name: g.name, start, end,
+      displayValue: mark ? mark.plotY : null,
+      sortRate: mark ? mark.rate : null,
+      estimated: g.rows.some(r => r.row && r.row.estimated),
+      lineMarks
+    });
+  });
+  groupRanges.forEach(g => {
+    if (g.sortRate == null) return;
+    for (let i = g.start; i <= g.end; i++) {
+      const rec = mergedHover[i];
+      if (!rec) continue;
+      rec.groupName = g.name;
+      rec.groupSortRate = g.sortRate;
+      rec.groupSortName = sortName;
+      rec.groupEstimated = g.estimated;
+    }
+  });
+  cfg.setHover(mergedHover);
+
+  const estimatedFlags = mergedHover.map(r => !!(r.row && r.row.estimated));
+  const stackDatasets = stack.map((s, si) => ({
+    label: s.label,
+    bandKey: s.key,
+    bandLabel: s.shortLabel || s.label,
+    data: mergedHover.map(r => shareOf(r.row[s.key], r.row[denomKey])),
+    backgroundColor: s.color,
+    borderWidth: 0,
+    order: 2,
+    stack: 'mix',
+    hideZeroHover: true,
+    estimatedFlags: estimatedFlags,
+    _groupRanges: si === 0 && groupMode !== 'none' ? groupRanges : undefined
+  }));
+
+  const groupAvgDatasets = groupMode === 'none' ? [] : groupRanges.filter(g => g.end > g.start && g.displayValue != null).map(g => ({
+    type: 'line',
+    label: 'Aggregate ' + sortName + ' (' + g.name + ')',
+    data: mergedLabels.map((_, i) => (i >= g.start && i <= g.end) ? g.displayValue : null),
+    borderColor: '#555',
+    borderDash: [5, 3],
+    pointRadius: 0,
+    borderWidth: 1.25,
+    spanGaps: false,
+    order: 1,
+    stack: 'group-line-' + g.name
+  }));
+
+  const caMark = cfg.caRow ? sortBandPlotY(cfg.caRow, stack, sortKey, denomKey) : null;
+  const statewideLineDatasets = (caMark && mergedLabels.length)
+    ? [{
+        type: 'line',
+        label: 'California ' + sortName,
+        data: mergedLabels.map(() => caMark.plotY),
+        borderColor: 'rgba(31,36,48,0.7)',
+        borderDash: [6, 4],
+        pointRadius: 0,
+        borderWidth: 2,
+        spanGaps: false,
+        order: 0,
+        stack: 'ca-line',
+        _statewideLine: true
+      }]
+    : [];
+
+  if (cfg.chart) cfg.chart.destroy();
+  clearHoverTooltip(document.getElementById(cfg.hoverId));
+  const chart = new Chart(document.getElementById(cfg.canvasId), {
+    type: 'bar',
+    data: {
+      labels: mergedLabels,
+      datasets: [
+        ...stackDatasets,
+        ...groupAvgDatasets,
+        ...statewideLineDatasets
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false, axis: 'x' },
+      layout: { padding: { top: 95 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal(cfg.hoverId, 'above', (idx) => {
+            const rec = cfg.getHover()[idx];
+            return rec ? cfg.hoverExtra(rec) : null;
+          }),
+          filter: (item) => item.dataset && item.dataset.stack === 'mix' && item.raw !== null && item.raw !== undefined,
+          itemSort: (a, b) => {
+            const order = stack.map(s => s.label);
+            const ai = order.indexOf(a.dataset.label);
+            const bi = order.indexOf(b.dataset.label);
+            if (ai === -1 && bi === -1) return 0;
+            if (ai === -1) return 1;
+            if (bi === -1) return -1;
+            return bi - ai;
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { minRotation: 90, maxRotation: 90, autoSkip: false, font: { size: 9 } },
+          grid: { display: false }
+        },
+        y: {
+          stacked: true,
+          min: 0,
+          max: 100,
+          ticks: { callback: v => v + '%' },
+          grid: { color: '#f0f0f0' }
+        }
+      }
+    }
+  });
+  cfg.setChart(chart);
+
+  const tableHead = document.querySelector('#' + cfg.tableId + ' thead tr');
+  tableHead.innerHTML = '<th scope="col">County</th>' +
+    '<th scope="col" id="' + cfg.groupColHeaderId + '">' + groupCol + '</th>' +
+    stack.map(s => '<th scope="col">' + s.shortLabel + '</th>').join('') +
+    '<th scope="col">' + cfg.denomLabel + '</th>';
+  const tableRows = mergedHover.map((r, i) => {
+    const g = groupRanges.find(gr => i >= gr.start && i <= gr.end);
+    return [
+      r.county,
+      g ? g.name : '',
+      ...stack.map(s => fmtPct(shareOf(r.row[s.key], r.row[denomKey]))),
+      fmtCount(r.row[denomKey])
+    ];
+  });
+  renderAccessibleTable(document.querySelector('#' + cfg.tableId + ' tbody'), tableRows);
+  document.querySelector('#' + cfg.tableId + ' caption').textContent = cfg.tableCaption;
+}
+
+function buildCountyChart() {
+  document.getElementById('countyFiltersSummary').textContent =
+    filterSummary(regionFilterEl, sizeFilterEl, countyFilterEl);
+  const stack = dueStackFor(countyClock);
+  const clockLabel = countyClock === 'recert' ? 'Recertification' : 'SAR 7';
+  const sortName = sortLabel(countySort);
+  const caRow = DATA.series.Statewide && DATA.series.Statewide[countyClock]
+    ? DATA.series.Statewide[countyClock][selectedMonth] : null;
+  buildRankChart({
+    stack: stack,
+    denomKey: 'scheduled',
+    sortKey: countySort,
+    sortName: sortName,
+    sortShort: sortShort(countySort),
+    groupMode: groupByMode,
+    rows: rankRowsForMonth(countyDue, 'scheduled', countySort),
+    regionEl: regionFilterEl,
+    sizeEl: sizeFilterEl,
+    countyEl: countyFilterEl,
+    plotTitle: clockLabel + ' Outcomes by county',
+    caption: 'Sorted by ' + sortName + ', highest first. Of households scheduled in ' + fmtMonthLong(selectedMonth) + '.',
+    titleId: 'countyPlotTitle',
+    subId: 'countySub',
+    captionId: 'countyCaption',
+    groupLegendItemId: 'groupLineLegendItem',
+    groupLegendLabelId: 'groupLineLegendLabel',
+    canvasId: 'countyChart',
+    hoverId: 'countyChartHover',
+    tableId: 'countyChartTable',
+    groupColHeaderId: 'countyGroupColHeader',
+    denomLabel: 'Households scheduled',
+    tableCaption: clockLabel + ' outcomes by county · sorted by ' + sortName + ' · ' + fmtMonth(selectedMonth),
+    caRow: caRow,
+    chart: countyChart,
+    setChart: c => { countyChart = c; },
+    setHover: rows => { countyHoverRows = rows; },
+    getHover: () => countyHoverRows,
+    hoverExtra: withGroupHover(rec => dueNestedHover(countyClock, rec.row, { splits: false }))
+  });
+}
+
+function buildWhoCountyChart() {
+  document.getElementById('whoCountyFiltersSummary').textContent =
+    filterSummary(whoRegionFilterEl, whoSizeFilterEl, whoCountyFilterEl);
+  const stack = APP_STACK;
+  const sortName = whoSortLabel(whoCountySort);
+  const caRow = DATA.series.Statewide && DATA.series.Statewide.apps
+    ? DATA.series.Statewide.apps[selectedMonth] : null;
+  buildRankChart({
+    stack: stack,
+    denomKey: 'all',
+    sortKey: whoCountySort,
+    sortName: sortName,
+    sortShort: whoSortShort(whoCountySort),
+    groupMode: whoGroupByMode,
+    rows: rankRowsForMonth(countyApps, 'all', whoCountySort),
+    regionEl: whoRegionFilterEl,
+    sizeEl: whoSizeFilterEl,
+    countyEl: whoCountyFilterEl,
+    plotTitle: 'Who applied by county',
+    caption: 'Sorted by ' + sortName + ', highest first. Of applications disposed in ' + fmtMonthLong(selectedMonth) + '.',
+    titleId: 'whoCountyPlotTitle',
+    subId: 'whoCountySub',
+    captionId: 'whoCountyCaption',
+    groupLegendItemId: 'whoGroupLineLegendItem',
+    groupLegendLabelId: 'whoGroupLineLegendLabel',
+    canvasId: 'whoCountyChart',
+    hoverId: 'whoCountyChartHover',
+    tableId: 'whoCountyChartTable',
+    groupColHeaderId: 'whoCountyGroupColHeader',
+    denomLabel: 'Applications disposed',
+    tableCaption: 'Who applied by county · sorted by ' + sortName + ' · ' + fmtMonth(selectedMonth),
+    caRow: caRow,
+    chart: whoCountyChart,
+    setChart: c => { whoCountyChart = c; },
+    setHover: rows => { whoCountyHoverRows = rows; },
+    getHover: () => whoCountyHoverRows,
+    hoverExtra: withGroupHover(rec => appsNestedHover(rec.row))
+  });
+}
+
+function rebuild() {
+  buildSnapshot();
+  buildCountyChart();
+  buildWhoCountyChart();
+}
+
+monthSels.forEach(sel => {
+  sel.addEventListener('change', () => {
+    selectedMonth = sel.value;
+    monthSels.forEach(other => { other.value = selectedMonth; });
+    rebuild();
+  });
+});
+placeSels.forEach(sel => {
+  sel.addEventListener('change', () => {
+    selectedPlace = sel.value;
+    placeSels.forEach(other => { other.value = selectedPlace; });
+    buildSnapshot();
+  });
+});
+document.querySelectorAll('.due-clock-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    dueClock = btn.getAttribute('data-due-clock');
+    document.querySelectorAll('.due-clock-btn').forEach(b => {
+      const on = b === btn;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    applyDueClock();
+  });
+});
+function bindReappFold(toggleId, foldId) {
+  const btn = document.getElementById(toggleId);
+  const fold = document.getElementById(foldId);
+  if (!btn || !fold) return;
+  btn.addEventListener('click', () => {
+    const open = btn.getAttribute('aria-expanded') !== 'true';
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.classList.toggle('collapsed', !open);
+    fold.hidden = !open;
+    applyDueClock();
+  });
+}
+bindReappFold('reappOutcomesToggle', 'reappOutcomesFold');
+bindReappFold('reappTimeToggle', 'reappTimeFold');
+bindReappFold('lostToggle', 'lostFold');
+document.querySelectorAll('.reapp-time-unit').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const unit = btn.getAttribute('data-unit');
+    if (reappTimeUnit === unit) return;
+    reappTimeUnit = unit;
+    document.querySelectorAll('.reapp-time-unit').forEach(b => {
+      const on = b === btn;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const timeBtn = document.getElementById('reappTimeToggle');
+    const timeFold = document.getElementById('reappTimeFold');
+    if (timeBtn && timeFold && timeBtn.getAttribute('aria-expanded') !== 'true') {
+      timeBtn.setAttribute('aria-expanded', 'true');
+      timeBtn.classList.remove('collapsed');
+      timeFold.hidden = false;
+    }
+    recertTimeChart = buildReappTimeChart('recertTimeChart', 'recertTimeHover', 'recert');
+    sar7TimeChart = buildReappTimeChart('sar7TimeChart', 'sar7TimeHover', 'sar7');
+    combinedTimeChart = buildReappTimeChart('combinedTimeChart', 'combinedTimeHover', 'combined');
+    updateSnapshotCopy();
+    applyDueClock();
+  });
+});
+document.querySelectorAll('.clock-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    countyClock = btn.getAttribute('data-clock');
+    document.querySelectorAll('.clock-btn').forEach(b => {
+      const on = b === btn;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    buildCountyChart();
+  });
+});
+document.querySelectorAll('#dueRankCard .sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    countySort = btn.getAttribute('data-sort');
+    document.querySelectorAll('#dueRankCard .sort-btn').forEach(b => {
+      const on = b === btn;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    buildCountyChart();
+  });
+});
+document.querySelectorAll('#dueRankCard .groupby-btn-mode').forEach(btn => {
+  btn.addEventListener('click', () => {
+    groupByMode = btn.getAttribute('data-groupby');
+    document.querySelectorAll('#dueRankCard .groupby-btn-mode').forEach(b => {
+      b.classList.toggle('active', b === btn);
+    });
+    buildCountyChart();
+  });
+});
+document.getElementById('countyFiltersToggle').addEventListener('click', () => {
+  const root = document.getElementById('countyFilters');
+  const open = !root.classList.contains('filters-open');
+  root.classList.toggle('filters-open', open);
+  document.getElementById('countyFiltersToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+document.getElementById('clearCountyFiltersBtn').addEventListener('click', () => {
+  [regionFilterEl, sizeFilterEl, countyFilterEl].forEach(sel => {
+    Array.from(sel.options).forEach(o => { o.selected = false; });
+  });
+  buildCountyChart();
+});
+[regionFilterEl, sizeFilterEl, countyFilterEl].forEach(sel => {
+  sel.addEventListener('change', buildCountyChart);
+  enablePlainClickToggle(sel);
+});
+document.querySelectorAll('.who-sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    whoCountySort = btn.getAttribute('data-sort');
+    document.querySelectorAll('.who-sort-btn').forEach(b => {
+      const on = b === btn;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    buildWhoCountyChart();
+  });
+});
+document.querySelectorAll('.who-groupby-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    whoGroupByMode = btn.getAttribute('data-groupby');
+    document.querySelectorAll('.who-groupby-btn').forEach(b => {
+      b.classList.toggle('active', b === btn);
+    });
+    buildWhoCountyChart();
+  });
+});
+document.getElementById('whoCountyFiltersToggle').addEventListener('click', () => {
+  const root = document.getElementById('whoCountyFilters');
+  const open = !root.classList.contains('filters-open');
+  root.classList.toggle('filters-open', open);
+  document.getElementById('whoCountyFiltersToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+document.getElementById('whoClearCountyFiltersBtn').addEventListener('click', () => {
+  [whoRegionFilterEl, whoSizeFilterEl, whoCountyFilterEl].forEach(sel => {
+    Array.from(sel.options).forEach(o => { o.selected = false; });
+  });
+  buildWhoCountyChart();
+});
+[whoRegionFilterEl, whoSizeFilterEl, whoCountyFilterEl].forEach(sel => {
+  sel.addEventListener('change', buildWhoCountyChart);
+  enablePlainClickToggle(sel);
+});
+
+rebuild();
+}
+
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.info-tip-btn');
+  if (btn) {
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    document.querySelectorAll('.info-tip-btn').forEach(other => {
+      if (other !== btn) other.setAttribute('aria-expanded', 'false');
+    });
+    btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+    return;
+  }
+  document.querySelectorAll('.info-tip-btn').forEach(b => {
+    b.setAttribute('aria-expanded', 'false');
+  });
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.info-tip-btn').forEach(btn => {
+    btn.setAttribute('aria-expanded', 'false');
+  });
+});
+function openFooterMethods() {
+  const methods = document.getElementById('methods');
+  if (methods) methods.open = true;
+}
+document.querySelectorAll('a[href="#methods"]').forEach(a => {
+  a.addEventListener('click', openFooterMethods);
+});
+if (location.hash === '#methods') openFooterMethods();
+window.addEventListener('hashchange', () => {
+  if (location.hash === '#methods') openFooterMethods();
+});
+
+startLiveChurnDashboard(initDashboard);
+</script>
+<script src="quirk.js"></script>
+</body>
+</html>

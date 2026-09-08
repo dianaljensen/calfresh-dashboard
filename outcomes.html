@@ -581,6 +581,7 @@
     <nav class="site-nav" aria-label="Dashboard views">
       <a href="index.html">Participation Trends</a>
       <a href="outcomes.html" aria-current="page">Applications</a>
+      <a href="churn.html">Churn</a>
     </nav>
     <h1>CalFresh<span class="info-tip h1-info-tip">
       <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="calfreshNameTip" aria-label="What CalFresh means">i</button>
@@ -616,7 +617,7 @@
             <span class="filters-label-places">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
             <span class="filters-label-pops">County <span class="filters-toggle-mark" aria-hidden="true"></span></span>
           </span>
-          <span class="shared-filters-summary" id="sharedFiltersSummary">Sacramento</span>
+          <span class="shared-filters-summary" id="sharedFiltersSummary">California</span>
         </span>
       </button>
       <div class="shared-filters" id="sharedFilters">
@@ -838,7 +839,7 @@
 
   <footer class="source-note">
     <span class="footer-section-label">Sources</span>
-    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296: Applications, Expedited Service, and Recertifications</a>, <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-tables/cf-18">CF18: Recertification and Application Processing</a>, and the <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard">CalFresh Data Dashboard</a>.
+    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296: Applications, Expedited Service, and Recertifications</a> (<a href="https://www.cdss.ca.gov/Portals/9/Additional-Resources/Letters-and-Notices/ACLs/2022/22-85.pdf">ACL 22-85</a>), <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-tables/cf-18">CF18: Recertification and Application Processing</a> (<a href="https://www.cdss.ca.gov/portals/9/acl/2018/18-117.pdf">ACL 18-117</a>), and the <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard">CalFresh Data Dashboard</a>.
 
     <span class="footer-section-label">Definitions</span>
     County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000, computed from the latest available month of the CDSS Data Dashboard Monthly tab.
@@ -1659,9 +1660,9 @@ function demoRowAvailable(rowId) {
 }
 
 const allEntities = ['Statewide', ...DATA.all_counties];
-const DEFAULT_COUNTY = 'Sacramento';
-selectedCounties = [DEFAULT_COUNTY];
-lastPopulationCounties = [DEFAULT_COUNTY];
+const DEFAULT_PLACE = 'Statewide';
+selectedCounties = [DEFAULT_PLACE];
+lastPopulationCounties = [DEFAULT_PLACE];
 
 function uniquifyIds(root, prefix) {
   const map = {};
@@ -1850,7 +1851,7 @@ function syncPlaceFilterUi() {
 function keepOnePopulationCounty() {
   const added = selectedCounties.filter(v => lastPopulationCounties.indexOf(v) === -1);
   let keep = added.length ? added[added.length - 1] : (selectedCounties[0] || lastPopulationCounties[0]);
-  if (!keep) keep = DEFAULT_COUNTY;
+  if (!keep) keep = DEFAULT_PLACE;
   selectedCounties = [keep];
   selectedRegions = [];
   selectedSizes = [];
@@ -3559,7 +3560,7 @@ function onDrillToggle() {
   buildAreaCharts();
 }
 function clearGeoFilters() {
-  selectedCounties = [DEFAULT_COUNTY];
+  selectedCounties = [DEFAULT_PLACE];
   selectedRegions = [];
   selectedSizes = [];
   exploreMode = 'populations';
@@ -3567,7 +3568,7 @@ function clearGeoFilters() {
   STACK = stackFor(populationMode);
   comparePopSet = ['all', 'students', 'ssi'];
   drillActive = false;
-  lastPopulationCounties = [DEFAULT_COUNTY];
+  lastPopulationCounties = [DEFAULT_PLACE];
   syncExploreModeUi();
   syncPopulationUi();
   buildAreaCharts();
