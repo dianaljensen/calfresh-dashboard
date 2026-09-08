@@ -310,6 +310,8 @@
   .legend-swatch.dashed-group { border-top: 1.5px dashed #555; }
   .groupby-control .layer-toggle { padding: 4px 8px; font-size: 12px; }
   #countyChartHolder, #whoCountyChartHolder { height: 420px; overflow-x: auto; }
+  #dueRankCard > .chart-plot,
+  #whoRankCard > .chart-plot { margin-top: 16px; }
   .time-range-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
   .time-range-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
   .time-range-label strong { color: var(--ink); font-weight: 700; text-transform: none; letter-spacing: 0; margin-left: 4px; }
@@ -491,10 +493,10 @@
     </div>
     <div class="churn-explain">
       <p>Sometimes CalFresh households are not able to complete their regular reporting and later come back to file a full reapplication. That cycle is <strong>churn</strong>. Households that remained eligible throughout their enrollment gap miss out on benefits. Counties must take on the extra work of processing “new” applications that could have been continued through a sometimes more streamlined recertification or SAR 7 process.</p>
-      <p>Churn is measured in two ways:</p>
+      <p>The charts below show churn in two ways:</p>
       <ol>
-        <li><a href="#churnMeasureDue"><strong>Recertification / SAR 7 Outcomes</strong></a> measures the prevalence of churn. Of households with recertifications or semi-annual reports (SAR 7s) due in a given month, this is the share that return with a new application in the months that follow.</li>
-        <li><a href="#churnMeasureApps"><strong>Applicants’ Prior CalFresh Connection</strong></a> measures the impact of churning cases on application processing work. Of applications disposed in a given month, this is the share that come from households that were recently on the caseload.</li>
+        <li><a href="#churnMeasureDue"><strong>Recertification / SAR 7 Outcomes</strong></a> shows churning cases as a share of cases with certain reports due in a specific month.</li>
+        <li><a href="#churnMeasureApps"><strong>Applicants’ Prior CalFresh Connection</strong></a> shows churning cases as a proportion of all application processing work.</li>
       </ol>
     </div>
   </div>
@@ -688,13 +690,13 @@
     </table>
     <table class="sr-only" id="reappTable">
       <caption>Reapplications after a missed recertification or SAR 7, eligible versus ineligible</caption>
-      <thead><tr><th scope="col">Clock</th><th scope="col">Eligible (churn)</th><th scope="col">Ineligible</th><th scope="col">Reapplications</th></tr></thead>
+      <thead><tr><th scope="col">Report type</th><th scope="col">Eligible (churn)</th><th scope="col">Ineligible</th><th scope="col">Reapplications</th></tr></thead>
       <tbody></tbody>
     </table>
     <table class="sr-only" id="reappTimeTable">
       <caption>Reapplications by calendar months after the due month, eligible versus ineligible</caption>
       <thead><tr>
-        <th scope="col">Clock</th>
+        <th scope="col">Report type</th>
         <th scope="col">Lag</th>
         <th scope="col">Eligible (churn)</th>
         <th scope="col">Ineligible</th>
@@ -709,7 +711,7 @@
       <h2 id="churnMeasureAppsTitle">Applicants’ Prior CalFresh Connection</h2>
       <span class="info-tip">
         <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="whoTip" aria-label="About Applicants’ Prior CalFresh Connection">i</button>
-        <span id="whoTip" class="info-tip-bubble" role="tooltip">Of applications disposed that month, not households due. Purple is recertification or SAR 7 churn — a different clock from the orange reapplications above. Recipes in Data notes.</span>
+        <span id="whoTip" class="info-tip-bubble" role="tooltip">Of applications disposed that month, not households due. Purple is a recent recert or SAR 7 due — a different clock from the orange reapplications above. Recipes in Data notes.</span>
       </span>
     </div>
     <p class="churn-section-sub">“Churners” are those with recent recertification or SAR 7 due, shown in purple.</p>
@@ -740,11 +742,11 @@
       <h2>Recertification / SAR 7 Outcomes by County</h2>
       <span class="info-tip">
         <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="countyTip" aria-label="About Recertification / SAR 7 Outcomes by County">i</button>
-        <span id="countyTip" class="info-tip-bubble" role="tooltip">Same five-band Recertification / SAR 7 stack as Recertification / SAR 7 Outcomes, one bar per county. Sort by is No loss, No return, or Reapplications (default no return, highest first). The dashed California line and group lines are combined counts of that sorted band, placed on the band, not an average of percentages. Hover includes that group’s combined Sort-by rate. Counties with a starred Item 1 or parts that overshoot Item 1 are blank.</span>
+        <span id="countyTip" class="info-tip-bubble" role="tooltip">Same five-band Recertification / SAR 7 stack as Recertification / SAR 7 Outcomes, one bar per county. Sort by is No loss, No return, or Reapplications (default no return, highest first). The dashed California line and group lines are combined counts of that sorted band, placed on the band, not an average of percentages. Hover includes the California Sort-by rate and that group’s combined Sort-by rate. Counties with a starred Item 1 or parts that overshoot Item 1 are blank.</span>
       </span>
     </div>
-    <div class="groupby-control" role="group" aria-label="Clock">
-      <span class="groupby-label">Clock</span>
+    <div class="groupby-control" role="group" aria-label="Report type">
+      <span class="groupby-label">Report type</span>
       <button type="button" class="range-btn groupby-btn clock-btn active" data-clock="recert" aria-pressed="true">Recertification</button>
       <button type="button" class="range-btn groupby-btn clock-btn" data-clock="sar7" aria-pressed="false">SAR 7</button>
     </div>
@@ -821,13 +823,13 @@
       <h2>Applicants’ Prior CalFresh Connection by County</h2>
       <span class="info-tip">
         <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="whoCountyTip" aria-label="About Applicants’ Prior CalFresh Connection by County">i</button>
-        <span id="whoCountyTip" class="info-tip-bubble" role="tooltip">Same four-band Who applied stack as Applicants’ Prior CalFresh Connection, one bar per county. Sort by Recert &amp; SAR 7 churn (sum of those two bands), Recently on, or New (default Recert &amp; SAR 7 churn, highest first). The dashed California line and group lines are combined counts of that sorted band, placed on the band, not an average of percentages. Hover includes that group’s combined Sort-by rate. Counties with a starred Item 17 are blank.</span>
+        <span id="whoCountyTip" class="info-tip-bubble" role="tooltip">Same four-band Who applied stack as Applicants’ Prior CalFresh Connection, one bar per county. Sort by Recent Recert &amp; SAR 7 Due (sum of those two bands), Other Recently On, or New (default Recent Recert &amp; SAR 7 Due, highest first). The dashed California line and group lines are combined counts of that sorted band, placed on the band, not an average of percentages. Hover includes the California Sort-by rate and that group’s combined Sort-by rate. Counties with a starred Item 17 are blank.</span>
       </span>
     </div>
     <div class="groupby-control" role="group" aria-label="Sort by">
       <span class="groupby-label">Sort by</span>
-      <button type="button" class="range-btn groupby-btn who-sort-btn active" data-sort="churn" aria-pressed="true">Recert &amp; SAR 7 churn (sum)</button>
-      <button type="button" class="range-btn groupby-btn who-sort-btn" data-sort="recentNoDue" aria-pressed="false">Recently on</button>
+      <button type="button" class="range-btn groupby-btn who-sort-btn active" data-sort="churn" aria-pressed="true">Recent Recert &amp; SAR 7 Due (sum)</button>
+      <button type="button" class="range-btn groupby-btn who-sort-btn" data-sort="recentNoDue" aria-pressed="false">Other Recently On</button>
       <button type="button" class="range-btn groupby-btn who-sort-btn" data-sort="new" aria-pressed="false">New</button>
     </div>
     <div class="groupby-control">
@@ -878,7 +880,7 @@
         <span class="chart-plot-metric" id="whoCountyPlotTitle">Who applied by county</span>
         <span class="chart-plot-place" id="whoCountySub"></span>
       </h3>
-      <p class="caption" id="whoCountyCaption">Sorted by Recertification churn, highest first. Of applications disposed that month.</p>
+      <p class="caption" id="whoCountyCaption">Sorted by Recent Recert &amp; SAR 7 Due, highest first. Of applications disposed that month.</p>
       <div class="chart-hover" id="whoCountyChartHover" aria-live="polite"></div>
       <div class="chart-holder" id="whoCountyChartHolder"><canvas id="whoCountyChart" aria-hidden="true"></canvas></div>
     </div>
@@ -905,7 +907,6 @@
       <li>User-facing names are <strong>SAR 7</strong> and <strong>recertification (RRR)</strong>. Source name is CF 18 CalFresh Churn Monthly Report.</li>
       <li>Orange on Recertification and SAR 7 is a later new application after a missed recert or SAR 7, not a procedural denial. Eligible reapplications are churn; ineligible includes withdrawals. Grey Ineligible is the recert or SAR 7 itself. Who applied uses a forest / olive / wine / rose palette so those bands cannot be read as the due-chart colors. Average days lost (Item 7) and the dollar estimates are in the Estimated Lost Benefits fold-out. Days to approval stays on Applications.</li>
       <li>CDSS hides small numbers with an asterisk. Those slices are plotted as 5 and hover percents start with ~. Item 1 (households scheduled) and Item 17 (applications disposed) are not plotted as 5 — if those totals are starred, the month is blank.</li>
-      <li>Recertification / SAR 7 Outcomes by County is the same Recertification / SAR 7 stack as the snapshot section. Sort by is No loss, No return, or Reapplications (default no return, highest first). Applicants’ Prior CalFresh Connection by County is the Who applied stack. Sort by is Recert &amp; SAR 7 churn (sum of Recertification churn and SAR 7 churn), Recently on, or New (default Recert &amp; SAR 7 churn, highest first). California is the dashed statewide combined rate of that band, drawn on the band. Group lines use combined counts, not an average of percentages. Hover includes that group’s combined Sort-by rate. Full CF18 history is in the month picker (FY2020–21 onward). Pre-CalSAWS months may reflect differing calculation methods across the old C-IV / CalWIN / LRS systems. <a href="#methods">See wonky &amp; math-y details</a>.</li>
     </ul>
     <details class="footer-methods" id="methods">
       <summary>
@@ -928,8 +929,8 @@
       <ul class="footer-notes">
         <li>100% = Item 17 (C37): all CalFresh/CFAP applications disposed that month.</li>
         <li>New / not recently on = Item 17 − Item 18.</li>
-        <li>Recently on, no SAR 7 or recert due = Item 18 − Item 19. Item 18 is participated in the prior four months, not necessarily a missed report.</li>
-        <li>SAR 7 churn = C39. Recertification churn = C40. Hover nests restoration and lag 1 vs 2–4 months (approved vs denied) under each churn band. Applicants’ Prior CalFresh Connection by County uses this same stack. Sort by Recert &amp; SAR 7 churn is C39 + C40 (combined counts, not an average of the two rates). Counties with a starred Item 17 are blank.</li>
+        <li>Other Recently On = Item 18 − Item 19. Item 18 is participated in the prior four months, not necessarily a missed report.</li>
+        <li>Recent SAR 7 Due = C39. Recent Recert Due = C40. Hover nests restoration and lag 1 vs 2–4 months (approved vs denied) under each due band. Applicants’ Prior CalFresh Connection by County uses this same stack. Sort by Recent Recert &amp; SAR 7 Due is C39 + C40 (combined counts, not an average of the two rates). Counties with a starred Item 17 are blank.</li>
         <li>This mix uses a forest / olive / wine / rose palette. It is not the due-chart orange and blue.</li>
       </ul>
       <h3 class="footer-wonk-h">Small cells (*)</h3>
@@ -1425,6 +1426,16 @@ const stackBandLabelPlugin = {
           const y1 = y.getPixelForValue(to);
           if (Math.abs(y1 - y0) < minH) return;
           const midY = (y0 + y1) / 2;
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = contrastInk(d.borderColor || d.backgroundColor);
+          if (n === 1) {
+            const dsIndex = data.datasets.indexOf(d);
+            const el = chart.getDatasetMeta(dsIndex).data[bestIdx];
+            const cx = el ? el.x : x.getPixelForValue(bestIdx);
+            ctx.textAlign = 'center';
+            ctx.fillText(label, cx, midY);
+            return;
+          }
           const px = x.getPixelForValue(bestIdx);
           const textW = ctx.measureText(label).width;
           ctx.textAlign = 'right';
@@ -1433,8 +1444,6 @@ const stackBandLabelPlugin = {
             ctx.textAlign = 'left';
             tx = Math.min(px + 4, chartArea.right - textW - 4);
           }
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = contrastInk(d.borderColor || d.backgroundColor);
           ctx.fillText(label, tx, midY);
         });
       }
@@ -1538,8 +1547,8 @@ const SORT_OPTS = [
   { key: 'reapp', label: 'Reapplications', shortLabel: 'Reapps' }
 ];
 const WHO_SORT_OPTS = [
-  { key: 'churn', label: 'Recert & SAR 7 churn', shortLabel: 'Recert + SAR 7' },
-  { key: 'recentNoDue', label: 'Recently on', shortLabel: 'Recently on' },
+  { key: 'churn', label: 'Recent Recert & SAR 7 Due', shortLabel: 'Recert + SAR 7 Due' },
+  { key: 'recentNoDue', label: 'Other Recently On', shortLabel: 'Other Recently On' },
   { key: 'new', label: 'New', shortLabel: 'New' }
 ];
 const GROUP_LINE_COLOR = '#111';
@@ -1598,12 +1607,22 @@ function whoSortShort(key) {
 function withGroupHover(baseFn) {
   return rec => {
     const extra = baseFn(rec) || {};
-    if (rec.groupSortRate == null) return extra;
-    extra.trail = [{
-      group: true,
-      color: GROUP_LINE_COLOR,
-      text: rec.groupName + ' ' + rec.groupSortName + ': ' + fmtHoverPct(rec.groupSortRate, rec.groupEstimated)
-    }];
+    const trail = [];
+    if (rec.caSortRate != null) {
+      trail.push({
+        group: true,
+        color: '#111',
+        text: 'California ' + rec.caSortName + ': ' + fmtHoverPct(rec.caSortRate, rec.caEstimated)
+      });
+    }
+    if (rec.groupSortRate != null) {
+      trail.push({
+        group: trail.length === 0,
+        color: GROUP_LINE_COLOR,
+        text: rec.groupName + ' ' + rec.groupSortName + ': ' + fmtHoverPct(rec.groupSortRate, rec.groupEstimated)
+      });
+    }
+    if (trail.length) extra.trail = trail;
     return extra;
   };
 }
@@ -2304,6 +2323,13 @@ function buildRankChart(cfg) {
       lineMarks
     });
   });
+  const caMark = cfg.caRow ? sortBandPlotY(cfg.caRow, stack, sortKey, denomKey) : null;
+  mergedHover.forEach(rec => {
+    if (!rec || !caMark) return;
+    rec.caSortRate = caMark.rate;
+    rec.caSortName = sortName;
+    rec.caEstimated = !!(cfg.caRow && cfg.caRow.estimated);
+  });
   groupRanges.forEach(g => {
     if (g.sortRate == null) return;
     for (let i = g.start; i <= g.end; i++) {
@@ -2345,7 +2371,6 @@ function buildRankChart(cfg) {
     stack: 'group-line-' + g.name
   }));
 
-  const caMark = cfg.caRow ? sortBandPlotY(cfg.caRow, stack, sortKey, denomKey) : null;
   const statewideLineDatasets = (caMark && mergedLabels.length)
     ? [{
         type: 'line',
