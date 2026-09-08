@@ -457,10 +457,23 @@
   .outcome-legend i {
     display: inline-block; width: 14px; height: 10px; border-radius: 2px;
   }
-  .procedural-note {
-    font-size: 12px; color: var(--muted); line-height: 1.5; margin: 0 0 12px;
-    max-width: 720px;
+  .procedural-callout {
+    margin: 16px 0 0; padding: 12px 14px 10px;
+    border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    border-radius: 8px; background: #f7fbfb;
   }
+  .procedural-callout-head { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+  .procedural-callout-head h3 { font-size: 13px; font-weight: 700; margin: 0; }
+  .procedural-def { font-size: 13px; line-height: 1.5; margin: 0 0 10px; }
+  .procedural-impact { font-size: 13px; line-height: 1.5; margin: 0; }
+  .procedural-impact p { margin: 0 0 8px; }
+  .procedural-impact p:last-child { margin-bottom: 0; }
+  .procedural-impact ul {
+    margin: 0; padding-left: 1.2em;
+  }
+  .procedural-impact li { margin: 0 0 4px; }
+  .procedural-impact li:last-child { margin-bottom: 0; }
+  .procedural-callout-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.45; }
   .layers-control {
     display: flex; flex-direction: column; align-items: stretch; gap: 6px;
     margin: 8px 0 8px; padding: 8px 12px;
@@ -710,6 +723,18 @@
       <thead><tr><th scope="col">Month</th></tr></thead>
       <tbody></tbody>
     </table>
+    <aside class="procedural-callout" id="proceduralCallout" aria-label="What are procedural denials">
+      <div class="procedural-callout-head">
+        <h3>What are procedural denials?</h3>
+        <span class="info-tip">
+          <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="proceduralTip" aria-label="About the procedural denials estimate">i</button>
+          <span id="proceduralTip" class="info-tip-bubble" role="tooltip">1% of applications disposed in the last month of the date range, for the Application Trends place. Dollars are that count × California average issuance per household (Total Issuances ÷ CalFresh Households). College student and SSI household rows use that same all-household rate — CDSS does not publish a type-specific issuance. One month of benefits. Some of those households may not have been eligible. Recipes in Data notes.</span>
+        </span>
+      </div>
+      <p class="procedural-def">An application is considered procedurally denied if the denial is due to an incomplete part of the process rather than a determination of definitive ineligibility. The household applying may or may not have been eligible.</p>
+      <div class="procedural-impact" id="proceduralImpact"></div>
+      <p class="procedural-callout-note" id="proceduralImpactNote"></p>
+    </aside>
   </div>
 
   <div class="card link-b">
@@ -854,6 +879,7 @@
       <li>SSI household outcomes are displayed according to best available data from the CDSS Data Dashboard Monthly tab. When ineligible + procedural is close to denied, the mix is shown as approved / ineligible / procedural / other. CalWIN counties ~2020–May 2022 show total denials, but not a break-out of ineligible vs. procedural, and are shown as a single lumped Denied in warm grey. Months where the ineligible / procedural split overshoots total denials are also shown this way.</li>
       <li>SSI Denial details is households with only SSI recipients: ineligible vs procedural, a subset of some-SSI denials.</li>
       <li>Timeliness percents are all applications from CF296, not college student or SSI mixes. After 30 days and after 3 days (expedited) overlay on one chart — different clocks for all disposed vs expedited applications. Days to process is all applications (Quarterly tab, then CF18); SSI households (Monthly tab) sit on a checkbox on that chart (on by default). College students have no days column. <a href="#methods">See wonky &amp; math-y details</a>.</li>
+      <li>The procedural denials call-out is a 1% counterfactual of applications disposed in the last month of the date range, for the Application Trends place. Dollars use California average issuance (Total Issuances ÷ households). College student and SSI rows use that same all-household rate. <a href="#methods">See wonky &amp; math-y details</a>.</li>
     </ul>
     <details class="footer-methods" id="methods">
       <summary>
@@ -905,6 +931,12 @@
         <li>Otherwise Approved / lumped Denied (warm grey): CalWIN ~2020–May 2022, and months where the split overshoots (including a bad November 2025 statewide ineligible reading).</li>
         <li>Months that have approved and denied are still shown.</li>
         <li>SSI Denial details is <code>SSI Only - Ineligible Denials</code> vs <code>SSI Only Procedural Denials</code>: only-SSI households, a subset of some-SSI denials.</li>
+      </ul>
+      <h3 class="footer-wonk-h">Procedural denials 1% estimate</h3>
+      <ul class="footer-notes">
+        <li>Not a CDSS cell. 1% × applications disposed in the last month of the Application Trends date range, for the selected place (or the combined selected places). College students and SSI use that population’s disposed count (approved + denied). Compare Populations lists each visible population; Compare Places uses the selected population.</li>
+        <li>Dollars = that 1% count × California average issuance per household (Monthly tab Total Issuances ÷ CalFresh Households for that month, or the latest month at or before it). If that is missing, $198 per household-month is the fallback — the same rate as Churn’s lost-benefits estimate. CDSS does not publish a college-student or SSI-specific issuance, so those rows use the all-household rate.</li>
+        <li>One month of benefits. The definition already says the household may or may not have been eligible; the dollar figure does not claim they were.</li>
       </ul>
       <h3 class="footer-wonk-h">Who applied (Age, Language, Race, Gender, Household size, Exemptions &amp; deductions)</h3>
       <ul class="footer-notes">
@@ -1018,6 +1050,12 @@ function fmtAge(v) {
 function fmtDays(v) {
   if (v == null || isNaN(v)) return 'n/a';
   return v.toFixed(1);
+}
+function fmtMoney(v) {
+  if (v == null || isNaN(v)) return 'n/a';
+  const abs = Math.abs(v);
+  if (abs >= 1e6) return '$' + (v / 1e6).toFixed(1) + ' million';
+  return '$' + Math.round(v).toLocaleString('en-US');
 }
 function fmtNet(v) {
   if (v == null || isNaN(v)) return 'n/a';
@@ -2799,6 +2837,104 @@ function appendOutcomeMixChart(cell, hoverId, pane, labels, showMonthAxis) {
   return datasets;
 }
 
+function applicantsNoun(mode) {
+  if (mode === 'students') return 'college student applicants';
+  if (mode === 'ssi') return 'SSI household applicants';
+  return 'all applicants';
+}
+function placeDisplayName(geo) {
+  if (geo.kind === 'size') return (SIZE_DISPLAY[geo.id] || geo.id) + ' counties';
+  return geo.title;
+}
+function joinPlaceNames(names) {
+  if (!names.length) return 'California';
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return names[0] + ' and ' + names[1];
+  if (names.length === 3) return names[0] + ', ' + names[1] + ', and ' + names[2];
+  return names[0] + ', ' + names[1] + ', and ' + (names.length - 2) + ' other places';
+}
+function inPlacePhrase(label) {
+  if (/ region$/.test(label)) return 'In the ' + label;
+  if (/ counties$/.test(label) && label.indexOf(' and ') === -1) return 'In the ' + label;
+  return 'In ' + label;
+}
+function sumDisposed(geos, month, mode) {
+  let disposed = 0;
+  let any = false;
+  let estimated = false;
+  geos.forEach(geo => {
+    const counts = countsForEntity(geo, month, mode);
+    if (!counts || counts.disposed == null) return;
+    any = true;
+    disposed += counts.disposed;
+    const flags = counts.estimated || {};
+    if (Object.keys(flags).some(k => flags[k])) estimated = true;
+  });
+  if (!any) return null;
+  return { disposed: disposed, estimated: estimated };
+}
+function fillProceduralCallout() {
+  const body = document.getElementById('proceduralImpact');
+  const noteEl = document.getElementById('proceduralImpactNote');
+  if (!body || !noteEl) return;
+  const month = DATA.months[rangeEnd];
+  const { counties, regions, sizes } = currentSelection();
+  const geos = paneEntities(counties, regions, sizes);
+  const modes = visibleOutcomeModes();
+  const placeLabel = joinPlaceNames(geos.map(placeDisplayName));
+  const benefit = benefitPerHousehold(month, DATA.benefit_by_month || {});
+  const rows = modes.map(mode => ({
+    mode: mode,
+    pack: sumDisposed(geos, month, mode)
+  }));
+  function extraCases(pack) {
+    return pack.disposed * 0.01;
+  }
+  function casesText(pack) {
+    const n = extraCases(pack);
+    let text;
+    if (n < 0.5) text = 'fewer than 1 additional case';
+    else if (Math.round(n) === 1) text = '1 additional case';
+    else text = fmtCount(n) + ' additional cases';
+    if (pack.estimated) text = '~' + text;
+    return text;
+  }
+  function dollarsText(pack) {
+    return fmtMoney(extraCases(pack) * benefit.value) + '/month';
+  }
+  const filled = rows.filter(r => r.pack && r.pack.disposed > 0);
+  if (!filled.length) {
+    body.innerHTML = '<p>' + inPlacePhrase(placeLabel) +
+      ', the 1% estimate is not available for ' + fmtMonth(month) + '.</p>';
+  } else if (rows.length === 1) {
+    const r = filled[0];
+    body.innerHTML = '<p>' + inPlacePhrase(placeLabel) +
+      ', if 1% of ' + applicantsNoun(r.mode) +
+      ' were approved instead of procedurally denied in ' + fmtMonth(month) +
+      ', that would represent ' + casesText(r.pack) +
+      ' receiving an estimated ' + dollarsText(r.pack) + '.</p>';
+  } else {
+    const items = rows.map(r => {
+      if (!r.pack || r.pack.disposed <= 0) {
+        return '<li>' + popLabel(r.mode) + ': n/a for this month</li>';
+      }
+      return '<li>' + popLabel(r.mode) + ': ' + casesText(r.pack) +
+        ' receiving an estimated ' + dollarsText(r.pack) + '</li>';
+    }).join('');
+    body.innerHTML = '<p>' + inPlacePhrase(placeLabel) +
+      ', if 1% of applicants were approved instead of procedurally denied in ' +
+      fmtMonth(month) + ', that would represent:</p><ul>' + items + '</ul>';
+  }
+  const rate = Math.round(benefit.value);
+  const rateMonth = benefit.period ? fmtMonth(benefit.period) : null;
+  const live = !!(DATA.benefit_by_month && benefit.period && DATA.benefit_by_month[benefit.period] != null);
+  let note = 'Estimates use $' + rate.toLocaleString('en-US') + ' per household-month';
+  if (live) note += ' (California average issuance in ' + rateMonth + ')';
+  else note += ' (fallback; CDSS issuances were not available for this month)';
+  note += '. College student and SSI household rows use that same all-household rate — CDSS does not publish a type-specific issuance. 1% is of applications disposed that month. This is one month of benefits, and some of those households may not have been eligible.';
+  noteEl.textContent = note;
+}
+
 function buildAreaCharts() {
   updateRangeLabel();
   const { counties, regions, sizes } = currentSelection();
@@ -3049,6 +3185,7 @@ function buildAreaCharts() {
     });
     return row;
   }));
+  fillProceduralCallout();
   buildTimelinessCharts();
 }
 

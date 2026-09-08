@@ -319,9 +319,9 @@ const CHURN_DUE_STACK = [
 ];
 const CHURN_APP_STACK = [
   { key: 'new', label: 'New / not recently on', shortLabel: 'New', color: '#3D6B4F' },
-  { key: 'recentNoDue', label: 'Recently on, no SAR 7 or recert due', shortLabel: 'Recently on', color: '#8A9A6B' },
-  { key: 'sar7Churn', label: 'SAR 7 churn', shortLabel: 'SAR 7 churn', color: '#6B3D5A' },
-  { key: 'recertChurn', label: 'Recertification churn', shortLabel: 'Recert churn', color: '#A56B7D' }
+  { key: 'recentNoDue', label: 'Other Recently On', shortLabel: 'Other Recently On', color: '#8A9A6B' },
+  { key: 'sar7Churn', label: 'Recent SAR 7 Due', shortLabel: 'Recent SAR 7 Due', color: '#6B3D5A' },
+  { key: 'recertChurn', label: 'Recent Recert Due', shortLabel: 'Recent Recert Due', color: '#A56B7D' }
 ];
 const CHURN_DUE_BAND_KEYS = CHURN_DUE_STACK.map(d => d.key);
 const CHURN_APP_BAND_KEYS = CHURN_APP_STACK.map(d => d.key);
@@ -2962,6 +2962,7 @@ async function startLiveOutcomesDashboard(initDashboard) {
       DATA.months,
       DATA.all_counties
     );
+    DATA.benefit_by_month = statewideBenefitByMonth(csvToMonthlyRows(monthlyLoaded.parsed));
     const fetchedAt = [
       cf296Loaded.fetchedAt, legacyLoaded.fetchedAt, metaLoaded.fetchedAt,
       monthlyLoaded.fetchedAt, cf18Loaded.fetchedAt, quarterlyLoaded.fetchedAt
