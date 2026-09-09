@@ -6,9 +6,68 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  position: relative;
+  min-height: 80px;
   margin: 0 0 16px;
 }
-.quirk-brand-row .brand { margin: 0; }
+.quirk-brand-row .brand {
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+.quirk-brand-row .site-title {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  margin: 0;
+  z-index: 0;
+  width: max-content;
+  max-width: 100%;
+  font-family: Montserrat, -apple-system, BlinkMacSystemFont, sans-serif;
+  text-align: center;
+  line-height: 1;
+}
+.site-title-name {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--dark-blue);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.site-title-role {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--accent);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+/* Wordmark stays between the lockup and ostrich until those boxes would overlap. */
+.quirk-brand-row--stacked {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "brand doodle"
+    "title title";
+  min-height: 0;
+}
+.quirk-brand-row--stacked .brand { grid-area: brand; }
+.quirk-brand-row--stacked .quirk-doodle { grid-area: doodle; justify-self: end; }
+.quirk-brand-row--stacked .site-title {
+  position: static;
+  transform: none;
+  grid-area: title;
+  justify-self: center;
+  padding-top: 6px;
+}
+.quirk-brand-row--stacked .site-title-name { font-size: 26px; }
+.quirk-brand-row--stacked .site-title-role { font-size: 10px; letter-spacing: 0.16em; }
 
 .quirk-doodle {
   position: relative;

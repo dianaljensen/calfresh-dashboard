@@ -303,7 +303,51 @@ const STUDENT_OUTCOME_PART_KEYS = ['approved', 'denied', 'pended'];
 const SSI_RAW_KEYS = ['approved', 'denied', 'ineligible', 'procedural', 'ssiOnlyIneligible', 'ssiOnlyProcedural'];
 const SSI_VOLUME_KEYS = ['onlineApps', 'nonOnlineApps'];
 const SSI_SERIES_KEYS = SSI_RAW_KEYS.concat(SSI_VOLUME_KEYS).concat(['avgAge', 'daysDispose']);
-const DAYS_CF18_KEYS = ['esDays', 'esN', 'neDays', 'neN'];
+const DAYS_BUCKET_KEYS = [
+  'es1to3', 'es4to7', 'esOver7',
+  'ne1to7', 'ne8to15', 'ne16to22', 'ne23to30', 'neOver30'
+];
+const DAYS_CF18_KEYS = ['esDays', 'esN', 'neDays', 'neN'].concat(DAYS_BUCKET_KEYS);
+const RECERT_KEYS = [
+  'recertDisposed', 'recertOverdue',
+  'recertLag1to30', 'recertLag31to60', 'recertLag61to90', 'recertLag91plus'
+];
+const RECERT_LAG_KEYS = [
+  'recertLag1to30', 'recertLag31to60', 'recertLag61to90', 'recertLag91plus'
+];
+const DAYS_BUCKET_ES_STACK = [
+  { key: 'es1to3', label: '1–3 days', shortLabel: '1–3', color: '#4BA5BA' },
+  { key: 'es4to7', label: '4–7 days', shortLabel: '4–7', color: '#5B4B8A' },
+  { key: 'esOver7', label: 'After 7 days', shortLabel: 'After 7', color: '#FB7906' }
+];
+const DAYS_BUCKET_NE_STACK = [
+  { key: 'ne1to7', label: '1–7 days', shortLabel: '1–7', color: '#4BA5BA' },
+  { key: 'ne8to15', label: '8–15 days', shortLabel: '8–15', color: '#6BA3C4' },
+  { key: 'ne16to22', label: '16–22 days', shortLabel: '16–22', color: '#5B4B8A' },
+  { key: 'ne23to30', label: '23–30 days', shortLabel: '23–30', color: '#C17B5C' },
+  { key: 'neOver30', label: 'After 30 days', shortLabel: 'After 30', color: '#FB7906' }
+];
+const RECERT_LAG_STACK = [
+  { key: 'recertLag1to30', label: '1–30 days overdue', shortLabel: '1–30', color: '#4BA5BA' },
+  { key: 'recertLag31to60', label: '31–60 days overdue', shortLabel: '31–60', color: '#6BA3C4' },
+  { key: 'recertLag61to90', label: '61–90 days overdue', shortLabel: '61–90', color: '#5B4B8A' },
+  { key: 'recertLag91plus', label: '91+ days overdue', shortLabel: '91+', color: '#FB7906' }
+];
+const MONTHLY_ROW_COLUMNS = [
+  'county', 'period', 'persons', 'households', 'child_only',
+  'dual_medi_cal', 'dollars_issued', 'students',
+  'federal_persons', 'cfap_persons', 'snb', 'tnb',
+  'state_issuances', 'ebt_snb', 'ebt_tnb',
+  'unemployment',
+  'active_error', 'negative_error', 'negative_error_n'
+];
+const LAYER_SERIES_KEYS = [
+  'child_only', 'dual_medi_cal', 'students', 'dollars_issued',
+  'federal_persons', 'cfap_persons', 'snb', 'tnb',
+  'state_issuances', 'ebt_snb', 'ebt_tnb',
+  'unemployment',
+  'active_error', 'negative_error', 'negative_error_n'
+];
 
 // CF18 Measurement 1 (households due) and Measurement 2 (applications disposed).
 // Cell numbers are the DataDictionary C1…C58 labels in pipeline/cf18_labels.json.
@@ -350,7 +394,7 @@ const CHANNEL_RAW_KEYS = ['received', 'online', 'gcfAll', 'gcfCfa', 'gcfCbo', 'g
 const MOVEMENT_KEYS = ['caseApproved', 'ict', 'reinstated', 'rescinded', 'discontinued'];
 const TIMELINESS_KEYS = [
   'approvedOver30', 'deniedOver30', 'esEntitled', 'es1to3', 'es4to7', 'esOver7'
-];
+].concat(RECERT_KEYS);
 // CDSS stars both true 1–10 cells and complementary totals ≥11. Identity
 // reconstruction fills the latter; leftover 1–10 cells are plotted as 5.
 const SMALL_CELL_PLACEHOLDER = 5;
@@ -385,10 +429,30 @@ const OVERLAY_META = {
   },
   dollars_issued: {
     label: 'CalFresh Benefits Issued',
-    description: "Master_Monthly's 'Total Issuances' column (dollar value of CalFresh benefits issued that month). Statewide figures go back to 2014; county-level breakdowns only exist from Sep 2023 onward — shown as a gap before that for any county other than California.",
+    description: "Master_Monthly's 'Total Issuances' column (dollar value of CalFresh benefits issued that month). Statewide figures go back to 2014; county-level breakdowns only exist from Sep 2023 onward — shown as a gap before that for any county other than California. SNB and TNB dollars are not in that total; checking SNB / TNB adds them.",
     cadence: 'monthly',
     color: '#2a6ebb',
     axis: 'y1'
+  },
+  snb: {
+    label: 'SNB',
+    description: 'People in Supplemental Nutrition Benefit households. SNB cases are already inside the CalFresh persons total; this band is a subset, not extra people.',
+    cadence: 'monthly',
+    color: '#6B3D5A'
+  },
+  tnb: {
+    label: 'TNB',
+    description: 'People in Transitional Nutrition Benefit households. TNB is not reported on CF 256 and is not inside CalFresh Persons — extra people.',
+    cadence: 'monthly',
+    color: '#C17B5C'
+  },
+  unemployment: {
+    label: 'Unemployment rate',
+    description: 'County unemployment rate from EDD (not seasonally adjusted). Shares the right axis with $ Issued — checking one turns the other off.',
+    cadence: 'monthly',
+    color: '#3D6B4F',
+    axis: 'y1',
+    format: 'percent'
   }
 };
 
@@ -504,7 +568,7 @@ async function fetchCsv(gid, label) {
 // copy in IndexedDB so reloads can paint from disk, then refresh in the background.
 const CSV_CACHE_DB = 'calfresh-csv-v1';
 const CSV_CACHE_STORE = 'csv';
-const MONTHLY_ROWS_KEY = 'monthly-rows-v1';
+const MONTHLY_ROWS_KEY = 'monthly-rows-v3';
 const COUNTY_META_KEY = 'county-meta-v1';
 const csvRefreshInflight = {};
 let csvCacheDbPromise = null;
@@ -676,7 +740,21 @@ function csvToMonthlyRows(parsed) {
     households: findCol(map, ['CalFresh Households']),
     child_only: findCol(map, ['Child Only Persons', 'Persons in Child-Only Households']),
     dollars_issued: findCol(map, ['Total Issuances']),
-    students: findCol(map, ['Caseload Total Student Count'])
+    students: findCol(map, ['Caseload Total Student Count']),
+    federal_persons: findCol(map, ['All Federal Persons']),
+    cfap_persons: findCol(map, ['All CFAP Persons']),
+    snb: findCol(map, ['Total SSI Persons in SNB Households']),
+    tnb: findCol(map, ['Total SSI Persons in TNB Households']),
+    state_issuances: findCol(map, ['State Issuances']),
+    ebt_snb: findCol(map, ['EBT_SNB_dollars']),
+    ebt_tnb: findCol(map, ['EBT_TNB_dollars']),
+    unemployment: findCol(map, ['Unemployment Monthly', 'Unemployment Rate']),
+    active_error: findCol(map, ['Active Error Rate']),
+    negative_error: findCol(map, ['Negative Error Rate']),
+    negative_error_n: findCol(map, [
+      'Negative Error Rate on Completed Cases',
+      'Negative Error Rate Cases Completed'
+    ])
   };
   return parsed.data.map(row => {
     const county = normalizeCountyName(row[countyCol]);
@@ -690,12 +768,24 @@ function csvToMonthlyRows(parsed) {
       child_only: parseNumber(row[cols.child_only]),
       dual_medi_cal: null,
       dollars_issued: parseNumber(row[cols.dollars_issued]),
-      students: parseNumber(row[cols.students])
+      students: parseNumber(row[cols.students]),
+      federal_persons: parseNumber(row[cols.federal_persons]),
+      cfap_persons: parseNumber(row[cols.cfap_persons]),
+      snb: parseNumber(row[cols.snb]),
+      tnb: parseNumber(row[cols.tnb]),
+      state_issuances: parseNumber(row[cols.state_issuances]),
+      ebt_snb: parseNumber(row[cols.ebt_snb]),
+      ebt_tnb: parseNumber(row[cols.ebt_tnb]),
+      unemployment: parseNumber(row[cols.unemployment]),
+      active_error: parseNumber(row[cols.active_error]),
+      negative_error: parseNumber(row[cols.negative_error]),
+      negative_error_n: parseNumber(row[cols.negative_error_n])
     };
-    if (rec.persons == null && rec.households == null && rec.child_only == null &&
-        rec.dollars_issued == null && rec.students == null) {
-      return null; // CDSS placeholder rows for months not yet reported
-    }
+    const hasAny = MONTHLY_ROW_COLUMNS.some(k => {
+      if (k === 'county' || k === 'period' || k === 'dual_medi_cal') return false;
+      return rec[k] != null;
+    });
+    if (!hasAny) return null; // CDSS placeholder rows for months not yet reported
     return rec;
   }).filter(Boolean);
 }
@@ -754,16 +844,15 @@ function mergeDualIntoMonthly(monthly, dualRows) {
     if (index[key]) {
       index[key].dual_medi_cal = d.dual_medi_cal;
     } else {
-      monthly.push({
+      const extra = {
         county: d.county,
         period: d.period,
-        persons: null,
-        households: null,
-        child_only: null,
-        dual_medi_cal: d.dual_medi_cal,
-        dollars_issued: null,
-        students: null
+        dual_medi_cal: d.dual_medi_cal
+      };
+      MONTHLY_ROW_COLUMNS.forEach(k => {
+        if (extra[k] === undefined) extra[k] = null;
       });
+      monthly.push(extra);
     }
   });
   return monthly;
@@ -881,7 +970,10 @@ function describeReportingGapsThisRefresh(gaps) {
   Object.keys(byMonth).sort().forEach(m => {
     parts.push(fmtMonthShort(m) + ' (' + byMonth[m].slice().sort().join(', ') + ')');
   });
-  return parts.length ? 'This refresh: ' + parts.join('; ') + '.' : '';
+  return parts.length
+    ? 'One-month CDSS reporting holes are shown as gaps. Reporting holes in this refresh: ' +
+      parts.join('; ') + '.'
+    : '';
 }
 
 function yoyPct(current, prior) {
@@ -900,12 +992,8 @@ function buildDashboardData(payload) {
   const ageRows = rowsToObjects(payload.age_bands);
 
   const series = {};
-  const overlaySeries = {
-    child_only: {},
-    dual_medi_cal: {},
-    students: {},
-    dollars_issued: {}
-  };
+  const overlaySeries = {};
+  LAYER_SERIES_KEYS.forEach(key => { overlaySeries[key] = {}; });
   const countiesSet = new Set();
   const monthsSet = new Set();
 
@@ -925,10 +1013,9 @@ function buildDashboardData(payload) {
     const s = ensureSeries(r.county);
     if (r.persons != null) s.persons[r.period] = r.persons;
     if (r.households != null) s.households[r.period] = r.households;
-    if (r.child_only != null) ensureOverlay('child_only', r.county)[r.period] = r.child_only;
-    if (r.dual_medi_cal != null) ensureOverlay('dual_medi_cal', r.county)[r.period] = r.dual_medi_cal;
-    if (r.students != null) ensureOverlay('students', r.county)[r.period] = r.students;
-    if (r.dollars_issued != null) ensureOverlay('dollars_issued', r.county)[r.period] = r.dollars_issued;
+    LAYER_SERIES_KEYS.forEach(key => {
+      if (r[key] != null) ensureOverlay(key, r.county)[r.period] = r[key];
+    });
   });
 
   const months = Array.from(monthsSet).sort();
@@ -982,10 +1069,14 @@ function buildDashboardData(payload) {
 
   const childLast = lastNonNullMonth(overlaySeries.child_only.Statewide);
   const overlays = {};
-  Object.keys(OVERLAY_META).forEach(key => {
-    const meta = Object.assign({}, OVERLAY_META[key]);
+  LAYER_SERIES_KEYS.forEach(key => {
+    const meta = Object.assign({}, OVERLAY_META[key] || {
+      label: key,
+      cadence: 'monthly',
+      hidden: true
+    });
     if (key === 'child_only' && childLast) {
-      meta.description += ' Latest reading in the live file: ' + childLast + '.';
+      meta.description = (meta.description || '') + ' Latest reading in the live file: ' + childLast + '.';
     }
     meta.series = overlaySeries[key];
     overlays[key] = meta;
@@ -1548,7 +1639,17 @@ function csvToOutcomeRows(parsed, label) {
     esEntitled: findCf296Field(fields, ['found entitled'], ['not entitled']),
     es1to3: findCf296Field(fields, ['issued in 1'], []),
     es4to7: findCf296Field(fields, ['issued in 4'], []),
-    esOver7: findCf296Field(fields, ['over 7 days'], [])
+    esOver7: findCf296Field(fields, ['over 7 days'], []),
+    recertDisposed: findCf296Field(fields, ['recertifications disposed of during the month'], [
+      '9.a', 'determined continuing', 'determined ineligible'
+    ]),
+    recertOverdue: findCf296Field(fields, ['overdue recertifications'], [
+      '9.a.1', 'federal funding', '1-30 days', '31-60 days', '61-90 days', '91+'
+    ]),
+    recertLag1to30: findCf296Field(fields, ['9.a.1', '1-30 days'], []),
+    recertLag31to60: findCf296Field(fields, ['9.a.1', '31-60 days'], []),
+    recertLag61to90: findCf296Field(fields, ['9.a.1', '61-90 days'], []),
+    recertLag91plus: findCf296Field(fields, ['9.a.1', '91+'], ['federal funding'])
   };
   const outcomeParts = {
     disposed: {
@@ -1636,9 +1737,32 @@ function csvToOutcomeRows(parsed, label) {
     esOver7: {
       pacf: findCf296Field(fields, ['over 7 days'], [], 'pacf'),
       nacf: findCf296Field(fields, ['over 7 days'], [], 'nacf')
+    },
+    recertDisposed: {
+      pacf: findCf296Field(fields, ['recertifications disposed of during the month'], [
+        '9.a', 'determined continuing', 'determined ineligible'
+      ], 'pacf'),
+      nacf: findCf296Field(fields, ['recertifications disposed of during the month'], [
+        '9.a', 'determined continuing', 'determined ineligible'
+      ], 'nacf')
+    },
+    recertOverdue: {
+      pacf: findCf296Field(fields, ['overdue recertifications'], [
+        '9.a.1', 'federal funding', '1-30 days', '31-60 days', '61-90 days', '91+'
+      ], 'pacf'),
+      nacf: findCf296Field(fields, ['overdue recertifications'], [
+        '9.a.1', 'federal funding', '1-30 days', '31-60 days', '61-90 days', '91+'
+      ], 'nacf')
     }
   };
-  const missing = Object.keys(cols).filter(k => k !== 'received' && !cols[k]);
+  const optionalCols = {
+    received: true,
+    recertLag1to30: true,
+    recertLag31to60: true,
+    recertLag61to90: true,
+    recertLag91plus: true
+  };
+  const missing = Object.keys(cols).filter(k => !optionalCols[k] && !cols[k]);
   if (!countyCol || missing.length) {
     throw new Error(label + ' is missing expected CF296 columns' +
       (missing.length ? ' (' + missing.join(', ') + ')' : '') + '.');
@@ -1749,10 +1873,14 @@ function buildOutcomesData(outcomeRows, county_meta) {
         received: {},
         caseApproved: {}, ict: {}, reinstated: {}, rescinded: {}, discontinued: {},
         approvedOver30: {}, deniedOver30: {}, esEntitled: {}, es1to3: {}, es4to7: {}, esOver7: {},
+        recertDisposed: {}, recertOverdue: {},
+        recertLag1to30: {}, recertLag31to60: {}, recertLag61to90: {}, recertLag91plus: {},
         estimated: {
           approved: {}, ineligible: {}, procedural: {}, withdrawn: {},
           caseApproved: {}, ict: {}, reinstated: {}, rescinded: {}, discontinued: {},
-          approvedOver30: {}, deniedOver30: {}, esEntitled: {}, es1to3: {}, es4to7: {}, esOver7: {}
+          approvedOver30: {}, deniedOver30: {}, esEntitled: {}, es1to3: {}, es4to7: {}, esOver7: {},
+          recertDisposed: {}, recertOverdue: {},
+          recertLag1to30: {}, recertLag31to60: {}, recertLag61to90: {}, recertLag91plus: {}
         }
       };
     }
@@ -2244,9 +2372,17 @@ function deriveTimeliness(row) {
     disposed: row.disposed,
     esLateCount: esLate,
     esEntitled: row.esEntitled,
+    recertOverdue: pctOrNull(row.recertOverdue, row.recertDisposed),
+    recertOverdueCount: row.recertOverdue,
+    recertDisposed: row.recertDisposed,
+    recertLag1to30: row.recertLag1to30,
+    recertLag31to60: row.recertLag31to60,
+    recertLag61to90: row.recertLag61to90,
+    recertLag91plus: row.recertLag91plus,
     estimated: {
       over30: !!(est.approvedOver30 || est.deniedOver30),
-      esOver3: !!(est.esEntitled || est.es1to3 || est.es4to7 || est.esOver7)
+      esOver3: !!(est.esEntitled || est.es1to3 || est.es4to7 || est.esOver7),
+      recertOverdue: !!(est.recertOverdue || est.recertDisposed)
     }
   };
 }
@@ -2256,6 +2392,7 @@ function timelinessCountsFromSeries(s, period) {
   const row = { estimated: estimatedFlagsFor(s, period, TIMELINESS_KEYS) };
   TIMELINESS_KEYS.forEach(k => { row[k] = s[k] ? s[k][period] : null; });
   row.disposed = s.disposed ? s.disposed[period] : null;
+  row.recertDisposed = s.recertDisposed ? s.recertDisposed[period] : row.recertDisposed;
   return row;
 }
 
@@ -2273,7 +2410,10 @@ function sumTimelinessCounts(memberCounties, period, series) {
   const esPair = esBuckets || sumSeriesKeys(memberCounties, period, series, [
     'esEntitled', 'es1to3'
   ]);
-  if (!over30 && !esPair) return null;
+  const recert = sumSeriesKeys(memberCounties, period, series, [
+    'recertDisposed', 'recertOverdue'
+  ].concat(RECERT_LAG_KEYS));
+  if (!over30 && !esPair && !recert) return null;
   const row = { estimated: {} };
   if (over30) {
     row.disposed = over30.disposed;
@@ -2287,6 +2427,12 @@ function sumTimelinessCounts(memberCounties, period, series) {
     if (esPair.esOver7 != null) row.esOver7 = esPair.esOver7;
     if (esPair.es1to3 != null) row.es1to3 = esPair.es1to3;
     Object.assign(row.estimated, esPair.estimated);
+  }
+  if (recert) {
+    row.recertDisposed = recert.recertDisposed;
+    row.recertOverdue = recert.recertOverdue;
+    RECERT_LAG_KEYS.forEach(k => { row[k] = recert[k]; });
+    Object.assign(row.estimated, recert.estimated);
   }
   return deriveTimeliness(row);
 }
@@ -2360,7 +2506,15 @@ function csvToCf18DaysRows(parsed) {
       esDays: parseNumber(row[cols.esDays]),
       esN: esN,
       neDays: parseNumber(row[cols.neDays]),
-      neN: neN
+      neN: neN,
+      es1to3: es1,
+      es4to7: es4,
+      esOver7: es7,
+      ne1to7: ne1,
+      ne8to15: ne8,
+      ne16to22: ne16,
+      ne23to30: ne23,
+      neOver30: ne30
     });
   });
   return rows;
@@ -2805,12 +2959,29 @@ function buildDaysSeries(cf18Rows, quarterlyRows, months, all_counties) {
   );
 }
 
+function daysBucketsFromSeries(s, period) {
+  if (!s) return null;
+  const out = {};
+  let any = false;
+  DAYS_BUCKET_KEYS.forEach(k => {
+    const v = s[k] ? s[k][period] : null;
+    out[k] = v;
+    if (v != null) any = true;
+  });
+  return any ? out : null;
+}
+
 function cf18PartsForCounty(s, period) {
   if (!s) return null;
-  return combineDaysParts(
+  const parts = combineDaysParts(
     s.esDays[period], s.esN[period],
     s.neDays[period], s.neN[period]
   );
+  const buckets = daysBucketsFromSeries(s, period);
+  if (!parts && !buckets) return null;
+  const out = parts ? Object.assign({}, parts) : { source: 'cf18' };
+  if (buckets) Object.assign(out, buckets);
+  return out;
 }
 
 function weightedCf18Days(memberCounties, period, series) {
@@ -2820,6 +2991,9 @@ function weightedCf18Days(memberCounties, period, series) {
   let esDen = 0;
   let neNum = 0;
   let neDen = 0;
+  const bucketSum = {};
+  const bucketAny = {};
+  DAYS_BUCKET_KEYS.forEach(k => { bucketSum[k] = 0; bucketAny[k] = false; });
   for (let i = 0; i < memberCounties.length; i++) {
     const s = series[memberCounties[i]];
     if (!s) continue;
@@ -2839,16 +3013,28 @@ function weightedCf18Days(memberCounties, period, series) {
       num += neDays * neN;
       den += neN;
     }
+    DAYS_BUCKET_KEYS.forEach(k => {
+      const v = s[k] ? s[k][period] : null;
+      if (v != null) {
+        bucketSum[k] += v;
+        bucketAny[k] = true;
+      }
+    });
   }
-  if (!den) return null;
-  return {
+  const anyBucket = DAYS_BUCKET_KEYS.some(k => bucketAny[k]);
+  if (!den && !anyBucket) return null;
+  const out = den ? {
     days: num / den,
     esDays: esDen ? esNum / esDen : null,
     esN: esDen || null,
     neDays: neDen ? neNum / neDen : null,
     neN: neDen || null,
     source: 'cf18'
-  };
+  } : { source: 'cf18' };
+  if (anyBucket) {
+    DAYS_BUCKET_KEYS.forEach(k => { out[k] = bucketAny[k] ? bucketSum[k] : null; });
+  }
+  return out;
 }
 
 function allAppsDaysForCounty(county, period, series) {
@@ -3029,10 +3215,7 @@ async function startLiveDashboard(initDashboard) {
       csvToDualRows(pitParsed)
     );
     const payload = {
-      monthly: toColumnBlock(monthlyRows, [
-        'county', 'period', 'persons', 'households', 'child_only',
-        'dual_medi_cal', 'dollars_issued', 'students'
-      ]),
+      monthly: toColumnBlock(monthlyRows, MONTHLY_ROW_COLUMNS),
       age_bands: toColumnBlock(csvToAgeRows(annualParsed), [
         'county', 'period', 'elderly', 'a1859', 'children'
       ])
@@ -3052,6 +3235,29 @@ async function startLiveDashboard(initDashboard) {
       gapsNote.hidden = !refresh;
       gapsNote.textContent = refresh;
     }
+    mainEl.hidden = false;
+    initDashboard();
+  } catch (err) {
+    statusEl.className = 'prototype-note error-note';
+    statusEl.innerHTML = '<strong>Could not load live spreadsheet data.</strong> ' +
+      String(err.message || err);
+  }
+}
+
+async function startLiveQcDashboard(initDashboard) {
+  const statusEl = document.getElementById('dataStatus');
+  const mainEl = document.getElementById('dashboardMain');
+
+  try {
+    statusEl.className = 'prototype-note';
+    statusEl.innerHTML = 'Loading current data...';
+
+    const monthlyLoaded = await loadMonthlyRows();
+    DATA = buildDashboardData({
+      monthly: toColumnBlock(monthlyLoaded.rows || [], MONTHLY_ROW_COLUMNS),
+      age_bands: toColumnBlock([], ['county', 'period', 'elderly', 'a1859', 'children'])
+    });
+    setFeedStatus(statusEl, monthlyLoaded.fetchedAt);
     mainEl.hidden = false;
     initDashboard();
   } catch (err) {

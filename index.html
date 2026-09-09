@@ -2,10 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>CalFresh Participation Trends — Prototype</title>
+<title>Participation Trends — CalFresh Data Explorer</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
 <script src="data.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="quirk.css">
 <style>
   :root {
@@ -62,9 +65,6 @@
   a.brand:hover .brand-name { color: var(--accent); }
   a.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
   header.page-head h1 { font-size: 26px; margin: 0 0 4px; font-weight: 700; }
-  header.page-head h1 .h1-info-tip {
-    margin: 0 0.28em 0 0.18em; vertical-align: middle; top: -0.12em;
-  }
   header.page-head p.sub { margin: 0; color: var(--muted); font-size: 12px; max-width: 46em; line-height: 1.45; }
   .copy-email {
     display: inline;
@@ -236,11 +236,49 @@
     display: none;
   }
   .shared-controls:not(.filters-open) .shared-filters { display: none; }
+  /* Folded date+place bars: one compact summary, not the slider. Shared by
+     sticky #sharedControls and Caseload movement. */
+  .compact-filters .shared-filters-toggle { margin-top: 0; margin-bottom: 10px; }
+  .compact-filters:not(.filters-open) .shared-filters-toggle {
+    margin-bottom: 0; padding: 4px 2px;
+    border-color: transparent; background: transparent;
+  }
+  .compact-filters:not(.filters-open) .shared-filters-toggle:hover {
+    background: #f2f2f2;
+  }
+  .compact-filters:not(.filters-open) .shared-filters-toggle:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .compact-filters .shared-filters-toggle-text {
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    justify-content: space-between; gap: 4px 14px;
+  }
+  .compact-filters .shared-filters-showing {
+    min-width: 0; flex: 1 1 12em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .compact-filters .shared-filters-summary {
+    display: inline; margin-top: 0; font-size: 13px;
+  }
+  .compact-filters .shared-filters-prompt {
+    font-size: 12px; color: var(--muted);
+    white-space: nowrap; display: inline-flex; align-items: center;
+    flex-shrink: 0;
+  }
+  .compact-filters.filters-open .shared-filters-prompt-expand { display: none; }
+  .compact-filters:not(.filters-open) .shared-filters-prompt-collapse { display: none; }
+  .compact-filters:not(.filters-open) .shared-controls-body { display: none; }
+  .compact-filters .time-range-header .time-range-label { display: none; }
+  #sharedControls:not(.filters-open) {
+    padding: 6px 14px;
+    margin-bottom: 24px;
+  }
   .caseload-filters {
-    margin: 0 0 14px;
-    padding: 0 0 14px;
+    margin: 0 0 22px;
+    padding: 0 0 16px;
     border-bottom: 1px solid var(--line);
   }
+  .caseload-filters:not(.filters-open) { padding-bottom: 16px; }
   .caseload-filters .shared-filters { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
   .caseload-filters .shared-filters .card-filters { margin-bottom: 0; }
   .caseload-filters.filters-open .shared-filters {
@@ -248,8 +286,8 @@
     overflow-y: auto;
   }
   .caseload-filters:not(.filters-open) .shared-filters { display: none; }
-  .caseload-filters .shared-filters-toggle { margin-top: 12px; }
   .bucket-filters:not(.filters-open) .bucket-filter-lists { display: none; }
+  .bucket-filters { margin: 0 0 22px; }
   .bucket-filters .shared-filters-toggle { margin-top: 0; }
   .bucket-filters.filters-open .bucket-filter-lists {
     margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line);
@@ -343,10 +381,10 @@
   .area-pane { min-width: 0; overflow: visible; }
   .area-pane .chart-holder { height: 280px; }
   .bucket-title-row {
-    display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
   }
-  .card .bucket-title-row h2 { margin: 0; }
-  .bucket-period-toggle { display: flex; gap: 6px; }
+  .card .bucket-title-row h2 { margin: 0; flex: none; }
+  .bucket-title-row .range-btn { flex-shrink: 0; }
   .bucket-filter-head {
     flex-basis: 100%;
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -362,12 +400,19 @@
      ticks (Diana, 2026-09-02). */
   .chart-plot { position: relative; margin-top: 2px; overflow: visible; --plot-title-inset: 0px; }
   .chart-plot-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .chart-plot > .yoy-title-row,
   .chart-plot > h2,
   .chart-plot > h3,
   .chart-plot > h4,
   .chart-plot > .caption {
     padding-left: var(--plot-title-inset);
   }
+  .yoy-title-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin: 0 0 12px;
+  }
+  .card .yoy-title-row h2 { margin: 0; flex: none; }
+  .yoy-title-row .range-btn { flex-shrink: 0; }
   .chart-hover {
     display: none; position: fixed; z-index: 30; left: 0; top: 0;
     pointer-events: none; width: max-content;
@@ -411,7 +456,9 @@
     margin: 12px 0 8px; padding: 8px 10px;
     border: 1px solid var(--line); border-radius: 8px; background: #fff;
   }
+  .layers-label-row { display: flex; align-items: center; gap: 6px; }
   .layers-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .layers-label-row .info-tip-bubble { width: 320px; }
   .layers-hint { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.3; }
   .layers-control.is-locked .layers-hint { display: none; }
   .layers-control .layers-lock-note { margin: 0; }
@@ -443,6 +490,11 @@
     outline: 2px solid var(--layer-color); outline-offset: 2px;
   }
   .layer-toggle input[type="checkbox"]:disabled { cursor: not-allowed; }
+  .layer-toggle:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+  .layers-defs {
+    margin: 10px 0 0; font-size: 12px; color: var(--muted); line-height: 1.45;
+  }
+  .layers-defs[hidden] { display: none; }
   .layers-control.is-locked .layer-toggle:hover { background: transparent; }
   .layers-control.is-locked .layer-toggle:has(input:checked),
   .layers-control.is-locked .layer-toggle:has(input:checked):hover {
@@ -502,6 +554,7 @@
   footer.source-note .footer-wonk-h:first-of-type { margin-top: 8px; }
   footer.source-note .footer-methods .footer-notes { margin-bottom: 2px; }
   footer.source-note .footer-credit { margin: 16px 0 0; }
+  footer.source-note .footer-site { margin: 4px 0 0; }
   .live-note {
     background: #eef6f4; border: 1px solid #c5ddd6; color: #1f4d43;
     font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
@@ -526,6 +579,8 @@
        hide the interactive controls, the "Showing" text label already states
        the active date range as plain text. */
     .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover, .quirk-doodle, .quirk-dialog { display: none; }
+    .shared-controls-body { display: block !important; }
+    .compact-filters .time-range-header .time-range-label { display: inline !important; }
     .shared-filters, .bucket-filter-lists { display: flex !important; border-top: 0; padding-top: 0; }
     .filter-group.multi select { min-height: auto; }
   }
@@ -534,30 +589,47 @@
 <body>
 <div class="wrap">
   <header class="page-head">
-    <a class="brand" href="https://www.djconsults.com" target="_blank" rel="noopener noreferrer" aria-label="Diana Jensen Consulting, djconsults.com">
+    <div class="quirk-brand-row">
+    <a class="brand" href="https://www.djconsults.com" target="_blank" rel="noopener noreferrer" aria-label="Diana Jensen Consulting">
       <img src="assets/dj-logo.png" alt="" width="36" height="41">
       <span class="brand-text">
         <span class="brand-name">Diana Jensen</span>
-        <span class="brand-meta">Consulting · djconsults.com</span>
+        <span class="brand-meta">Consulting</span>
       </span>
     </a>
+    <p class="site-title" aria-label="CalFresh Data Explorer"><span class="site-title-name">CalFresh</span><span class="site-title-role">Data Explorer</span></p>
+    </div>
     <nav class="site-nav" aria-label="Dashboard views">
       <a href="index.html" aria-current="page">Participation Trends</a>
       <a href="outcomes.html">Applications</a>
       <a href="churn.html">Churn</a>
+      <a href="qc.html">Quality Control</a>
     </nav>
-    <h1>CalFresh<span class="info-tip h1-info-tip">
-      <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="calfreshNameTip" aria-label="What CalFresh means">i</button>
-      <span id="calfreshNameTip" class="info-tip-bubble" role="tooltip">CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California.</span>
-    </span> Participation Trends</h1>
-    <p class="sub">This is a working prototype I developed for the love of the data visualization game. All data is from public sources, hopefully a little easier to explore now.<br>Send me suggestions or corrections at <button type="button" class="copy-email" data-email="diana@djconsults.com" title="Copy email address" aria-label="Copy diana@djconsults.com">diana@djconsults.com</button>.<span class="copy-email-status" aria-live="polite"></span></p>
+    <h1>Participation Trends</h1>
+    <p class="sub">This is a working prototype I developed for the love of the data visualization game.<br>All data is from public sources, hopefully a little easier to explore now.<br>Send me suggestions or corrections at <button type="button" class="copy-email" data-email="diana@djconsults.com" title="Copy email address" aria-label="Copy diana@djconsults.com">diana@djconsults.com</button>.<span class="copy-email-status" aria-live="polite"></span></p>
   </header>
 
   <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
 
   <div id="dashboardMain" hidden>
   <div class="trend-sticky-scope">
-  <div class="shared-controls time-range-control link-a" id="sharedControls">
+  <div class="shared-controls compact-filters time-range-control link-a" id="sharedControls">
+    <button type="button" id="sharedFiltersToggle" class="shared-filters-toggle"
+      aria-expanded="false" aria-controls="sharedControlsBody">
+      <span class="shared-filters-toggle-text">
+        <span class="shared-filters-showing">
+          <span class="time-range-label">Showing<strong id="rangeSummary"></strong></span>
+          <span aria-hidden="true"> · </span>
+          <span class="shared-filters-summary" id="sharedFiltersSummary">California</span>
+        </span>
+        <span class="shared-filters-prompt">
+          <span class="shared-filters-prompt-expand">Expand to change what you see</span>
+          <span class="shared-filters-prompt-collapse">Hide filters</span>
+          <span class="filters-toggle-mark" aria-hidden="true"></span>
+        </span>
+      </span>
+    </button>
+    <div class="shared-controls-body" id="sharedControlsBody">
     <div class="time-range-header">
       <span class="time-range-label">Showing<strong id="rangeLabel"></strong></span>
       <button type="button" id="rangeLast2" class="range-btn">Last 2 years</button>
@@ -573,13 +645,6 @@
     </div>
     <p class="range-hint">Drag either handle to change the date range</p>
 
-    <button type="button" id="sharedFiltersToggle" class="shared-filters-toggle"
-      aria-expanded="false" aria-controls="sharedFilters">
-      <span class="shared-filters-toggle-text">
-        <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
-        <span class="shared-filters-summary" id="sharedFiltersSummary">California</span>
-      </span>
-    </button>
     <div class="shared-filters" id="sharedFilters">
       <div class="card-filters">
         <div class="card-filters-clear">
@@ -636,12 +701,13 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 
   <div class="charts-row">
     <div class="card link-a">
       <div class="chart-plot">
-        <h2>Total CalFresh Participants</h2>
+        <h2 id="totalTitle">Total CalFresh Participants</h2>
         <p class="caption" id="totalCaption">California, monthly persons, 2014–2026</p>
         <div class="chart-hover" id="totalChartHover" aria-live="polite"></div>
         <div class="chart-holder"><canvas id="totalChart" aria-hidden="true"></canvas></div>
@@ -653,7 +719,13 @@
         <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
       </button>
       <div class="layers-control" id="layersControl">
+        <div class="layers-label-row">
         <span class="layers-label">Show on this chart</span>
+        <span class="info-tip">
+          <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="layersTip" aria-label="About participant types">i</button>
+          <span id="layersTip" class="info-tip-bubble" role="tooltip">All Participants is the umbrella CalFresh persons total (federal SNAP plus CFAP). Checking CFAP restacks that total for California — it does not add people. SNB / TNB is one stacked pair: SNB people are already inside the total; TNB people are not. $ Issued follows the person layers you have checked. Unemployment shares the right axis with $ Issued.</span>
+        </span>
+        </div>
         <p class="layers-hint">Check a group to add its line.</p>
         <p class="layers-lock-note" id="layersLockNote">Participant types are available when one county or one region is selected.</p>
         <div class="layers-list">
@@ -664,10 +736,18 @@
           <label class="layer-toggle" style="--layer-color:#6c8a3b"><input type="checkbox" id="layerDualMedical"><span class="layer-swatch" style="background:#6c8a3b"></span>Also enrolled in Medi-Cal</label>
           <label class="layer-toggle" style="--layer-color:#8a3b6c"><input type="checkbox" id="layerChildOnly"><span class="layer-swatch" style="background:#8a3b6c"></span>People in Child-Only Households</label>
           <label class="layer-toggle" style="--layer-color:#b03a3a"><input type="checkbox" id="layerStudents"><span class="layer-swatch" style="background:#b03a3a"></span>College students</label>
+          <label class="layer-toggle" id="cfapToggle" style="--layer-color:#2C5985"><input type="checkbox" id="cfapCheckbox">
+            <span class="layer-swatch-stack" aria-hidden="true"><span class="layer-swatch" style="background:#FB7906"></span><span class="layer-swatch" style="background:#2C5985"></span></span>
+            <span class="layer-toggle-copy">CFAP <span class="layer-toggle-sub">(California only)</span></span></label>
+          <label class="layer-toggle" style="--layer-color:#6B3D5A"><input type="checkbox" id="layerSnbTnb">
+            <span class="layer-swatch-stack" aria-hidden="true"><span class="layer-swatch" style="background:#6B3D5A"></span><span class="layer-swatch" style="background:#C17B5C"></span></span>
+            <span class="layer-toggle-copy">SNB / TNB <span class="layer-toggle-sub">(SNB in the total · TNB extra)</span></span></label>
           <label class="layer-toggle" style="--layer-color:#2a6ebb"><input type="checkbox" id="layerDollarsIssued"><span class="layer-swatch" style="background:#2a6ebb"></span>$ Issued <span class="layer-toggle-sub">(right axis)</span></label>
+          <label class="layer-toggle" style="--layer-color:#3D6B4F"><input type="checkbox" id="layerUnemployment"><span class="layer-swatch" style="background:#3D6B4F"></span>Unemployment rate <span class="layer-toggle-sub">(right axis)</span></label>
         </div>
       </div>
       <p class="layers-caveat" id="layersCaveat"></p>
+      <div class="layers-defs" id="layersDefs" hidden></div>
       <table class="sr-only" id="totalChartTable">
         <caption>Total CalFresh Participants, monthly persons</caption>
         <thead><tr><th scope="col">Month</th><th scope="col">Persons</th></tr></thead>
@@ -676,7 +756,10 @@
     </div>
     <div class="card link-a">
       <div class="chart-plot">
-        <h2>Annual % Change in CalFresh Participants</h2>
+        <div class="yoy-title-row">
+          <h2 id="yoyTitle">Annual % Change in CalFresh Participants</h2>
+          <button type="button" id="yoyPeriodBtn" class="range-btn">Show Quarterly Change</button>
+        </div>
         <p class="caption" id="yoyCaption">Year-over-year change, selected counties</p>
         <div class="chart-hover" id="yoyChartHover" aria-live="polite"></div>
         <div class="chart-holder"><canvas id="yoyChart" aria-hidden="true"></canvas></div>
@@ -699,10 +782,7 @@
   <div class="card link-b">
     <div class="bucket-title-row">
       <h2 id="bucketTitle">Annual % Change by County</h2>
-      <div class="bucket-period-toggle" role="group" aria-label="Change window">
-        <button type="button" class="range-btn groupby-btn active" data-period="annual">Annual</button>
-        <button type="button" class="range-btn groupby-btn" data-period="quarterly">Quarterly</button>
-      </div>
+      <button type="button" id="bucketPeriodBtn" class="range-btn">Show Quarterly Change</button>
     </div>
     <div class="groupby-control">
       <span class="groupby-label">Month</span>
@@ -772,7 +852,23 @@
         <span id="movementTip" class="info-tip-bubble" role="tooltip">Net is additions minus discontinuances.</span>
       </span>
     </div>
-    <div class="caseload-filters" id="movementControls">
+    <div class="caseload-filters compact-filters" id="movementControls">
+      <button type="button" id="movementFiltersToggle" class="shared-filters-toggle"
+        aria-expanded="false" aria-controls="movementControlsBody">
+        <span class="shared-filters-toggle-text">
+          <span class="shared-filters-showing">
+            <span class="time-range-label">Showing<strong id="movementRangeSummary"></strong></span>
+            <span aria-hidden="true"> · </span>
+            <span class="shared-filters-summary" id="movementFiltersSummary">California</span>
+          </span>
+          <span class="shared-filters-prompt">
+            <span class="shared-filters-prompt-expand">Expand to change what you see</span>
+            <span class="shared-filters-prompt-collapse">Hide filters</span>
+            <span class="filters-toggle-mark" aria-hidden="true"></span>
+          </span>
+        </span>
+      </button>
+      <div class="shared-controls-body" id="movementControlsBody">
       <div class="time-range-header">
         <span class="time-range-label">Showing<strong id="movementRangeLabel"></strong></span>
         <button type="button" id="movementRangeLast2" class="range-btn">Last 2 years</button>
@@ -788,13 +884,6 @@
       </div>
       <p class="range-hint">Drag either handle to change the date range</p>
 
-      <button type="button" id="movementFiltersToggle" class="shared-filters-toggle"
-        aria-expanded="false" aria-controls="movementFilters">
-        <span class="shared-filters-toggle-text">
-          <span class="shared-filters-toggle-label">Filter by counties, regions, <span class="filters-toggle-keep">county size <span class="filters-toggle-mark" aria-hidden="true"></span></span></span>
-          <span class="shared-filters-summary" id="movementFiltersSummary">California</span>
-        </span>
-      </button>
       <div class="shared-filters" id="movementFilters">
         <div class="card-filters">
           <div class="card-filters-clear">
@@ -851,6 +940,7 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
     <p class="caption" id="movementCaption">Certified cases added and discontinued</p>
     <div id="movementPanes" class="area-panes"></div>
@@ -866,13 +956,16 @@
     Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard">CalFresh Data Dashboard</a> and <a href="https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables/cf296">CF296: Applications, Expedited Service, and Recertifications</a> (<a href="https://www.cdss.ca.gov/Portals/9/Additional-Resources/Letters-and-Notices/ACLs/2022/22-85.pdf">ACL 22-85</a>).
 
     <span class="footer-section-label">Definitions</span>
-    County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000 — computed from the latest available month, provisional pending final confirmation. EAs = Emergency Allotments.
+    CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California. CFAP (California Food Assistance Program) is a state-funded food benefit for people who do not qualify for federal SNAP; a person is on federal SNAP or CFAP, not both. Mixed households can have some federal members and some CFAP members. County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000 — computed from the latest available month, provisional pending final confirmation. EAs = Emergency Allotments.
 
     <span class="footer-section-label">Data notes</span>
     <ul class="footer-notes">
       <li>Data reports less frequently than monthly are shown as step functions.</li>
-      <li>$ Issued (CalFresh benefits issued) only has county breakdowns in the CalFresh Data Dashboard from Sep 2023 onward — shown as a gap before that date for any county other than California. Historical data will be included from the DFA/CF256 report in a future build.</li>
-      <li>If a county's participant count jumps or drops by 40% or more for exactly one month and then returns to the surrounding trend, we treat that month as a CDSS reporting error and leave a gap in the line rather than interpolating. The newest month cannot be checked this way until the following month is published.</li>
+      <li>$ Issued (CalFresh benefits issued) only has county breakdowns in the CalFresh Data Dashboard from Sep 2023 onward — shown as a gap before that date for any county other than California. Historical data will be included from the DFA/CF256 report in a future build. Checking CFAP with All Participants off shows state-funded issuances (CFAP), including the CFAP slice of mixed households — not “state-only” households. SNB and TNB dollars are excluded from Total Issuances; checking SNB / TNB adds them.</li>
+      <li>CFAP person counts are published for California only. Checking CFAP restacks All Participants into federal SNAP and CFAP; the stacked height matches the umbrella total. Uncheck All Participants to read the CFAP band on its own scale.</li>
+      <li>SNB (Supplemental Nutrition Benefit) people are already inside the CalFresh persons total — a subset. TNB (Transitional Nutrition Benefit) people are not on CF 256 and are not inside that total — extra people. One SNB / TNB toggle stacks them (SNB bottom, TNB top). SNB/TNB dollars are likewise excluded from issuance totals until that toggle is on.</li>
+      <li>Unemployment rate is EDD county unemployment, not seasonally adjusted. It shares the right axis with $ Issued; checking one turns the other off.</li>
+      <li>Annual % change is versus the same month a year earlier. Quarterly % change is versus three months earlier — not a calendar-quarter average. The two % change charts keep their own Annual / Quarterly setting.</li>
       <li>Caseload movement is certified cases from CF296, not the same as Total Participants (households and persons who participated that month, from the CDSS Data Dashboard Monthly tab). Each figure is in the month CDSS reported it. Other approvals and reinstated cases typically offset discontinuances from the prior month.</li>
       <li>ICT in is an inter-county transfer into this county. Transfers out are already inside discontinuances. CDSS does not publish a separate ICT-out count.</li>
       <li id="reportingGapsNote" hidden></li>
@@ -882,7 +975,14 @@
         Wonky &amp; math-y details
         <span class="filters-toggle-mark" aria-hidden="true"></span>
       </summary>
-      <h3 class="footer-wonk-h">CF296 files</h3>
+      <h3 class="footer-wonk-h">CFAP, SNB, TNB, and $ Issued</h3>
+      <ul class="footer-notes">
+        <li>Statewide, CalFresh Persons = All Federal Persons + All CFAP Persons. Checking CFAP restacks that identity; it does not add ~49k on top of All Participants.</li>
+        <li>Do not label CFAP as “state-only.” CF 256 Federal / Federal-State / State-only are household funding categories. Mixed households have some federal members and some CFAP members.</li>
+        <li>County person columns for federal/CFAP are blank. The CFAP stack is California only.</li>
+        <li>State Issuances are state-funded issuances (CFAP), including the CFAP slice of mixed households — CF 256 Item 10b — not “state-only” households. SNB and TNB dollars are excluded from Total Issuances until SNB / TNB is checked.</li>
+        <li>SNB cases are already inside regular household/person totals. TNB cases are not on CF 256 and are not inside CalFresh Persons. The SNB / TNB toggle is one stacked pair (SNB `#6B3D5A` bottom, TNB `#C17B5C` top), not two overlay lines.</li>
+      </ul>
       <ul class="footer-notes">
         <li>Current-era CF296 (FY2025-26+) and CF296_Legacy (FY2016-17 through FY2024-25) are combined by item meaning, not by cell number.</li>
       </ul>
@@ -894,12 +994,19 @@
         <li>When Part C Total is starred, it is recovered from PACF + NACF. A starred PACF or NACF part is plotted as 5.</li>
         <li>Other approvals are typically rescinded discontinuances. They offset prior-month Item 7, and they stay in the report month.</li>
       </ul>
+      <h3 class="footer-wonk-h">One-month reporting holes</h3>
+      <ul class="footer-notes">
+        <li>A month is blanked when the person count is at least 40% off the average of the months on either side, and those two neighbors are within 10% of each other. Real policy shifts fail that test because the new level lasts.</li>
+        <li>If at least half of counties with data that month match, every county is blanked. Feb 2019 (all counties) and Sonoma April 2019 are always included.</li>
+        <li>The newest month cannot be judged until the next month is published. Annual % change is computed after blanking, so both legs of the bad ratio disappear.</li>
+      </ul>
       <h3 class="footer-wonk-h">ICT</h3>
       <ul class="footer-notes">
         <li>ICT in is Item 5.c (incoming only). ICT outs are inside Item 7; CF296 has no ICT-out cell. Statewide, ICT in and those outs should cancel in the net.</li>
       </ul>
     </details>
     <p class="footer-credit">Designed by Diana Jensen, built with help from Cursor.</p>
+    <p class="footer-site"><a href="https://www.djconsults.com" target="_blank" rel="noopener noreferrer">djconsults.com</a></p>
   </footer>
   </div>
 </div>
@@ -1204,6 +1311,21 @@ function priorQuarterMonth(m) {
   if (pm < 1) { pm += 12; py -= 1; }
   return py + '-' + String(pm).padStart(2, '0');
 }
+function personsChangePct(county, month, priorMonth) {
+  const s = DATA.series[county];
+  if (!s) return null;
+  const current = s.persons[month];
+  const prior = s.persons[priorMonth];
+  if (current == null || prior == null || prior === 0) return null;
+  return (current / prior - 1) * 100;
+}
+function changePct(county, month, period) {
+  if (period === 'annual') {
+    const yoy = DATA.series[county] && DATA.series[county].yoy_pct[month];
+    return yoy === undefined ? null : yoy;
+  }
+  return personsChangePct(county, month, priorQuarterMonth(month));
+}
 
 // Dollar formatting for the $ Issued overlay -- abbreviated for axis ticks and
 // first/last point labels (space is tight there), full precision for tooltips.
@@ -1276,9 +1398,10 @@ const SIZE_DISPLAY = {
 // (the currently-picked month), but a region line on a time-series chart needs the
 // whole series. Kept as a thin wrapper over computeAggregateRate rather than
 // duplicating its math, so the two stay in sync if that logic ever changes.
-function computeAggregateSeries(rows, months) {
+function computeAggregateSeries(rows, months, priorMonthFn) {
+  const priorOf = priorMonthFn || priorYearMonth;
   const series = {};
-  months.forEach(m => { series[m] = computeAggregateRate(rows, m); });
+  months.forEach(m => { series[m] = computeAggregateRate(rows, m, priorOf(m)); });
   return series;
 }
 
@@ -1964,11 +2087,15 @@ let movementRangeEnd = rangeEnd;
 movementRangeStartInput.value = movementRangeStart;
 movementRangeEndInput.value = movementRangeEnd;
 
+const rangeSummaryEl = document.getElementById('rangeSummary');
 function updateRangeLabel() {
   syncRangeLabel(rangeStart, rangeEnd, rangeLabelEl, rangeTrackFill);
+  if (rangeSummaryEl) rangeSummaryEl.textContent = rangeLabelEl.textContent;
 }
+const movementRangeSummaryEl = document.getElementById('movementRangeSummary');
 function updateMovementRangeLabel() {
   syncRangeLabel(movementRangeStart, movementRangeEnd, movementRangeLabelEl, movementRangeTrackFill);
+  if (movementRangeSummaryEl) movementRangeSummaryEl.textContent = movementRangeLabelEl.textContent;
 }
 function syncRangeLabel(start, end, labelEl, fillEl) {
   labelEl.textContent = ' ' + fmtMonth(DATA.months[start]) + ' – ' + fmtMonth(DATA.months[end]);
@@ -2070,19 +2197,22 @@ function updateMovementFiltersSummary(counties, regions, sizes) {
 
 function applyOverlayLock(counties, regions) {
   const allow = isSingleFocusEntity(counties, regions) && !statewideCompareTotal;
-  const toggles = [...Object.values(layerCheckboxes), ageBandCheckbox, allParticipantsCheckbox];
+  const toggles = [...Object.values(layerCheckboxes), ageBandCheckbox, allParticipantsCheckbox, cfapCheckbox];
   if (allow) {
     layersControlEl.classList.remove('is-locked');
     toggles.forEach(el => { el.disabled = false; });
+    syncCfapAvailability(counties, regions);
     layersLockNoteEl.classList.remove('show');
     return;
   }
   Object.keys(activeOverlays).forEach(k => {
     activeOverlays[k] = false;
-    layerCheckboxes[k].checked = false;
+    if (layerCheckboxes[k]) layerCheckboxes[k].checked = false;
   });
   ageBandMode = false;
   ageBandCheckbox.checked = false;
+  cfapMode = false;
+  cfapCheckbox.checked = false;
   showTotal = true;
   allParticipantsCheckbox.checked = true;
   layersControlEl.classList.add('is-locked');
@@ -2355,17 +2485,30 @@ let totalChart, yoyChart;
 // toggle is a genuinely mutually-exclusive partition, so it swaps the chart
 // into a stacked view instead of adding a line.
 const DL = DATA.demographic_layers;
-const activeOverlays = { child_only: false, dual_medi_cal: false, students: false, dollars_issued: false };
+const activeOverlays = {
+  child_only: false,
+  dual_medi_cal: false,
+  students: false,
+  snb_tnb: false,
+  dollars_issued: false,
+  unemployment: false
+};
 let ageBandMode = false;
+let cfapMode = false;
 
 const layerCheckboxes = {
   child_only: document.getElementById('layerChildOnly'),
   dual_medi_cal: document.getElementById('layerDualMedical'),
   students: document.getElementById('layerStudents'),
-  dollars_issued: document.getElementById('layerDollarsIssued')
+  snb_tnb: document.getElementById('layerSnbTnb'),
+  dollars_issued: document.getElementById('layerDollarsIssued'),
+  unemployment: document.getElementById('layerUnemployment')
 };
 const ageBandCheckbox = document.getElementById('ageBandCheckbox');
+const cfapCheckbox = document.getElementById('cfapCheckbox');
+const cfapToggle = document.getElementById('cfapToggle');
 const layersCaveatEl = document.getElementById('layersCaveat');
+const layersDefsEl = document.getElementById('layersDefs');
 // "All Participants" is just the total line as another checkbox in the same
 // list -- checked by default, same swatch color as the line itself. Small
 // layers like child-only persons are invisible next to the total on the
@@ -2435,6 +2578,56 @@ function overlayValues(layer, county, region, labels) {
     : labels.map(m => (seriesForEntity[m] === undefined ? null : seriesForEntity[m]));
 }
 
+function layerOverlayValues(key, county, region, labels) {
+  const layer = DL.overlays[key];
+  if (!layer) return labels.map(() => null);
+  return overlayValues(layer, county, region, labels);
+}
+
+function addNullable(a, b) {
+  if (a == null && b == null) return null;
+  return (a || 0) + (b || 0);
+}
+
+function canShowCfap(county, region) {
+  return county === 'Statewide' && !region;
+}
+
+function syncCfapAvailability(counties, regions) {
+  const ok = canShowCfap(
+    (counties.length === 1 && regions.length === 0) ? counties[0] : null,
+    (regions.length === 1 && counties.length === 0) ? regions[0] : null
+  );
+  cfapCheckbox.disabled = !ok;
+  cfapToggle.title = ok
+    ? ''
+    : 'CFAP person counts are published for California only.';
+  if (!ok && cfapMode) {
+    cfapMode = false;
+    cfapCheckbox.checked = false;
+  }
+}
+
+function dollarsFollowLayers(county, region, labels) {
+  const allOn = showTotal;
+  const cfapOn = cfapMode && canShowCfap(county, region);
+  const snbTnbOn = !!activeOverlays.snb_tnb;
+  const total = layerOverlayValues('dollars_issued', county, region, labels);
+  const state = layerOverlayValues('state_issuances', county, region, labels);
+  const snbDollars = layerOverlayValues('ebt_snb', county, region, labels);
+  const tnbDollars = layerOverlayValues('ebt_tnb', county, region, labels);
+  return labels.map((_, i) => {
+    let v = null;
+    if (allOn) v = total[i];
+    else if (cfapOn) v = state[i];
+    if (snbTnbOn) {
+      v = addNullable(v, snbDollars[i]);
+      v = addNullable(v, tnbDollars[i]);
+    }
+    return v;
+  });
+}
+
 function ageBandValues(county, region, field, labels) {
   if (region) {
     const members = regionMemberCounties(region, currentSizes());
@@ -2485,7 +2678,7 @@ function statewideComparePersonsDataset(labels) {
 function statewideCompareYoyDataset(labels) {
   return {
     label: 'California',
-    data: labels.map(m => DATA.series['Statewide'].yoy_pct[m]),
+    data: labels.map(m => changePct('Statewide', m, yoyPeriod)),
     borderColor: STATEWIDE_COMPARE_COLOR,
     backgroundColor: STATEWIDE_COMPARE_COLOR,
     borderDash: STATEWIDE_COMPARE_DASH,
@@ -2496,6 +2689,52 @@ function statewideCompareYoyDataset(labels) {
     _firstLast: true,
     _labelFormat: v => v.toFixed(1) + '%'
   };
+}
+
+// Caption (and title, when All Participants is off) names the checked layers
+// so a screenshot of the plot still says what the lines are. Checkbox order.
+function totalChartShownNames(county, region) {
+  const names = [];
+  const cfapOk = cfapMode && canShowCfap(county, region);
+  const cfapStack = cfapOk && showTotal && !ageBandMode;
+  if (cfapStack) names.push('Federal SNAP and CFAP');
+  else if (showTotal) names.push('All Participants');
+  if (ageBandMode) names.push('By Age Group');
+  if (activeOverlays.dual_medi_cal) names.push('Also enrolled in Medi-Cal');
+  if (activeOverlays.child_only) names.push('People in Child-Only Households');
+  if (activeOverlays.students) names.push('College students');
+  if (cfapOk && !cfapStack) names.push('CFAP');
+  if (activeOverlays.snb_tnb) names.push('SNB / TNB');
+  if (activeOverlays.dollars_issued) {
+    names.push((!showTotal && cfapOk) ? 'State-funded issuances (CFAP)' : '$ Issued');
+  }
+  if (activeOverlays.unemployment) names.push('Unemployment rate');
+  return names;
+}
+
+function totalChartPersonTitles(county, region) {
+  const titles = [];
+  if (ageBandMode) titles.push('CalFresh Participants by Age Group');
+  if (activeOverlays.dual_medi_cal) titles.push('CalFresh Participants Also Enrolled In Medi-Cal');
+  if (activeOverlays.child_only) titles.push('CalFresh Participants in Child-Only Households');
+  if (activeOverlays.students) titles.push('CalFresh College Students');
+  if (cfapMode && canShowCfap(county, region)) titles.push('CFAP Participants');
+  if (activeOverlays.snb_tnb) titles.push('SNB / TNB Participants');
+  return titles;
+}
+
+function totalChartTitleText(singleFocus, county, region) {
+  if (!singleFocus || showTotal) return 'Total CalFresh Participants';
+  const personTitles = totalChartPersonTitles(county, region);
+  if (personTitles.length === 1) return personTitles[0];
+  if (personTitles.length > 1) return 'CalFresh Participants';
+  if (activeOverlays.dollars_issued) {
+    return (cfapMode && canShowCfap(county, region))
+      ? 'State-funded issuances (CFAP)'
+      : '$ Issued';
+  }
+  if (activeOverlays.unemployment) return 'Unemployment rate';
+  return 'CalFresh Participants';
 }
 
 function buildTotalChart(counties, regions) {
@@ -2565,7 +2804,43 @@ function buildTotalChart(counties, regions) {
   }
 
   if (singleFocus) {
-    if (showTotal) {
+    const cfapOk = cfapMode && canShowCfap(singleCounty, singleRegion);
+    const cfapStack = cfapOk && showTotal && !ageBandMode;
+    if (cfapStack) {
+      const federal = layerOverlayValues('federal_persons', singleCounty, singleRegion, labels);
+      const cfap = layerOverlayValues('cfap_persons', singleCounty, singleRegion, labels);
+      datasets.push({
+        label: 'Federal SNAP',
+        data: federal,
+        borderColor: '#FB7906',
+        backgroundColor: 'rgba(217,123,63,0.35)',
+        fill: true,
+        stack: 'cfap',
+        pointRadius: 0,
+        borderWidth: 1,
+        tension: 0,
+        spanGaps: false,
+        order: 3,
+        _firstLast: true,
+        _labelFormat: v => (v/1000).toFixed(1) + 'K'
+      });
+      datasets.push({
+        label: 'CFAP',
+        data: cfap,
+        borderColor: '#2C5985',
+        backgroundColor: '#2C598555',
+        fill: true,
+        stack: 'cfap',
+        pointRadius: 0,
+        borderWidth: 1,
+        tension: 0,
+        spanGaps: false,
+        order: 3,
+        _firstLast: true,
+        _labelFormat: v => (v/1000).toFixed(1) + 'K'
+      });
+      caveats.push('CFAP restacks All Participants into federal SNAP and CFAP for California — same people, not extra. One person is on one program or the other, not both.');
+    } else if (showTotal) {
       const color = singleRegion ? REGION_COLOR_BY_NAME[singleRegion] : '#FB7906';
       datasets.push({
         label: entityName,
@@ -2585,36 +2860,90 @@ function buildTotalChart(counties, regions) {
       });
     }
 
-    const overlayKeys = Object.keys(activeOverlays).filter(k => activeOverlays[k]);
+    if (cfapOk && !cfapStack) {
+      datasets.push({
+        label: 'CFAP',
+        data: layerOverlayValues('cfap_persons', singleCounty, singleRegion, labels),
+        borderColor: '#2C5985',
+        backgroundColor: '#2C5985',
+        fill: false,
+        stack: 'overlay_cfap',
+        pointRadius: 0,
+        borderWidth: 1.5,
+        tension: 0,
+        spanGaps: false,
+        order: 2,
+        _firstLast: true,
+        _labelFormat: v => (v/1000).toFixed(1) + 'K'
+      });
+    }
+
+    if (activeOverlays.snb_tnb) {
+      const snb = layerOverlayValues('snb', singleCounty, singleRegion, labels);
+      const tnb = layerOverlayValues('tnb', singleCounty, singleRegion, labels);
+      datasets.push({
+        label: 'SNB',
+        data: snb,
+        borderColor: '#6B3D5A',
+        backgroundColor: '#6B3D5A55',
+        fill: true,
+        stack: 'snb_tnb',
+        pointRadius: 0,
+        borderWidth: 1,
+        tension: 0,
+        spanGaps: false,
+        order: 2,
+        _firstLast: true,
+        _labelFormat: v => (v/1000).toFixed(1) + 'K'
+      });
+      datasets.push({
+        label: 'TNB',
+        data: tnb,
+        borderColor: '#C17B5C',
+        backgroundColor: '#C17B5C55',
+        fill: true,
+        stack: 'snb_tnb',
+        pointRadius: 0,
+        borderWidth: 1,
+        tension: 0,
+        spanGaps: false,
+        order: 2,
+        _firstLast: true,
+        _labelFormat: v => (v/1000).toFixed(1) + 'K'
+      });
+    }
+
+    const overlayKeys = Object.keys(activeOverlays).filter(k => activeOverlays[k] && k !== 'snb_tnb');
     overlayKeys.forEach(key => {
       const layer = DL.overlays[key];
-      // Guards a layer key that's wired into the UI (checkbox + activeOverlays)
-      // before its DATA.demographic_layers.overlays entry has real numbers behind
-      // it yet -- lets the checkbox exist without crashing the chart in the
-      // meantime. Remove once every wired key has data.
       if (!layer) return;
-      const data = overlayValues(layer, singleCounty, singleRegion, labels);
+      const data = key === 'dollars_issued'
+        ? dollarsFollowLayers(singleCounty, singleRegion, labels)
+        : overlayValues(layer, singleCounty, singleRegion, labels);
       const isQuarterly = layer.cadence === 'quarterly';
-      // Dollar figures live on their own right-hand axis (layer.axis === 'y1') --
-      // wildly different scale than a persons count, and unlike the other overlays
-      // here the point isn't a direct same-axis size comparison, it's "does the
-      // shape of the two lines track together." See niceAxisMax1/y1 scale below.
-      const isDollarAxis = layer.axis === 'y1';
+      const isY1 = layer.axis === 'y1';
+      const isPct = layer.format === 'percent';
+      const dollarsLabel = key === 'dollars_issued' && !showTotal && cfapOk
+        ? 'State-funded issuances (CFAP)'
+        : layer.label;
       datasets.push({
-        label: layer.label,
+        label: key === 'dollars_issued' ? dollarsLabel : layer.label,
         data,
         borderColor: layer.color,
         backgroundColor: layer.color,
         fill: false,
         stack: 'overlay_' + key,
-        yAxisID: isDollarAxis ? 'y1' : 'y',
+        yAxisID: isY1 ? 'y1' : 'y',
         pointRadius: 0,
         borderWidth: 1.5,
         stepped: isQuarterly ? 'before' : false,
         spanGaps: false,
         order: 2,
         _firstLast: true,
-        _labelFormat: isDollarAxis ? fmtDollarsAbbrev : (v => (v/1000).toFixed(1) + 'K')
+        _valueKind: isPct ? 'percent' : (isY1 ? 'dollars' : 'count'),
+        _labelFormat: isPct
+          ? (v => v.toFixed(1) + '%')
+          : (isY1 ? fmtDollarsAbbrev : (v => (v/1000).toFixed(1) + 'K'))
       });
       if (isQuarterly) cadenceClauses.push(quarterlyPhrases[key] || (layer.label + ' on a quarterly basis'));
     });
@@ -2675,8 +3004,9 @@ function buildTotalChart(counties, regions) {
   // total that isn't even shown -- rescale to whatever's actually visible,
   // using the age bands' stacked SUM (not each band's own raw value) since
   // that's the height they actually render at.
+  const stackedGroupIds = ['age', 'cfap', 'snb_tnb'];
   const personValues = datasets.filter(ds => ds.yAxisID !== 'y1').flatMap(ds => {
-    if (ds.stack === 'age') return [];
+    if (stackedGroupIds.indexOf(ds.stack) !== -1) return [];
     return ds.data;
   });
   const totalOnly = (singleFocus ? values : personValues).filter(v => v !== null && v !== undefined);
@@ -2687,26 +3017,26 @@ function buildTotalChart(counties, regions) {
       : personValues.filter(v => v !== null && v !== undefined);
     ({ max: yMax, step: yStep } = niceAxisMax(scaleSrc.length ? Math.max(...scaleSrc) : 100));
   } else {
-    const ageStackSums = ageBandMode
-      ? labels.map((_, i) => datasets.filter(ds => ds.stack === 'age').reduce((sum, ds) => sum + (ds.data[i] || 0), 0))
-      : [];
-    // $ Issued lives on its own axis (y1) and is on a completely different
-    // numeric scale (hundreds of millions vs. thousands of persons) -- it must
-    // never factor into the left (persons) axis's rescale-to-visible logic, or
-    // it would blow the left axis out to a useless scale the moment it's toggled on.
-    const otherValues = datasets.filter(ds => ds.stack !== 'age' && ds.yAxisID !== 'y1').flatMap(ds => ds.data);
-    const visibleValues = [...ageStackSums, ...otherValues].filter(v => v !== null && v !== undefined);
+    const groupSums = stackedGroupIds.flatMap(id => {
+      const members = datasets.filter(ds => ds.stack === id);
+      if (!members.length) return [];
+      return labels.map((_, i) => members.reduce((sum, ds) => sum + (ds.data[i] || 0), 0));
+    });
+    // $ Issued / unemployment live on their own axis (y1) and must
+    // never factor into the left (persons) axis's rescale-to-visible logic.
+    const otherValues = datasets.filter(ds => stackedGroupIds.indexOf(ds.stack) === -1 && ds.yAxisID !== 'y1').flatMap(ds => ds.data);
+    const visibleValues = [...groupSums, ...otherValues].filter(v => v !== null && v !== undefined);
     ({ max: yMax, step: yStep } = niceAxisMax(visibleValues.length ? Math.max(...visibleValues) : (totalOnly.length ? Math.max(...totalOnly) : 100)));
   }
 
   // Right-hand dollar axis, scaled independently from the left (persons) axis --
   // sized off its own data only, min:0 like every other axis in this project
   // (Diana's standing "axes always start at zero" rule, 2026-07-31).
-  const dollarsDataset = datasets.find(ds => ds.yAxisID === 'y1');
+  const y1Dataset = datasets.find(ds => ds.yAxisID === 'y1');
   let y1Max, y1Step;
-  if (dollarsDataset) {
-    const dollarsOnly = dollarsDataset.data.filter(v => v !== null && v !== undefined);
-    ({ max: y1Max, step: y1Step } = niceAxisMax(dollarsOnly.length ? Math.max(...dollarsOnly) : 100));
+  if (y1Dataset) {
+    const y1Only = y1Dataset.data.filter(v => v !== null && v !== undefined);
+    ({ max: y1Max, step: y1Step } = niceAxisMax(y1Only.length ? Math.max(...y1Only) : 100));
   }
 
   if (totalChart) totalChart.destroy();
@@ -2761,41 +3091,59 @@ function buildTotalChart(counties, regions) {
               return singleRegion ? (singleRegion + ' region') : entityPhrase(entityName);
             },
             label: (item) => {
-              // The total line's dataset.label is just the entity name again
-              // (it's colored/keyed to match the "All Participants" checkbox) --
-              // showing that as the bullet text would just repeat the entity line
-              // above it, so it gets the checkbox's own wording instead.
               const bulletLabel = (singleFocus && item.dataset.label === entityName)
                 ? 'All Participants' : item.dataset.label;
               if (item.raw === null || item.raw === undefined) return bulletLabel + ': n/a';
-              const isDollarAxis = item.dataset.yAxisID === 'y1';
+              if (item.dataset._valueKind === 'percent') {
+                return bulletLabel + ': ' + Number(item.raw).toFixed(1) + '%';
+              }
+              const isDollarAxis = item.dataset.yAxisID === 'y1' || item.dataset._valueKind === 'dollars';
               const formatted = isDollarAxis ? fmtDollarsFull(item.raw) : Math.round(item.raw).toLocaleString('en-US');
               return bulletLabel + ': ' + formatted;
+            },
+            footer: () => {
+              const notes = [];
+              if (singleFocus && cfapMode && canShowCfap(singleCounty, singleRegion)) {
+                notes.push('One person is on federal SNAP or CFAP, not both.');
+              }
+              if (singleFocus && activeOverlays.snb_tnb) {
+                notes.push('SNB people are already in All Participants. TNB people are not.');
+              }
+              if (singleFocus && activeOverlays.dollars_issued && !showTotal && cfapMode && canShowCfap(singleCounty, singleRegion)) {
+                notes.push('State-funded issuances (CFAP), including the CFAP slice of mixed households. Not “state-only” households.');
+              }
+              return notes;
             }
           }
         }
       },
       scales: {
         x: { ticks: { display: false }, grid: { display: false } },
-        y: { stacked: !!(singleFocus && ageBandMode), min: 0, max: yMax, ticks: { stepSize: yStep, callback: v => (v/1000) + 'K' }, grid: { color: '#f0f0f0' } },
-        // Only defined when the $ Issued overlay is actually on -- Chart.js is
-        // happy with an axis nobody references, but there's no reason to carry
-        // the extra tick-layout work every render when it's not in use.
-        ...(dollarsDataset ? {
+        y: { stacked: !!(singleFocus && (ageBandMode || activeOverlays.snb_tnb || (cfapMode && showTotal && !ageBandMode && canShowCfap(singleCounty, singleRegion)))), min: 0, max: yMax, ticks: { stepSize: yStep, callback: v => (v/1000) + 'K' }, grid: { color: '#f0f0f0' } },
+        ...(y1Dataset ? {
           y1: {
             position: 'right', min: 0, max: y1Max,
-            ticks: { stepSize: y1Step, callback: v => fmtDollarsAbbrev(v) },
+            ticks: {
+              stepSize: y1Step,
+              callback: v => y1Dataset._valueKind === 'percent' ? Number(v).toFixed(1) + '%' : fmtDollarsAbbrev(v)
+            },
             grid: { display: false }
           }
         } : {})
       }
     }
   });
-  document.getElementById('totalCaption').innerHTML =
-    '<strong>' + selectionCaption(counties, regions) +
-    (addStatewideLine ? ', California' : '') +
-    '</strong>, monthly persons, ' +
-    fmtMonth(labels[0]) + ' to ' + fmtMonth(labels[labels.length-1]);
+  const placeBit = selectionCaption(counties, regions) + (addStatewideLine ? ', California' : '');
+  const shownLayers = singleFocus ? totalChartShownNames(singleCounty, singleRegion) : [];
+  const titleText = totalChartTitleText(singleFocus, singleCounty, singleRegion);
+  const dateBit = fmtMonth(labels[0]) + ' to ' + fmtMonth(labels[labels.length-1]);
+  document.getElementById('totalTitle').textContent = titleText;
+  document.getElementById('totalCaption').innerHTML = shownLayers.length
+    ? '<strong>' + placeBit + '</strong> · ' + shownLayers.join(', ') + ' · ' + dateBit
+    : '<strong>' + placeBit + '</strong>, monthly persons, ' + dateBit;
+  document.querySelector('#totalChartTable caption').textContent = shownLayers.length
+    ? titleText + ', ' + shownLayers.join(', ')
+    : titleText + ', monthly persons';
   renderRefLineLegend('totalRefLineLegend', labels, totalChart);
 
   if (caveats.length) {
@@ -2803,6 +3151,26 @@ function buildTotalChart(counties, regions) {
     layersCaveatEl.classList.add('show');
   } else {
     layersCaveatEl.classList.remove('show');
+  }
+  const defLines = [];
+  if (singleFocus && cfapMode && canShowCfap(singleCounty, singleRegion)) {
+    defLines.push('CFAP is California’s state-funded food benefit for people who do not qualify for federal SNAP. Mixed households can have some federal members and some CFAP members.');
+  }
+  if (singleFocus && activeOverlays.snb_tnb) {
+    defLines.push('SNB people are already inside All Participants — a subset. TNB people are not — extra people, and not on CF 256.');
+  }
+  if (singleFocus && activeOverlays.unemployment) {
+    defLines.push('Unemployment rate is EDD county unemployment, not seasonally adjusted.');
+  }
+  if (singleFocus && activeOverlays.dollars_issued && !showTotal && cfapMode) {
+    defLines.push('$ Issued here is state-funded issuances (CFAP), including the CFAP slice of mixed households — not “state-only” households.');
+  }
+  if (defLines.length) {
+    layersDefsEl.hidden = false;
+    layersDefsEl.textContent = defLines.join(' ');
+  } else {
+    layersDefsEl.hidden = true;
+    layersDefsEl.textContent = '';
   }
 
   const tableHeaders = ['Month', ...datasets.map(ds =>
@@ -2812,12 +3180,21 @@ function buildTotalChart(counties, regions) {
   renderAccessibleTable(document.querySelector('#totalChartTable tbody'), labels.map((m, i) => [
     fmtMonth(m),
     ...datasets.map(ds => ds.data[i] === null || ds.data[i] === undefined ? 'n/a' :
-      (ds.yAxisID === 'y1' ? fmtDollarsFull(ds.data[i]) : Math.round(ds.data[i]).toLocaleString('en-US')))
+      (ds._valueKind === 'percent' ? Number(ds.data[i]).toFixed(1) + '%' :
+      (ds.yAxisID === 'y1' || ds._valueKind === 'dollars' ? fmtDollarsFull(ds.data[i]) : Math.round(ds.data[i]).toLocaleString('en-US'))))
   ]));
 }
 
 Object.keys(layerCheckboxes).forEach(key => {
   layerCheckboxes[key].addEventListener('change', () => {
+    if (key === 'dollars_issued' && layerCheckboxes.dollars_issued.checked && layerCheckboxes.unemployment.checked) {
+      layerCheckboxes.unemployment.checked = false;
+      activeOverlays.unemployment = false;
+    }
+    if (key === 'unemployment' && layerCheckboxes.unemployment.checked && layerCheckboxes.dollars_issued.checked) {
+      layerCheckboxes.dollars_issued.checked = false;
+      activeOverlays.dollars_issued = false;
+    }
     activeOverlays[key] = layerCheckboxes[key].checked;
     const { counties, regions } = currentSelection();
     buildTotalChart(counties, regions);
@@ -2828,11 +3205,30 @@ allParticipantsCheckbox.addEventListener('change', () => {
   const { counties, regions } = currentSelection();
   buildTotalChart(counties, regions);
 });
+cfapCheckbox.addEventListener('change', () => {
+  cfapMode = cfapCheckbox.checked;
+  const { counties, regions } = currentSelection();
+  buildTotalChart(counties, regions);
+});
 ageBandCheckbox.addEventListener('change', () => {
   ageBandMode = ageBandCheckbox.checked;
   const { counties, regions } = currentSelection();
   buildTotalChart(counties, regions);
 });
+
+let yoyPeriod = 'annual';
+function yoyPriorMonth(month) {
+  return yoyPeriod === 'quarterly' ? priorQuarterMonth(month) : priorYearMonth(month);
+}
+function syncYoyPeriodUi() {
+  const quarterly = yoyPeriod === 'quarterly';
+  document.getElementById('yoyTitle').textContent = quarterly
+    ? 'Quarterly % Change in CalFresh Participants'
+    : 'Annual % Change in CalFresh Participants';
+  document.getElementById('yoyPeriodBtn').textContent = quarterly
+    ? 'Show Annual Change'
+    : 'Show Quarterly Change';
+}
 
 function buildYoyChart(counties, regions) {
   regions = regions || [];
@@ -2841,7 +3237,7 @@ function buildYoyChart(counties, regions) {
 
   const countyDatasets = counties.map((c, i) => ({
     label: c === 'Statewide' ? 'California' : c,
-    data: labels.map(m => DATA.series[c].yoy_pct[m]),
+    data: labels.map(m => changePct(c, m, yoyPeriod)),
     borderColor: COMPARE_COLORS[i % COMPARE_COLORS.length],
     backgroundColor: COMPARE_COLORS[i % COMPARE_COLORS.length],
     pointRadius: 0,
@@ -2862,7 +3258,7 @@ function buildYoyChart(counties, regions) {
     const members = regionMemberCounties(r, currentSizes());
     if (!members.length) return null;
     const memberRows = members.map(c => ({ county: c }));
-    const series = computeAggregateSeries(memberRows, labels);
+    const series = computeAggregateSeries(memberRows, labels, yoyPriorMonth);
     return {
       label: r,
       data: labels.map(m => series[m]),
@@ -2913,8 +3309,8 @@ function buildYoyChart(counties, regions) {
           itemSort: tooltipItemsByValueDesc,
           callbacks: {
             title: (items) => {
-              const [y, mo] = items[0].label.split('-');
-              return fmtMonth(items[0].label) + ' vs ' + fmtMonth((parseInt(y, 10) - 1) + '-' + mo);
+              const m = items[0].label;
+              return fmtMonth(m) + ' vs ' + fmtMonth(yoyPriorMonth(m));
             },
             label: (item) => {
               if (item.raw === null || item.raw === undefined) return item.dataset.label + ': n/a';
@@ -2935,11 +3331,15 @@ function buildYoyChart(counties, regions) {
     ? sizeCaptionSuffix(currentSizes()) : '';
   const captionParts = [sizedNames.join(', ') + sizeBit];
   if (addStatewideLine) captionParts.push('California');
+  const windowBit = yoyPeriod === 'quarterly' ? 'Change vs three months earlier' : 'Year-over-year change';
   document.getElementById('yoyCaption').textContent =
-    'Year-over-year change — ' + captionParts.filter(Boolean).join(', ');
+    windowBit + ' — ' + captionParts.filter(Boolean).join(', ');
   renderRefLineLegend('yoyRefLineLegend', labels, yoyChart);
 
   const yoyEntityNames = datasets.map(d => d.label === 'California' ? 'California' : d.label);
+  document.querySelector('#yoyChartTable caption').textContent = yoyPeriod === 'quarterly'
+    ? 'Quarterly percentage change in CalFresh participants, versus three months earlier'
+    : 'Annual percentage change in CalFresh participants, year-over-year, by county';
   document.querySelector('#yoyChartTable thead tr').innerHTML =
     '<th scope="col">Month</th>' + yoyEntityNames.map(n => '<th scope="col">' + n + '</th>').join('');
   renderAccessibleTable(document.querySelector('#yoyChartTable tbody'), labels.map((m, i) => [
@@ -2966,6 +3366,13 @@ statewideCompareYoyBtn.addEventListener('click', () => {
   const { counties, regions } = currentSelection();
   buildYoyChart(counties, regions);
 });
+document.getElementById('yoyPeriodBtn').addEventListener('click', () => {
+  yoyPeriod = yoyPeriod === 'annual' ? 'quarterly' : 'annual';
+  syncYoyPeriodUi();
+  const { counties, regions } = currentSelection();
+  buildYoyChart(counties, regions);
+});
+syncYoyPeriodUi();
 
 const drillRegionBtn = document.getElementById('drillRegionBtn');
 let drillActive = false;
@@ -3366,20 +3773,8 @@ let bucketPeriod = 'annual';
 function bucketPriorMonth(month) {
   return bucketPeriod === 'quarterly' ? priorQuarterMonth(month) : priorYearMonth(month);
 }
-function personsChangePct(county, month, priorMonth) {
-  const s = DATA.series[county];
-  if (!s) return null;
-  const current = s.persons[month];
-  const prior = s.persons[priorMonth];
-  if (current == null || prior == null || prior === 0) return null;
-  return (current / prior - 1) * 100;
-}
 function bucketRate(county, month) {
-  if (bucketPeriod === 'annual') {
-    const yoy = DATA.series[county] && DATA.series[county].yoy_pct[month];
-    return yoy === undefined ? null : yoy;
-  }
-  return personsChangePct(county, month, bucketPriorMonth(month));
+  return changePct(county, month, bucketPeriod);
 }
 function bucketChartTitle() {
   return bucketPeriod === 'quarterly' ? 'Quarterly % Change by County' : 'Annual % Change by County';
@@ -3388,9 +3783,13 @@ function bucketRateLabel() {
   return bucketPeriod === 'quarterly' ? 'Quarterly % change' : 'Annual % change';
 }
 function updateBucketPeriodCopy() {
+  const quarterly = bucketPeriod === 'quarterly';
   document.getElementById('bucketTitle').textContent = bucketChartTitle();
   document.getElementById('bucketPlotTitle').textContent = bucketChartTitle();
   document.getElementById('bucketRateColHeader').textContent = bucketRateLabel();
+  document.getElementById('bucketPeriodBtn').textContent = quarterly
+    ? 'Show Annual Change'
+    : 'Show Quarterly Change';
 }
 function countyRowsForMonth(month) {
   const rows = [];
@@ -3484,15 +3883,11 @@ groupByBtns.forEach(btn => {
 });
 updateGroupLineLegendLabel();
 
-const periodBtns = Array.from(document.querySelectorAll('[data-period]'));
-periodBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    bucketPeriod = btn.getAttribute('data-period');
-    periodBtns.forEach(b => b.classList.toggle('active', b === btn));
-    updateBucketPeriodCopy();
-    populateBucketMonthSelect();
-    buildBucketChart();
-  });
+document.getElementById('bucketPeriodBtn').addEventListener('click', () => {
+  bucketPeriod = bucketPeriod === 'annual' ? 'quarterly' : 'annual';
+  updateBucketPeriodCopy();
+  populateBucketMonthSelect();
+  buildBucketChart();
 });
 updateBucketPeriodCopy();
 
