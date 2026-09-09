@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quality Control — CalFresh Data Explorer</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
+<script src="data.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="quirk.css">
+<style>
+  :root {
+    --ink: #1f2430;
+    --muted: #6A6A6A;
+    --line: #e2e4e9;
+    --bg: #fafafa;
+    --card: #ffffff;
+    --accent: #4BA5BA;
+    --accent2: #FB7906;
+    --dark-blue: #2C5985;
+    --grid: #ececec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
+  header.page-head { margin-bottom: 6px; }
+  a.brand {
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 0 16px; width: fit-content; max-width: 100%;
+    text-decoration: none; color: inherit;
+  }
+  a.brand img { width: 36px; height: auto; display: block; flex-shrink: 0; }
+  a.brand .brand-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  a.brand .brand-name {
+    font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--dark-blue); line-height: 1.2;
+  }
+  a.brand .brand-meta {
+    font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); line-height: 1.2;
+  }
+  a.brand:hover .brand-name { color: var(--accent); }
+  a.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  header.page-head h1 { font-size: 26px; margin: 0 0 4px; font-weight: 700; }
+  header.page-head p.sub { margin: 0; color: var(--muted); font-size: 12px; max-width: 46em; line-height: 1.45; }
+  .copy-email {
+    display: inline; margin: 0; padding: 0; border: 0; background: none;
+    font: inherit; color: var(--accent); cursor: copy;
+    text-decoration: underline; text-underline-offset: 2px;
+  }
+  .copy-email:hover { color: var(--dark-blue); }
+  .copy-email:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  .copy-email-status { margin-left: 0.45em; color: var(--muted); font-weight: 600; font-size: 11px; }
+  .copy-email-status:empty { display: none; }
+  nav.site-nav {
+    display: flex; gap: 2px; flex-wrap: wrap; margin: 0 0 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  nav.site-nav a {
+    padding: 8px 12px 10px; font-size: 13px; font-weight: 600;
+    color: var(--muted); text-decoration: none;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  nav.site-nav a:hover { color: var(--ink); }
+  nav.site-nav a[aria-current="page"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .prototype-note, .live-note {
+    font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
+  }
+  .prototype-note { background: #fff7e8; border: 1px solid #f0d9a8; color: #6b4b12; }
+  .live-note { background: #f3f7f4; border: 1px solid #cfe0d3; color: #35543c; }
+  .error-note { background: #fdecea; border-color: #f5c2c0; color: #8a1f16; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px 18px 18px; margin: 0 0 22px;
+  }
+  .card.link-a { border-left: 4px solid var(--accent2); background: rgba(251,121,6,0.05); }
+  .card-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
+  .card-title-row h2 { font-size: 16px; margin: 0; }
+  .qc-callout {
+    margin: 0 0 14px; padding: 12px 14px 10px;
+    border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    border-radius: 8px; background: #f7fbfb;
+  }
+  .qc-callout h3 { font-size: 13px; font-weight: 700; margin: 0 0 8px; }
+  .qc-callout p { font-size: 13px; line-height: 1.5; margin: 0 0 8px; }
+  .qc-callout p:last-child { margin-bottom: 0; }
+  .qc-callout .qc-callout-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+  .caption { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
+  .chart-plot { position: relative; }
+  .chart-holder { height: 320px; }
+  .chart-hover {
+    position: fixed; z-index: 30; display: none; min-width: 160px; max-width: 280px;
+    padding: 8px 10px; background: rgba(24, 27, 36, 0.97); color: #fff;
+    border-radius: 6px; font-size: 12px; line-height: 1.35; pointer-events: none;
+  }
+  .chart-hover.is-active { display: block; }
+  .chart-hover-title { font-weight: 700; margin-bottom: 4px; }
+  .chart-hover-row { display: flex; align-items: flex-start; gap: 6px; }
+  .chart-hover-swatch {
+    width: 8px; height: 8px; border-radius: 2px; margin-top: 4px; flex-shrink: 0;
+  }
+  .chart-hover-note { color: #c8cdd6; font-size: 11px; margin-top: 4px; }
+  .info-tip { position: relative; display: inline-flex; flex-shrink: 0; }
+  .info-tip-btn {
+    width: 16px; height: 16px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--muted); background: #fff; color: var(--muted);
+    font-size: 11px; font-weight: 700; font-style: italic; font-family: Georgia, "Times New Roman", serif;
+    line-height: 1; cursor: help;
+  }
+  .info-tip-btn:hover, .info-tip-btn:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+  .info-tip-btn:focus-visible { box-shadow: 0 0 0 3px rgba(75,165,186,0.28); }
+  .info-tip-bubble {
+    display: none; position: absolute; left: 0; top: calc(100% + 8px);
+    width: 300px; z-index: 40; padding: 8px 10px;
+    background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+    font-size: 12px; font-weight: 400; font-style: normal; text-transform: none;
+    letter-spacing: 0; line-height: 1.45;
+    box-shadow: 0 4px 14px rgba(31,36,48,0.16);
+  }
+  .info-tip:hover .info-tip-bubble,
+  .info-tip:focus-within .info-tip-bubble,
+  .info-tip-btn[aria-expanded="true"] + .info-tip-bubble { display: block; }
+  .card-filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 14px; }
+  .filter-group { display: flex; flex-direction: column; gap: 6px; }
+  .filter-group label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .filter-group.multi { width: 200px; }
+  .filter-group.multi select {
+    min-height: 120px; width: 200px; font-size: 12px; padding: 5px 8px;
+    border-radius: 6px; border: 1px solid var(--line); background: #fff;
+  }
+  .filter-hint { font-size: 11px; color: var(--muted); max-width: 220px; }
+  .time-range-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .time-range-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .time-range-label strong { color: var(--ink); font-weight: 700; text-transform: none; letter-spacing: 0; margin-left: 4px; }
+  .range-btn { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--ink); }
+  .range-btn:hover { background: #f2f2f2; }
+  .range-btn.active { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .range-slider { position: relative; height: 28px; margin: 0 0 4px; }
+  .range-track { position: absolute; left: 0; right: 0; top: 12px; height: 4px; background: var(--line); border-radius: 2px; }
+  .range-track-fill { position: absolute; top: 0; height: 4px; background: var(--accent2); border-radius: 2px; }
+  .range-input {
+    position: absolute; left: 0; right: 0; width: 100%; top: 4px; margin: 0;
+    pointer-events: none; appearance: none; background: transparent; height: 20px;
+  }
+  .range-input::-webkit-slider-thumb { pointer-events: auto; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent2); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--accent2); }
+  .range-input::-moz-range-thumb { pointer-events: auto; width: 14px; height: 14px; border-radius: 50%; background: var(--accent2); border: 2px solid #fff; }
+  .range-hint { font-size: 11px; color: var(--muted); margin: 0 0 14px; }
+  .source-note { font-size: 12px; color: var(--muted); line-height: 1.55; margin-top: 8px; }
+  .footer-section-label {
+    display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--ink); margin: 16px 0 6px;
+  }
+  .footer-notes { margin: 0; padding-left: 18px; }
+  .footer-notes li { margin: 0 0 6px; }
+  .footer-methods { margin: 12px 0 0; }
+  .footer-methods summary { cursor: pointer; font-weight: 700; font-size: 13px; color: var(--ink); }
+  .footer-wonk-h { font-size: 13px; margin: 12px 0 6px; }
+  .footer-credit { margin: 18px 0 0; font-size: 11px; color: var(--muted); }
+  .footer-site { margin: 4px 0 0; font-size: 11px; }
+  .footer-site a { color: var(--muted); }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); border: 0;
+  }
+  @media print {
+    .quirk-doodle { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page-head">
+    <div class="quirk-brand-row">
+    <a class="brand" href="https://www.djconsults.com" target="_blank" rel="noopener noreferrer" aria-label="Diana Jensen Consulting">
+      <img src="assets/dj-logo.png" alt="" width="36" height="41">
+      <span class="brand-text">
+        <span class="brand-name">Diana Jensen</span>
+        <span class="brand-meta">Consulting</span>
+      </span>
+    </a>
+    <p class="site-title" aria-label="CalFresh Data Explorer"><span class="site-title-name">CalFresh</span><span class="site-title-role">Data Explorer</span></p>
+    </div>
+    <nav class="site-nav" aria-label="Dashboard views">
+      <a href="index.html">Participation Trends</a>
+      <a href="outcomes.html">Applications</a>
+      <a href="churn.html">Churn</a>
+      <a href="qc.html" aria-current="page">Quality Control</a>
+    </nav>
+    <h1>Quality Control</h1>
+    <p class="sub">This is a working prototype I developed for the love of the data visualization game.<br>All data is from public sources, hopefully a little easier to explore now.<br>Send me suggestions or corrections at <button type="button" class="copy-email" data-email="diana@djconsults.com" title="Copy email address" aria-label="Copy diana@djconsults.com">diana@djconsults.com</button>.<span class="copy-email-status" aria-live="polite"></span></p>
+  </header>
+
+  <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
+
+  <div id="dashboardMain" hidden>
+  <div class="card link-a">
+    <div class="card-title-row">
+      <h2>Error rates</h2>
+      <span class="info-tip">
+        <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="qcTip" aria-label="About quality control rates">i</button>
+        <span id="qcTip" class="info-tip-bubble" role="tooltip">Rates are cumulative for the federal fiscal year. 19 PMC counties report their own rates; the other 39 share a pooled rate. Rates lag the participation file. Not a county ranking.</span>
+      </span>
+    </div>
+    <aside class="qc-callout" aria-label="What these rates mean">
+      <h3>What these rates mean</h3>
+      <p><strong>Active error rate</strong> looks at households already getting CalFresh. It asks: did they get the right amount? “Active” means the case was on the program — not that an error is happening right now.</p>
+      <p><strong>Negative error rate</strong> looks at denials and closings. It asks: was that “no” correct? “Negative” means the county said no — not that the number is worse.</p>
+      <p>Neither is a fraud rate. The two answer different questions, so the percents are not comparable. The negative rate is often much higher.</p>
+      <p class="qc-callout-note">Cumulative for the federal fiscal year. Recipes in Data notes.</p>
+    </aside>
+    <div class="time-range-header">
+      <span class="time-range-label">Showing<strong id="rangeLabel"></strong></span>
+      <button type="button" id="rangeLast2" class="range-btn">Last 2 years</button>
+      <button type="button" id="rangeReset" class="range-btn">Full range</button>
+    </div>
+    <div class="range-slider">
+      <div class="range-track"><div class="range-track-fill" id="rangeTrackFill"></div></div>
+      <input type="range" id="rangeStart" class="range-input" min="0" max="0" value="0" step="1"
+        aria-label="Start of date range">
+      <input type="range" id="rangeEnd" class="range-input" min="0" max="0" value="0" step="1"
+        aria-label="End of date range">
+    </div>
+    <p class="range-hint">Drag either handle to change the date range</p>
+    <div class="card-filters">
+      <div class="filter-group multi">
+        <label for="compareSelect">Counties</label>
+        <select id="compareSelect" multiple></select>
+        <div class="filter-hint">Click a name to add or remove it. California is the default. Rates are not combined across counties.</div>
+      </div>
+    </div>
+    <p class="caption" id="qcCaption"></p>
+    <div class="chart-plot">
+      <div class="chart-hover" id="qcChartHover" aria-live="polite"></div>
+      <div class="chart-holder"><canvas id="qcChart" aria-hidden="true"></canvas></div>
+    </div>
+    <table class="sr-only" id="qcChartTable">
+      <caption>CalFresh quality control active and negative error rates, by month</caption>
+      <thead><tr><th scope="col">Month</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <footer class="source-note">
+    <span class="footer-section-label">Sources</span>
+    Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard">CalFresh Data Dashboard</a> Monthly tab (Active Error Rate, Negative Error Rate, Negative Error Rate on Completed Cases).
+
+    <span class="footer-section-label">Definitions</span>
+    CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California. Quality Control reviews a sample of county eligibility and benefit decisions. An “error” is the reviewer finding that the decision or the amount was wrong — not fraud. <strong>Active</strong> means the household was already getting CalFresh (wrong amount or should not have been certified). <strong>Negative</strong> means the county said no — a denial or a closing (that “no” was wrong, or a required step was skipped).
+
+    <span class="footer-section-label">Data notes</span>
+    <ul class="footer-notes">
+      <li>Rates are cumulative for the federal fiscal year, not a single-month snapshot.</li>
+      <li>19 Project Management County (PMC) counties report their own rates. The other 39 counties share one pooled rate, so several county lines can sit on top of each other.</li>
+      <li>QC rates lag caseload reporting. Months with no published rate are shown as gaps. This is not a county ranking bar.</li>
+    </ul>
+    <details class="footer-methods" id="methods">
+      <summary>Wonky &amp; math-y details <span class="filters-toggle-mark" aria-hidden="true"></span></summary>
+      <h3 class="footer-wonk-h">Quality Control</h3>
+      <ul class="footer-notes">
+        <li>Active reviews are of cases receiving benefits (USDA’s payment-accuracy universe). Negative reviews are of denials, terminations, and suspensions (USDA now calls that measure CAPER; CDSS still publishes it as Negative Error Rate).</li>
+        <li>Hover on Negative Error Rate includes Negative Error Rate on Completed Cases (n).</li>
+        <li>Selecting two counties does not average their rates. Each selected place is its own overlay line.</li>
+      </ul>
+    </details>
+    <p class="footer-credit">Designed by Diana Jensen, built with help from Cursor.</p>
+    <p class="footer-site"><a href="https://www.djconsults.com" target="_blank" rel="noopener noreferrer">djconsults.com</a></p>
+  </footer>
+  </div>
+</div>
+
+<script>
+const DEFAULT_PLACE = 'Statewide';
+const DEFAULT_RANGE_MONTHS = 24;
+const COMPARE_COLORS = [
+  '#1f2430', '#e69f00', '#009e73', '#cc79a7', '#56b4e9', '#d55e00',
+  '#0072b2', '#6a3d9a', '#b15928', '#66a61e', '#e7298a', '#a6761d'
+];
+const QC_METRICS = [
+  { key: 'active_error', label: 'Active error rate', color: '#2C5985' },
+  { key: 'negative_error', label: 'Negative error rate', color: '#FB7906', nKey: 'negative_error_n' }
+];
+
+function fmtMonth(m) {
+  const [y, mo] = m.split('-');
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return names[parseInt(mo, 10) - 1] + ' ' + y;
+}
+function lastNMonthsStart(n) {
+  return Math.max(0, DATA.months.length - n);
+}
+function optionFromPointer(select, e) {
+  const t = e.target;
+  if (t && t.tagName === 'OPTION' && select.contains(t)) return t;
+  const hit = document.elementFromPoint(e.clientX, e.clientY);
+  if (hit && hit.tagName === 'OPTION' && select.contains(hit)) return hit;
+  return null;
+}
+function enablePlainClickToggle(select) {
+  select.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const option = optionFromPointer(select, e);
+    if (!option) return;
+    e.preventDefault();
+    const next = !option.selected;
+    const scroll = select.scrollTop;
+    option.selected = next;
+    select.focus();
+    select.scrollTop = scroll;
+    requestAnimationFrame(() => {
+      option.selected = next;
+      select.scrollTop = scroll;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+}
+function clearHoverTooltip(el) {
+  if (!el) return;
+  el.replaceChildren();
+  el.classList.remove('is-active');
+}
+function renderHoverTooltip(el, tooltip) {
+  if (!el) return;
+  if (!tooltip || !tooltip.body || !tooltip.body.length) {
+    clearHoverTooltip(el);
+    return;
+  }
+  el.classList.add('is-active');
+  el.replaceChildren();
+  (tooltip.title || []).forEach(line => {
+    if (!line) return;
+    const p = document.createElement('div');
+    p.className = 'chart-hover-title';
+    p.textContent = line;
+    el.appendChild(p);
+  });
+  tooltip.body.forEach((bodyItem, i) => {
+    const row = document.createElement('div');
+    row.className = 'chart-hover-row';
+    const color = (tooltip.labelColors && tooltip.labelColors[i]) || {};
+    const swatch = document.createElement('span');
+    swatch.className = 'chart-hover-swatch';
+    swatch.style.background = color.borderColor || color.backgroundColor || '#888';
+    row.appendChild(swatch);
+    const text = document.createElement('span');
+    text.textContent = (bodyItem.lines || []).join(' ');
+    row.appendChild(text);
+    el.appendChild(row);
+  });
+  (tooltip.footer || []).forEach(line => {
+    const p = document.createElement('div');
+    p.className = 'chart-hover-note';
+    p.textContent = line;
+    el.appendChild(p);
+  });
+}
+function hoverTooltipExternal(elId) {
+  return function(context) {
+    const el = document.getElementById(elId);
+    const tooltip = context.tooltip;
+    if (!el) return;
+    if (!tooltip || tooltip.opacity === 0 || !tooltip.body || !tooltip.body.length) {
+      clearHoverTooltip(el);
+      return;
+    }
+    renderHoverTooltip(el, tooltip);
+    const canvas = context.chart.canvas;
+    const plot = canvas.closest('.chart-plot');
+    if (!plot) return;
+    const plotRect = plot.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    const caretX = canvasRect.left + tooltip.caretX;
+    const tipW = el.offsetWidth;
+    const tipH = el.offsetHeight;
+    const left = Math.max(plotRect.left + 8, Math.min(caretX - tipW / 2, plotRect.right - tipW - 8));
+    let top = canvasRect.top - tipH - 8;
+    if (top < 8) top = 8;
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+  };
+}
+function monthAbbrev(mo) {
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return names[parseInt(mo, 10) - 1];
+}
+const monthYearAxisPlugin = {
+  id: 'monthYearAxis',
+  afterDraw(chart) {
+    if (!chart.options.plugins || !chart.options.plugins.monthYearAxis) return;
+    const labels = chart.data.labels;
+    if (!labels || !labels.length || !/^\d{4}-\d{2}$/.test(String(labels[0]))) return;
+    const { ctx, chartArea, scales: { x } } = chart;
+    if (!chartArea || !x) return;
+    const quarterIdx = [];
+    labels.forEach((m, i) => {
+      const mo = m.split('-')[1];
+      if (i === 0 || mo === '01' || mo === '04' || mo === '07' || mo === '10') quarterIdx.push(i);
+    });
+    const availWidth = chartArea.right - chartArea.left;
+    const maxTicks = Math.max(1, Math.floor(availWidth / 30));
+    const quarterStep = Math.max(1, Math.ceil(quarterIdx.length / maxTicks));
+    const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    let lastYearShown = null;
+    if (quarterStep >= 4) {
+      const yearIdx = [];
+      labels.forEach((m, i) => {
+        if (i === 0 || m.split('-')[1] === '01') yearIdx.push(i);
+      });
+      yearIdx.forEach(i => {
+        ctx.font = 'bold 10px ' + fontStack;
+        ctx.fillStyle = '#333';
+        ctx.fillText(labels[i].split('-')[0], x.getPixelForValue(i), chartArea.bottom + 6);
+      });
+    } else {
+      quarterIdx.filter((_, qi) => qi % quarterStep === 0).forEach(i => {
+        const [y, mo] = labels[i].split('-');
+        const px = x.getPixelForValue(i);
+        ctx.font = '10px ' + fontStack;
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText(monthAbbrev(mo), px, chartArea.bottom + 6);
+        if ((mo === '01' || i === 0) && y !== lastYearShown) {
+          ctx.font = 'bold 10px ' + fontStack;
+          ctx.fillStyle = '#333';
+          ctx.fillText(y, px, chartArea.bottom + 19);
+          lastYearShown = y;
+        }
+      });
+    }
+    ctx.restore();
+  }
+};
+Chart.register(monthYearAxisPlugin);
+
+function renderAccessibleTable(tbody, rows) {
+  tbody.replaceChildren();
+  rows.forEach(cells => {
+    const tr = document.createElement('tr');
+    cells.forEach((cell, i) => {
+      const td = document.createElement(i === 0 ? 'th' : 'td');
+      if (i === 0) td.scope = 'row';
+      td.textContent = cell;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function qcValue(county, key, month) {
+  const layer = DATA.demographic_layers && DATA.demographic_layers.overlays[key];
+  if (!layer || !layer.series) return null;
+  const s = layer.series[county] || {};
+  return s[month] == null ? null : s[month];
+}
+
+let qcChart;
+let rangeStart = 0;
+let rangeEnd = 0;
+let rangePreset = 'last2';
+const compareSelect = document.getElementById('compareSelect');
+
+function currentCounties() {
+  const selected = Array.from(compareSelect.selectedOptions).map(o => o.value);
+  return selected.length ? selected : [DEFAULT_PLACE];
+}
+
+function syncRangeUi() {
+  const max = Math.max(DATA.months.length - 1, 1);
+  const fillLeft = (rangeStart / max * 100) + '%';
+  const fillWidth = ((rangeEnd - rangeStart) / max * 100) + '%';
+  document.getElementById('rangeStart').max = max;
+  document.getElementById('rangeEnd').max = max;
+  document.getElementById('rangeStart').value = rangeStart;
+  document.getElementById('rangeEnd').value = rangeEnd;
+  document.getElementById('rangeTrackFill').style.left = fillLeft;
+  document.getElementById('rangeTrackFill').style.width = fillWidth;
+  const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
+  document.getElementById('rangeLabel').textContent =
+    ' ' + fmtMonth(labels[0]) + ' – ' + fmtMonth(labels[labels.length - 1]);
+  document.getElementById('rangeLast2').classList.toggle('active', rangePreset === 'last2');
+  document.getElementById('rangeReset').classList.toggle('active', rangePreset === 'full');
+}
+
+function buildQcChart() {
+  const counties = currentCounties();
+  const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
+  const datasets = [];
+  counties.forEach((county, ci) => {
+    const place = county === 'Statewide' ? 'California' : county;
+    QC_METRICS.forEach((metric, mi) => {
+      const color = counties.length === 1
+        ? metric.color
+        : COMPARE_COLORS[ci % COMPARE_COLORS.length];
+      datasets.push({
+        label: place + ' · ' + metric.label,
+        data: labels.map(m => qcValue(county, metric.key, m)),
+        nData: metric.nKey ? labels.map(m => qcValue(county, metric.nKey, m)) : null,
+        borderColor: color,
+        backgroundColor: color,
+        borderDash: mi === 1 ? [5, 3] : undefined,
+        pointRadius: 0,
+        borderWidth: 1.75,
+        tension: 0,
+        spanGaps: false
+      });
+    });
+  });
+  if (qcChart) qcChart.destroy();
+  clearHoverTooltip(document.getElementById('qcChartHover'));
+  qcChart = new Chart(document.getElementById('qcChart'), {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false, axis: 'x' },
+      layout: { padding: { top: 8, bottom: 30 } },
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        monthYearAxis: true,
+        tooltip: {
+          enabled: false,
+          external: hoverTooltipExternal('qcChartHover'),
+          callbacks: {
+            title: items => fmtMonth(items[0].label),
+            label: item => {
+              if (item.raw == null) return item.dataset.label + ': n/a';
+              let text = item.dataset.label + ': ' + Number(item.raw).toFixed(1) + '%';
+              if (item.dataset.nData) {
+                const n = item.dataset.nData[item.dataIndex];
+                if (n != null) text += ' · ' + Math.round(n).toLocaleString('en-US') + ' completed cases';
+              }
+              return text;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { display: false }, grid: { display: false } },
+        y: { min: 0, beginAtZero: true, ticks: { callback: v => v + '%' }, grid: { color: '#f0f0f0' } }
+      }
+    }
+  });
+  document.getElementById('qcCaption').textContent =
+    counties.map(c => c === 'Statewide' ? 'California' : c).join(', ') +
+    ', cumulative federal fiscal year rates';
+  const thead = document.querySelector('#qcChartTable thead tr');
+  thead.innerHTML = '<th scope="col">Month</th>' + datasets.map(ds => '<th scope="col">' + ds.label + '</th>').join('');
+  renderAccessibleTable(document.querySelector('#qcChartTable tbody'), labels.map((m, i) => {
+    const row = [fmtMonth(m)];
+    datasets.forEach(ds => {
+      const v = ds.data[i];
+      if (v == null) {
+        row.push('n/a');
+        return;
+      }
+      let cell = Number(v).toFixed(1) + '%';
+      if (ds.nData && ds.nData[i] != null) {
+        cell += ' (' + Math.round(ds.nData[i]).toLocaleString('en-US') + ' completed cases)';
+      }
+      row.push(cell);
+    });
+    return row;
+  }));
+}
+
+function initDashboard() {
+  const counties = ['Statewide'].concat(DATA.all_counties || []);
+  compareSelect.replaceChildren();
+  counties.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c === 'Statewide' ? 'California' : c;
+    opt.selected = c === DEFAULT_PLACE;
+    compareSelect.appendChild(opt);
+  });
+  enablePlainClickToggle(compareSelect);
+  rangeEnd = DATA.months.length - 1;
+  rangeStart = lastNMonthsStart(DEFAULT_RANGE_MONTHS);
+  rangePreset = 'last2';
+  syncRangeUi();
+  buildQcChart();
+}
+
+compareSelect.addEventListener('change', () => {
+  if (!currentCounties().length) {
+    Array.from(compareSelect.options).forEach(o => { o.selected = o.value === DEFAULT_PLACE; });
+  }
+  buildQcChart();
+});
+function onRangeInput(which) {
+  let s = parseInt(document.getElementById('rangeStart').value, 10);
+  let e = parseInt(document.getElementById('rangeEnd').value, 10);
+  if (s > e) {
+    if (which === 'start') e = s;
+    else s = e;
+  }
+  rangeStart = s;
+  rangeEnd = e;
+  rangePreset = null;
+  syncRangeUi();
+  buildQcChart();
+}
+document.getElementById('rangeStart').addEventListener('input', () => onRangeInput('start'));
+document.getElementById('rangeEnd').addEventListener('input', () => onRangeInput('end'));
+document.getElementById('rangeLast2').addEventListener('click', () => {
+  rangeStart = lastNMonthsStart(DEFAULT_RANGE_MONTHS);
+  rangeEnd = DATA.months.length - 1;
+  rangePreset = 'last2';
+  syncRangeUi();
+  buildQcChart();
+});
+document.getElementById('rangeReset').addEventListener('click', () => {
+  rangeStart = 0;
+  rangeEnd = DATA.months.length - 1;
+  rangePreset = 'full';
+  syncRangeUi();
+  buildQcChart();
+});
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.info-tip-btn');
+  if (btn) {
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    document.querySelectorAll('.info-tip-btn').forEach(other => {
+      if (other !== btn) other.setAttribute('aria-expanded', 'false');
+    });
+    btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+    return;
+  }
+  document.querySelectorAll('.info-tip-btn').forEach(b => {
+    b.setAttribute('aria-expanded', 'false');
+  });
+});
+function openFooterMethods() {
+  const methods = document.getElementById('methods');
+  if (methods) methods.open = true;
+}
+document.querySelectorAll('a[href="#methods"]').forEach(a => {
+  a.addEventListener('click', openFooterMethods);
+});
+if (location.hash === '#methods') openFooterMethods();
+
+startLiveQcDashboard(initDashboard);
+</script>
+<script src="quirk.js"></script>
+</body>
+</html>

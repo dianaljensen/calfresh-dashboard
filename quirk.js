@@ -35,9 +35,14 @@
   const brand = header && header.querySelector('a.brand');
   if (!header || !brand) return;
 
-  const row = el('div', { className: 'quirk-brand-row' });
-  brand.replaceWith(row);
-  row.appendChild(brand);
+  let row = header.querySelector('.quirk-brand-row');
+  if (!row) {
+    row = el('div', { className: 'quirk-brand-row' });
+    brand.replaceWith(row);
+    row.appendChild(brand);
+  }
+  const title = header.querySelector('.site-title');
+  if (title && title.parentElement !== row) row.appendChild(title);
 
   const doodle = el('button', {
     className: 'quirk-doodle',
@@ -51,6 +56,40 @@
     el('span', { className: 'quirk-doodle-tip', text: QUIRK_LABEL })
   ]);
   row.appendChild(doodle);
+
+  const TITLE_GAP = 12;
+  let inlineTitleW = 0;
+  function layoutSiteTitle() {
+    if (!title) return;
+    const stacked = row.classList.contains('quirk-brand-row--stacked');
+    if (!stacked) inlineTitleW = title.offsetWidth;
+    const rowR = row.getBoundingClientRect();
+    const brandR = brand.getBoundingClientRect();
+    const doodleR = doodle.getBoundingClientRect();
+    const titleW = inlineTitleW || title.offsetWidth;
+    const mid = rowR.left + rowR.width / 2;
+    const cramped = (mid - titleW / 2) < (brandR.right + TITLE_GAP)
+      || (mid + titleW / 2) > (doodleR.left - TITLE_GAP);
+    row.classList.toggle('quirk-brand-row--stacked', cramped);
+  }
+  let titleLayoutTick = 0;
+  function scheduleTitleLayout() {
+    if (titleLayoutTick) return;
+    titleLayoutTick = requestAnimationFrame(() => {
+      titleLayoutTick = 0;
+      layoutSiteTitle();
+    });
+  }
+  layoutSiteTitle();
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      row.classList.remove('quirk-brand-row--stacked');
+      inlineTitleW = 0;
+      layoutSiteTitle();
+    });
+  }
+  window.addEventListener('resize', scheduleTitleLayout);
+  if (window.ResizeObserver) new ResizeObserver(scheduleTitleLayout).observe(row);
 
   const titleEl = el('h2', { className: 'quirk-title', id: 'quirkTitle', text: SERIES_TITLE });
   const hookEl = el('p', { className: 'quirk-hook', text: SERIES_HOOK });

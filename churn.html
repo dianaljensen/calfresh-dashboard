@@ -2,10 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>CalFresh Churn — Prototype</title>
+<title>Churn — CalFresh Data Explorer</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
 <script src="data.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="quirk.css">
 <style>
   :root {
@@ -49,9 +52,6 @@
   a.brand:hover .brand-name { color: var(--accent); }
   a.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
   header.page-head h1 { font-size: 26px; margin: 0 0 4px; font-weight: 700; }
-  header.page-head h1 .h1-info-tip {
-    margin: 0 0.28em 0 0.18em; vertical-align: middle; top: -0.12em;
-  }
   header.page-head p.sub { margin: 0; color: var(--muted); font-size: 12px; max-width: 46em; line-height: 1.45; }
   .copy-email {
     display: inline; margin: 0; padding: 0; border: 0; background: none;
@@ -437,6 +437,7 @@
   footer.source-note .footer-wonk-h:first-of-type { margin-top: 8px; }
   footer.source-note .footer-methods .footer-notes { margin-bottom: 2px; }
   footer.source-note .footer-credit { margin: 16px 0 0; }
+  footer.source-note .footer-site { margin: 4px 0 0; }
   .live-note {
     background: #eef6f4; border: 1px solid #c5ddd6; color: #1f4d43;
     font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
@@ -465,23 +466,24 @@
 <body>
 <div class="wrap">
   <header class="page-head">
-    <a class="brand" href="https://www.djconsults.com" target="_blank" rel="noopener noreferrer" aria-label="Diana Jensen Consulting, djconsults.com">
+    <div class="quirk-brand-row">
+    <a class="brand" href="https://www.djconsults.com" target="_blank" rel="noopener noreferrer" aria-label="Diana Jensen Consulting">
       <img src="assets/dj-logo.png" alt="" width="36" height="41">
       <span class="brand-text">
         <span class="brand-name">Diana Jensen</span>
-        <span class="brand-meta">Consulting · djconsults.com</span>
+        <span class="brand-meta">Consulting</span>
       </span>
     </a>
+    <p class="site-title" aria-label="CalFresh Data Explorer"><span class="site-title-name">CalFresh</span><span class="site-title-role">Data Explorer</span></p>
+    </div>
     <nav class="site-nav" aria-label="Dashboard views">
       <a href="index.html">Participation Trends</a>
       <a href="outcomes.html">Applications</a>
       <a href="churn.html" aria-current="page">Churn</a>
+      <a href="qc.html">Quality Control</a>
     </nav>
-    <h1>CalFresh<span class="info-tip h1-info-tip">
-      <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="calfreshNameTip" aria-label="What CalFresh means">i</button>
-      <span id="calfreshNameTip" class="info-tip-bubble" role="tooltip">CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California.</span>
-    </span> Churn</h1>
-    <p class="sub">This is a working prototype I developed for the love of the data visualization game. All data is from public sources, hopefully a little easier to explore now.<br>Send me suggestions or corrections at <button type="button" class="copy-email" data-email="diana@djconsults.com" title="Copy email address" aria-label="Copy diana@djconsults.com">diana@djconsults.com</button>.<span class="copy-email-status" aria-live="polite"></span></p>
+    <h1>Churn</h1>
+    <p class="sub">This is a working prototype I developed for the love of the data visualization game.<br>All data is from public sources, hopefully a little easier to explore now.<br>Send me suggestions or corrections at <button type="button" class="copy-email" data-email="diana@djconsults.com" title="Copy email address" aria-label="Copy diana@djconsults.com">diana@djconsults.com</button>.<span class="copy-email-status" aria-live="polite"></span></p>
   </header>
 
   <div id="dataStatus" class="prototype-note" role="status">Loading current data...</div>
@@ -742,18 +744,19 @@
       <h2>Recertification / SAR 7 Outcomes by County</h2>
       <span class="info-tip">
         <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="countyTip" aria-label="About Recertification / SAR 7 Outcomes by County">i</button>
-        <span id="countyTip" class="info-tip-bubble" role="tooltip">Same five-band Recertification / SAR 7 stack as Recertification / SAR 7 Outcomes, one bar per county. Sort by is No loss, No return, or Reapplications (default no return, highest first). The dashed California line and group lines are combined counts of that sorted band, placed on the band, not an average of percentages. Hover includes the California Sort-by rate and that group’s combined Sort-by rate. Counties with a starred Item 1 or parts that overshoot Item 1 are blank.</span>
+        <span id="countyTip" class="info-tip-bubble" role="tooltip">Same five-band Recertification / SAR 7 stack as Recertification / SAR 7 Outcomes, one bar per county. Report type is Combined (summed Recertification and SAR 7 counts, default), Recertification, or SAR 7. Sort by is No loss, No return, or Reapplications (default no loss, highest first). Group by is county size, region, or none (default county size). The dashed California line and group lines are combined counts of that sorted band, placed on the band, not an average of percentages. Hover includes the California Sort-by rate and that group’s combined Sort-by rate. Counties with a starred Item 1 or parts that overshoot Item 1 are blank.</span>
       </span>
     </div>
     <div class="groupby-control" role="group" aria-label="Report type">
       <span class="groupby-label">Report type</span>
-      <button type="button" class="range-btn groupby-btn clock-btn active" data-clock="recert" aria-pressed="true">Recertification</button>
+      <button type="button" class="range-btn groupby-btn clock-btn active" data-clock="combined" aria-pressed="true">Combined</button>
+      <button type="button" class="range-btn groupby-btn clock-btn" data-clock="recert" aria-pressed="false">Recertification</button>
       <button type="button" class="range-btn groupby-btn clock-btn" data-clock="sar7" aria-pressed="false">SAR 7</button>
     </div>
     <div class="groupby-control" role="group" aria-label="Sort by">
       <span class="groupby-label">Sort by</span>
-      <button type="button" class="range-btn groupby-btn sort-btn" data-sort="noLoss" aria-pressed="false">No loss</button>
-      <button type="button" class="range-btn groupby-btn sort-btn active" data-sort="noReturn" aria-pressed="true">No return</button>
+      <button type="button" class="range-btn groupby-btn sort-btn active" data-sort="noLoss" aria-pressed="true">No loss</button>
+      <button type="button" class="range-btn groupby-btn sort-btn" data-sort="noReturn" aria-pressed="false">No return</button>
       <button type="button" class="range-btn groupby-btn sort-btn" data-sort="reapp" aria-pressed="false">Reapplications</button>
     </div>
     <div class="groupby-control">
@@ -801,15 +804,15 @@
     </div>
     <div class="chart-plot">
       <h3 class="chart-plot-title">
-        <span class="chart-plot-metric" id="countyPlotTitle">Recertification Outcomes by county</span>
+        <span class="chart-plot-metric" id="countyPlotTitle">Recertification &amp; SAR 7 Outcomes by county</span>
         <span class="chart-plot-place" id="countySub"></span>
       </h3>
-      <p class="caption" id="countyCaption">Sorted by No return, highest first. Of households scheduled that month.</p>
+      <p class="caption" id="countyCaption">Sorted by No loss, highest first. Of households scheduled that month.</p>
       <div class="chart-hover" id="countyChartHover" aria-live="polite"></div>
       <div class="chart-holder" id="countyChartHolder"><canvas id="countyChart" aria-hidden="true"></canvas></div>
     </div>
     <table class="sr-only" id="countyChartTable">
-      <caption>County lineup of recertification or SAR 7 outcomes</caption>
+      <caption>County lineup of recertification and SAR 7 outcomes</caption>
       <thead><tr>
         <th scope="col">County</th>
         <th scope="col" id="countyGroupColHeader">Size group</th>
@@ -899,11 +902,11 @@
     Data: CDSS <a href="https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-tables/cf-18">CF 18 CalFresh Churn Monthly Report</a> (<a href="https://www.cdss.ca.gov/portals/9/acl/2018/18-117.pdf">ACL 18-117</a>). County size groups use the latest month of the CDSS Data Dashboard Monthly tab.
 
     <span class="footer-section-label">Definitions</span>
-    County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000.
+    CalFresh is the name for the Supplemental Nutrition Assistance Program (SNAP) in California. County Size groups: X-Large = 6 largest counties by CalFresh households, Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000.
 
     <span class="footer-section-label">Data notes</span>
     <ul class="footer-notes">
-      <li>The two California sections share one report month and one county (California is the default). Recertification / SAR 7 Outcomes follows households scheduled in that month (Measurement 1). Combined sums Recertification and SAR 7 counts; Side by side shows the two clocks. Applicants’ Prior CalFresh Connection (Who applied) follows applications disposed in that same report month (Measurement 2). Same report row, different clocks — the series are not shifted to line up. Each county lineup keeps its own filters.</li>
+      <li>The two California sections share one report month and one county (California is the default). Recertification / SAR 7 Outcomes follows households scheduled in that month (Measurement 1). Combined sums Recertification and SAR 7 counts; Side by side shows the two clocks. Applicants’ Prior CalFresh Connection (Who applied) follows applications disposed in that same report month (Measurement 2). A recent recert or SAR 7 was due in the prior four months — this clock looks backward from the application, not later. Same report row, different clocks — the series are not shifted to line up. Each county lineup keeps its own filters.</li>
       <li>User-facing names are <strong>SAR 7</strong> and <strong>recertification (RRR)</strong>. Source name is CF 18 CalFresh Churn Monthly Report.</li>
       <li>Orange on Recertification and SAR 7 is a later new application after a missed recert or SAR 7, not a procedural denial. Eligible reapplications are churn; ineligible includes withdrawals. Grey Ineligible is the recert or SAR 7 itself. Who applied uses a forest / olive / wine / rose palette so those bands cannot be read as the due-chart colors. Average days lost (Item 7) and the dollar estimates are in the Estimated Lost Benefits fold-out. Days to approval stays on Applications.</li>
       <li>CDSS hides small numbers with an asterisk. Those slices are plotted as 5 and hover percents start with ~. Item 1 (households scheduled) and Item 17 (applications disposed) are not plotted as 5 — if those totals are starred, the month is blank.</li>
@@ -920,7 +923,7 @@
         <li>Late with loss = Item 6b. Item 6 = 6a + 6b exactly; the chart uses the split, not Item 6. Item 7 (average days of lost benefits for those households) is in the Estimated Lost Benefits fold-out, and is still on hover.</li>
         <li>Reapplications = Items 9–16 (new application in the next 1–4 calendar months). That band sits on top of the stack. Fold-outs under the due chart split that same band: Reapplication Outcomes (eligible vs ineligible) and Time to reapply (when they came back). Combined fold-outs sum Recertification and SAR 7 reapplications. Lag months are calendar months after the due month, not 1–30 / 31–90 days.</li>
         <li>Recertification ineligible / SAR 7 ineligible (dark grey) = Items 3 + 5 + 8 (timely, untimely, and late ineligible). That is the recertification or SAR 7 determination, not a later new application.</li>
-        <li>Stack bottom→top: no loss, late with loss, recert/SAR 7 ineligible, no renewal and no return, reapplications. Snapshot due-chart hover and Recertification / SAR 7 Outcomes by County hover list those bands top-to-bottom as drawn (no nested splits — those live in the reapplication fold-outs). County hover also trails the group’s combined Sort-by rate.</li>
+        <li>Stack bottom→top: no loss, late with loss, recert/SAR 7 ineligible, no renewal and no return, reapplications. Snapshot due-chart hover and Recertification / SAR 7 Outcomes by County hover list those bands top-to-bottom as drawn (no nested splits — those live in the reapplication fold-outs). County hover also trails the group’s combined Sort-by rate. County Report type Combined sums Recertification and SAR 7 counts, like the snapshot Combined chart (default Combined, sort by No loss, group by county size).</li>
         <li>No renewal and no return within 4 months = Item 1 minus the bands above. Item 1 is not an auto-sum of the outcome cells; the leftover is this grey band (often ~20% statewide). If the parts overshoot Item 1, that month is left blank rather than drawing a negative leftover.</li>
         <li>The reapplication fold-outs are of Items 9–16 only (households who missed and came back), not of Item 1. They match the orange band on the stack above. Reapplication Outcomes is eligible vs ineligible of those reapplications. Time to reapply is when they came back: four bars (Next month / 2 / 3 / 4 months later). % is of those reapplications (the four bars sum to 100%). Hover is plain language: of the reapplications, X% (count) came back that month; then eligible vs ineligible of that month.</li>
         <li>Dollar estimates are not a CF18 cell. The call-out total is late-with-loss plus eligible-reapplication dollars. Late-with-loss dollars = Item 6b households × (Item 7 days ÷ 30) × average issuance per household. Eligible-reapplication dollars = Items 9+11+13+15 households × 1/2/3/4 months of lag × the same rate. Average issuance is California Total Issuances ÷ CalFresh Households from the CDSS Data Dashboard Monthly tab for that month (or the latest month at or before it). If that is missing, $198 per household-month is the fallback. The estimate does not include no-return or ineligible reapplications.</li>
@@ -930,7 +933,7 @@
         <li>100% = Item 17 (C37): all CalFresh/CFAP applications disposed that month.</li>
         <li>New / not recently on = Item 17 − Item 18.</li>
         <li>Other Recently On = Item 18 − Item 19. Item 18 is participated in the prior four months, not necessarily a missed report.</li>
-        <li>Recent SAR 7 Due = C39. Recent Recert Due = C40. Hover nests restoration and lag 1 vs 2–4 months (approved vs denied) under each due band. Applicants’ Prior CalFresh Connection by County uses this same stack. Sort by Recent Recert &amp; SAR 7 Due is C39 + C40 (combined counts, not an average of the two rates). Counties with a starred Item 17 are blank.</li>
+        <li>Recent SAR 7 Due = C39. Recent Recert Due = C40. Hover nests restoration and 1 vs 2–4 months prior (approved vs denied) under each due band — the case was restored or closed in those months before the application (ACL 18-117 Items 20–28), not after. Applicants’ Prior CalFresh Connection by County uses this same stack. Sort by Recent Recert &amp; SAR 7 Due is C39 + C40 (combined counts, not an average of the two rates). Counties with a starred Item 17 are blank.</li>
         <li>This mix uses a forest / olive / wine / rose palette. It is not the due-chart orange and blue.</li>
       </ul>
       <h3 class="footer-wonk-h">Small cells (*)</h3>
@@ -944,6 +947,7 @@
       </ul>
     </details>
     <p class="footer-credit">Designed by Diana Jensen, built with help from Cursor.</p>
+    <p class="footer-site"><a href="https://www.djconsults.com" target="_blank" rel="noopener noreferrer">djconsults.com</a></p>
   </footer>
   </div>
 </div>
@@ -999,10 +1003,10 @@ const DUE_NEST = {
 };
 const APP_CHURN_NEST = [
   { key: 'restore', label: 'Restoration' },
-  { key: 'd1app', label: '1 month later, approved' },
-  { key: 'd1den', label: '1 month later, denied' },
-  { key: 'laterApp', label: '2–4 months later, approved' },
-  { key: 'laterDen', label: '2–4 months later, denied' }
+  { key: 'd1app', label: '1 month prior, approved' },
+  { key: 'd1den', label: '1 month prior, denied' },
+  { key: 'laterApp', label: '2–4 months prior, approved' },
+  { key: 'laterDen', label: '2–4 months prior, denied' }
 ];
 
 function fmtMonth(m) {
@@ -1630,8 +1634,8 @@ function withGroupHover(baseFn) {
 let selectedMonth = DATA.latest_complete_month || DATA.months[DATA.months.length - 1];
 let selectedPlace = 'Statewide';
 let dueClock = 'both';
-let countyClock = 'recert';
-let countySort = 'noReturn';
+let countyClock = 'combined';
+let countySort = 'noLoss';
 let groupByMode = 'size';
 let whoCountySort = 'churn';
 let whoGroupByMode = 'size';
@@ -1733,10 +1737,16 @@ function dueRowFor(kind) {
   return placeRow(kind);
 }
 
+function dueScheduledNote(kind, scheduled) {
+  const n = fmtCount(scheduled);
+  if (kind === 'recert') return 'Of ' + n + ' households scheduled for recertification';
+  if (kind === 'sar7') return 'Of ' + n + ' households scheduled for a SAR 7 report';
+  return 'Of ' + n + ' households scheduled for a recertification or SAR 7 report';
+}
 function dueNestedHover(kind, row, opts) {
   if (!row) return null;
   const extra = {
-    note: 'Of ' + fmtCount(row.scheduled) + ' households scheduled',
+    note: dueScheduledNote(kind, row.scheduled),
     approx: !!row.estimated
   };
   if (!opts || opts.splits !== false) {
@@ -1914,7 +1924,7 @@ function buildSnapshot() {
   combinedChart = buildStackChart('combinedChart', 'combinedHover', dueStackFor('combined'), combined, 'scheduled', dueHoverExtra('combined', { splits: false }), { leaders: true });
   recertChart = buildStackChart('recertChart', 'recertHover', dueStackFor('recert'), recert, 'scheduled', dueHoverExtra('recert', { splits: false }), { leaders: true });
   sar7Chart = buildStackChart('sar7Chart', 'sar7Hover', dueStackFor('sar7'), sar7, 'scheduled', dueHoverExtra('sar7', { splits: false }), { leaders: true });
-  whoChart = buildStackChart('whoChart', 'whoHover', APP_STACK, apps, 'all', appHoverExtra);
+  whoChart = buildStackChart('whoChart', 'whoHover', APP_STACK, apps, 'all', appHoverExtra, { leaders: true });
   combinedReappChart = buildReappOutcomeChart('combinedReappChart', 'combinedReappHover', 'combined');
   recertReappChart = buildReappOutcomeChart('recertReappChart', 'recertReappHover', 'recert');
   sar7ReappChart = buildReappOutcomeChart('sar7ReappChart', 'sar7ReappHover', 'sar7');
@@ -2166,7 +2176,14 @@ function mixSortRate(row, key, denomKey) {
 
 function countyDue(county) {
   const s = DATA.series[county];
-  return s && s[countyClock] && s[countyClock][selectedMonth];
+  if (!s) return null;
+  if (countyClock === 'combined') {
+    return sumDueRows([
+      s.recert && s.recert[selectedMonth],
+      s.sar7 && s.sar7[selectedMonth]
+    ]);
+  }
+  return (s[countyClock] && s[countyClock][selectedMonth]) || null;
 }
 function countyApps(county) {
   const s = DATA.series[county];
@@ -2464,10 +2481,11 @@ function buildCountyChart() {
   document.getElementById('countyFiltersSummary').textContent =
     filterSummary(regionFilterEl, sizeFilterEl, countyFilterEl);
   const stack = dueStackFor(countyClock);
-  const clockLabel = countyClock === 'recert' ? 'Recertification' : 'SAR 7';
+  const clockLabel = countyClock === 'combined'
+    ? 'Recertification & SAR 7'
+    : (countyClock === 'recert' ? 'Recertification' : 'SAR 7');
   const sortName = sortLabel(countySort);
-  const caRow = DATA.series.Statewide && DATA.series.Statewide[countyClock]
-    ? DATA.series.Statewide[countyClock][selectedMonth] : null;
+  const caRow = countyDue('Statewide');
   buildRankChart({
     stack: stack,
     denomKey: 'scheduled',
