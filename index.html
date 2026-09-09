@@ -977,32 +977,26 @@
       </summary>
       <h3 class="footer-wonk-h">CFAP, SNB, TNB, and $ Issued</h3>
       <ul class="footer-notes">
-        <li>Statewide, CalFresh Persons = All Federal Persons + All CFAP Persons. Checking CFAP restacks that identity; it does not add ~49k on top of All Participants.</li>
-        <li>Do not label CFAP as “state-only.” CF 256 Federal / Federal-State / State-only are household funding categories. Mixed households have some federal members and some CFAP members.</li>
+        <li>Statewide, CalFresh Persons = All Federal Persons + All CFAP Persons. Checking CFAP restacks that identity; it does not add people on top of All Participants.</li>
         <li>County person columns for federal/CFAP are blank. The CFAP stack is California only.</li>
-        <li>State Issuances are state-funded issuances (CFAP), including the CFAP slice of mixed households — CF 256 Item 10b — not “state-only” households. SNB and TNB dollars are excluded from Total Issuances until SNB / TNB is checked.</li>
-        <li>SNB cases are already inside regular household/person totals. TNB cases are not on CF 256 and are not inside CalFresh Persons. The SNB / TNB toggle is one stacked pair (SNB `#6B3D5A` bottom, TNB `#C17B5C` top), not two overlay lines.</li>
-      </ul>
-      <ul class="footer-notes">
-        <li>Current-era CF296 (FY2025-26+) and CF296_Legacy (FY2016-17 through FY2024-25) are combined by item meaning, not by cell number.</li>
+        <li>State Issuances are CF 256 Item 10b: state-funded issuances (CFAP), including the CFAP slice of mixed households. SNB and TNB dollars are excluded from Total Issuances until SNB / TNB is checked.</li>
+        <li>SNB cases are already inside regular household/person totals. TNB cases are not on CF 256 and are not inside CalFresh Persons.</li>
       </ul>
       <h3 class="footer-wonk-h">Caseload movement</h3>
       <ul class="footer-notes">
+        <li>Current-era CF296 (FY2025-26+) and CF296_Legacy (FY2016-17 through FY2024-25) are combined by item meaning, not by cell number.</li>
         <li>Figures are CF296 Part C, in the month CDSS reported them.</li>
         <li>Adds: Item 5.a applications approved, Item 5.e Other approvals, Item 5.d reinstated prorated, Item 5.c ICT in.</li>
         <li>Exits: Item 7 full discontinuances. Item 5.b is omitted (Total is 0). Item 9.b recert ineligible is not subtracted from Item 7.</li>
         <li>When Part C Total is starred, it is recovered from PACF + NACF. A starred PACF or NACF part is plotted as 5.</li>
         <li>Other approvals are typically rescinded discontinuances. They offset prior-month Item 7, and they stay in the report month.</li>
+        <li>ICT in is Item 5.c (incoming only). ICT outs are inside Item 7; CF296 has no ICT-out cell. Statewide, ICT in and those outs should cancel in the net.</li>
       </ul>
       <h3 class="footer-wonk-h">One-month reporting holes</h3>
       <ul class="footer-notes">
         <li>A month is blanked when the person count is at least 40% off the average of the months on either side, and those two neighbors are within 10% of each other. Real policy shifts fail that test because the new level lasts.</li>
         <li>If at least half of counties with data that month match, every county is blanked. Feb 2019 (all counties) and Sonoma April 2019 are always included.</li>
         <li>The newest month cannot be judged until the next month is published. Annual % change is computed after blanking, so both legs of the bad ratio disappear.</li>
-      </ul>
-      <h3 class="footer-wonk-h">ICT</h3>
-      <ul class="footer-notes">
-        <li>ICT in is Item 5.c (incoming only). ICT outs are inside Item 7; CF296 has no ICT-out cell. Statewide, ICT in and those outs should cancel in the net.</li>
       </ul>
     </details>
     <p class="footer-credit">Designed by Diana Jensen, built with help from Cursor.</p>

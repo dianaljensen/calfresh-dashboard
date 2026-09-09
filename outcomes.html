@@ -270,7 +270,7 @@
   }
   .range-slider:active .range-input::-webkit-slider-thumb { cursor: grabbing; }
   .range-slider:active .range-input::-moz-range-thumb { cursor: grabbing; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 10px; margin-bottom: 22px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 10px; margin-bottom: 22px; max-width: 100%; min-width: 0; }
   .card h2 { font-size: 15px; margin: 0 0 8px; }
   .card-title-row {
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px;
@@ -314,7 +314,7 @@
     display: flex; align-items: center; justify-content: space-between;
     gap: 8px; flex-wrap: wrap; margin: 0 0 4px; min-height: 28px;
   }
-  .chart-plot-head .chart-plot-title { margin: 0; padding-left: 0; }
+  .chart-plot-head .chart-plot-title { margin: 0; padding-left: 0; min-width: 0; }
   .chart-plot-head .layer-toggle {
     padding: 2px 8px; font-size: 12px; --layer-color: #C17B5C;
     white-space: nowrap; flex-shrink: 0;
@@ -335,6 +335,7 @@
     width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; margin-top: 3px;
   }
   .chart-holder { position: relative; height: 280px; min-width: 0; }
+  .chart-holder canvas { display: block; max-width: 100%; }
   .received-holder { height: 120px; }
   .received-plot { margin-top: 4px; }
   .received-plot .chart-plot-title {
@@ -346,13 +347,19 @@
   }
   .timeliness-plots {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 16px;
     align-items: start;
+    width: 100%;
+    min-width: 0;
+  }
+  .timeliness-plots > .chart-plot {
+    min-width: 0;
+    max-width: 100%;
   }
   .timeliness-plots .chart-holder { height: 240px; }
   @media (max-width: 800px) {
-    .timeliness-plots { grid-template-columns: 1fr; }
+    .timeliness-plots { grid-template-columns: minmax(0, 1fr); }
   }
   .timeliness-legend {
     display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 10px;
@@ -462,8 +469,7 @@
     border: 1px solid var(--line); border-left: 4px solid var(--accent);
     border-radius: 8px; background: #f7fbfb;
   }
-  .procedural-callout-head { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
-  .procedural-callout-head h3 { font-size: 13px; font-weight: 700; margin: 0; }
+  .procedural-callout h3 { font-size: 13px; font-weight: 700; margin: 0 0 8px; }
   .procedural-def { font-size: 13px; line-height: 1.5; margin: 0 0 10px; }
   .procedural-impact { font-size: 13px; line-height: 1.5; margin: 0; }
   .procedural-impact p { margin: 0 0 8px; }
@@ -725,14 +731,8 @@
       <thead><tr><th scope="col">Month</th></tr></thead>
       <tbody></tbody>
     </table>
-    <aside class="procedural-callout" id="proceduralCallout" aria-label="What are procedural denials">
-      <div class="procedural-callout-head">
-        <h3>What are procedural denials?</h3>
-        <span class="info-tip">
-          <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="proceduralTip" aria-label="About the procedural denials estimate">i</button>
-          <span id="proceduralTip" class="info-tip-bubble" role="tooltip">1% of applications disposed in the last month of the date range, for the Application Trends place. Dollars are that count × California average issuance per household (Total Issuances ÷ CalFresh Households). College student and SSI household rows use that same all-household rate — CDSS does not publish a type-specific issuance. One month of benefits. Some of those households may not have been eligible. Recipes in Data notes.</span>
-        </span>
-      </div>
+    <aside class="procedural-callout" id="proceduralCallout" aria-label="What is the impact of procedural denials">
+      <h3>What is the impact of procedural denials?</h3>
       <p class="procedural-def">An application is considered procedurally denied if the denial is due to an incomplete part of the process rather than a determination of definitive ineligibility. The household applying may or may not have been eligible.</p>
       <div class="procedural-impact" id="proceduralImpact"></div>
       <p class="procedural-callout-note" id="proceduralImpactNote"></p>
@@ -902,8 +902,6 @@
       <li>Some CalWIN counties reported 0 SSI applications received from December 2019 through May 2022. SSI outcomes still exist those months.</li>
       <li>SSI household outcomes are displayed according to best available data from the CDSS Data Dashboard Monthly tab. When ineligible + procedural is close to denied, the mix is shown as approved / ineligible / procedural / other. CalWIN counties ~2020–May 2022 show total denials, but not a break-out of ineligible vs. procedural, and are shown as a single lumped Denied in warm grey. Months where the ineligible / procedural split overshoots total denials are also shown this way.</li>
       <li>SSI Denial details is households with only SSI recipients: ineligible vs procedural, a subset of some-SSI denials.</li>
-      <li>Timeliness percents are all applications or recertifications from CF296, not college student or SSI mixes. Applications: after 30 days and after 3 days (expedited) overlay on one chart. Recertifications: Item 10 overdue (county-caused) ÷ Item 9 disposed; the expedited 3-day clock does not apply. Days to process is initial applications (CF18 / Quarterly); SSI households sit on a checkbox on that chart (on by default). Recertifications replace that chart with overdue-day buckets from current-era Item 9.a.1. <a href="#methods">See wonky &amp; math-y details</a>.</li>
-      <li>The procedural denials call-out is a 1% counterfactual of applications disposed in the last month of the date range, for the Application Trends place. Dollars use California average issuance (Total Issuances ÷ households). College student and SSI rows use that same all-household rate. <a href="#methods">See wonky &amp; math-y details</a>.</li>
     </ul>
     <details class="footer-methods" id="methods">
       <summary>
@@ -919,25 +917,24 @@
         <li>CDSS uses “*” for counts under 11, and sometimes for a larger complementary total.</li>
         <li>If exactly one of the five outcome cells is starred, the missing value is recovered from disposed = approved + ineligible + procedural + withdrawn, when that number is over 10.</li>
         <li>Remaining under-11 cells are plotted as 5, never shown as a count. Hover percents then start with ~.</li>
-        <li>Two or more large hidden cells, or a county listed as not reporting, stay blank. A complete month next to those gaps still draws.</li>
+        <li>Two or more large hidden cells, or a county listed as not reporting, stay blank.</li>
         <li>Applications received and other volume cells are not plotted as 5.</li>
       </ul>
       <h3 class="footer-wonk-h">Applications received</h3>
       <ul class="footer-notes">
         <li>All applications: <code>Applications Received</code> on the CDSS Data Dashboard Monthly tab.</li>
         <li>College students: <code>New Applications Age Total</code>. Not CF296 applications received, and not a checksum of approved + denied + pended.</li>
-        <li>SSI households: <code>Online Apps - SSI</code> + <code>Non-Online Apps - SSI</code> (at least some SSI, not the SSI-only pair). Reporting starts June 2019. Starred volume cells stay blank. CF296 has no SSI-specific application cells.</li>
+        <li>SSI households: <code>Online Apps - SSI</code> + <code>Non-Online Apps - SSI</code> (at least some SSI, not the SSI-only pair). Reporting starts June 2019. Starred volume cells stay blank.</li>
       </ul>
       <h3 class="footer-wonk-h">Channels</h3>
       <ul class="footer-notes">
-        <li>A 100% mix of GetCalFresh, BenefitsCal / Other Online, and Other, from Monthly-tab columns.</li>
         <li>All applications: GetCalFresh = <code>All_GCF_apps_submit</code>; BenefitsCal / Other Online = <code>Online Applications Received</code> minus GetCalFresh; Other = <code>Applications Received</code> minus Online. After June 2025 GetCalFresh is 0; a dashed marker sits at July 2025 (the assister ended June 30, 2025).</li>
-        <li>College students: GetCalFresh = <code>Applications Submitted via Code for America</code>; BenefitsCal / Other Online = Other Online Source + BenefitsCal; Other = Other Source. Not <code>CfA_GCF_apps_submit</code>. Code for America continues after June 2025 at a small volume. The four source columns still sum to student approved + denied + pended.</li>
-        <li>SSI: GetCalFresh (SSA) = <code>SSA_GCF_apps_submit</code> (SSA office filings via GetCalFresh on behalf of SSI recipients). BenefitsCal / Other Online = <code>Online Apps - SSI</code> minus GetCalFresh (SSA). Other = <code>Non-Online Apps - SSI</code>. Last nonzero statewide SSA GCF is September 2024. If SSA GCF exceeds Online SSI, the month is left blank (CalWIN counties often reported 0 SSI online/non-online December 2019–May 2022 while SSA GCF was still filled).</li>
+        <li>College students: GetCalFresh = <code>Applications Submitted via Code for America</code>; BenefitsCal / Other Online = Other Online Source + BenefitsCal; Other = Other Source. Not <code>CfA_GCF_apps_submit</code>. The four source columns still sum to student approved + denied + pended.</li>
+        <li>SSI: GetCalFresh (SSA) = <code>SSA_GCF_apps_submit</code>; BenefitsCal / Other Online = <code>Online Apps - SSI</code> minus GetCalFresh (SSA); Other = <code>Non-Online Apps - SSI</code>. Last nonzero statewide SSA GCF is September 2024. If SSA GCF exceeds Online SSI, the month is left blank.</li>
       </ul>
       <h3 class="footer-wonk-h">College student outcomes</h3>
       <ul class="footer-notes">
-        <li>Share of applications disposed (approved + denied), starting January 2023. Pended is still in process: hover only, not in the mix.</li>
+        <li>Share of applications disposed (approved + denied), starting January 2023. Pended is still in process and is not in the mix.</li>
         <li>When the nine Denial Reason columns are close to total denials, the mix is Approved / Ineligible / Procedurally Denied / Other.
           <ul>
             <li>Ineligible: ineligible + ineligible CF student + over income</li>
@@ -952,46 +949,30 @@
       <ul class="footer-notes">
         <li>Households with at least some SSI. No pended or withdrawn column.</li>
         <li>When ineligible + procedural is close to denied: Approved / Ineligible / Procedurally Denied / Other.</li>
-        <li>Otherwise Approved / lumped Denied (warm grey): CalWIN ~2020–May 2022, and months where the split overshoots (including a bad November 2025 statewide ineligible reading).</li>
-        <li>Months that have approved and denied are still shown.</li>
+        <li>Otherwise Approved / lumped Denied: CalWIN ~2020–May 2022, and months where the split overshoots (including a bad November 2025 statewide ineligible reading).</li>
         <li>SSI Denial details is <code>SSI Only - Ineligible Denials</code> vs <code>SSI Only Procedural Denials</code>: only-SSI households, a subset of some-SSI denials.</li>
       </ul>
       <h3 class="footer-wonk-h">Procedural denials 1% estimate</h3>
       <ul class="footer-notes">
-        <li>Not a CDSS cell. 1% × applications disposed in the last month of the Application Trends date range, for the selected place (or the combined selected places). College students and SSI use that population’s disposed count (approved + denied). Compare Populations lists each visible population; Compare Places uses the selected population.</li>
-        <li>Dollars = that 1% count × California average issuance per household (Monthly tab Total Issuances ÷ CalFresh Households for that month, or the latest month at or before it). If that is missing, $198 per household-month is the fallback — the same rate as Churn’s lost-benefits estimate. CDSS does not publish a college-student or SSI-specific issuance, so those rows use the all-household rate.</li>
-        <li>One month of benefits. The definition already says the household may or may not have been eligible; the dollar figure does not claim they were.</li>
+        <li>1% × applications disposed in the last month of the date range, for the selected place. College students and SSI use that population’s disposed count (approved + denied).</li>
+        <li>All applications: Total Issuances ÷ CalFresh Households. College students: Total Issuances ÷ CalFresh Persons. SSI: <code>Average Approved Benefit - SSI</code>. If a month is missing, use the latest month at or before it. If the SSI or per-person series is missing entirely, fall back to the household rate.</li>
       </ul>
       <h3 class="footer-wonk-h">Who applied (Age, Language, Race, Gender, Household size, Exemptions &amp; deductions)</h3>
       <ul class="footer-notes">
-        <li>These mixes are composition of the applicant pool, not outcomes crossed by demographic. CDSS does not publish approved/denied by age, language, race, or gender.</li>
-        <li>College students, from the Monthly tab’s <code>New Applications …</code> block: Age (17 and under / 18–49 / 50 and over — CDSS names the middle band <code>New Applications Age 8 to 49</code>), Language (English / Spanish / Other), Race/ethnicity (nine CDSS categories), Gender (Female / Male / Other / Declined to state). Denominators are the matching Age / Language / Race / Gender Totals. Age Total is persons, not a checksum of approved + denied + pended. Hover on Age includes <code>New Applications Avg Age</code>.</li>
-        <li>SSI: Language is <code>SSI Disposed HH Language - [X]</code> (households). Race is <code>SSI Person Race/Ethnicity - [X]</code>, persons in new apps disposed (the same total as <code>SSI Persons in New Apps Disposed</code>). No SSI age bands. Average age (<code>Average Age of SSI Persons Newly Applying</code>) sits on SSI household-size and volume hover. No SSI-app gender columns.</li>
-        <li>Household size is SSI-only households added that month: 1 / 2 / 3+ of <code>SSI-only HHs of 1 added in the month</code>, <code>SSI-only HHs of 2 added in the month</code>, and <code>SSI only-HHs of 3+ added in the month</code> (hyphen placement is CDSS’s). Denominator is <code>Total SSI-only HHs added in the month</code>. Not the some-SSI disposed mix on Outcomes.</li>
-        <li>Language Other lumps every listed language except English and Spanish (including CDSS Other and, for students, Missing).</li>
-        <li>Exemptions &amp; deductions are overlapping shares, not a 100% stack. College students: types typically ≥5% of <code>New Applications Age Total</code> statewide — Employment and Training, Other E&amp;T, LPIE (Local Programs that Increase Employability), employed 20 hours, care of a child, work study. Tiny or obsolete exemption columns (JTPA, Trade Act, Tribal TANF, WIOA, Title 4, state/local training, CalFresh E&amp;T, CalGrant TANF, CalWORKs, Disabled) are omitted. SSI: <code>Claim Homeless Deduction - SSI</code>, <code>Claim Shelter Deduction - SSI</code>, <code>Claim Standard Medical Deduction - SSI</code> as a share of some-SSI approved + denied. Parallel SSI-only claim columns are unused here.</li>
-        <li>Student volume hover notes <code>New Applications - ICT Transfers</code>.</li>
-        <li>Default view is 100% (or % claiming, for exemptions). # plots the same series as counts; side-by-side student vs SSI (or two counties) are not comparable magnitudes in #, and SSI race is persons while SSI language is households.</li>
-      </ul>
-      <h3 class="footer-wonk-h">Hover</h3>
-      <ul class="footer-notes">
-        <li>Stacked mix: the count those percents are of. All applications = applications disposed. College students = applications disposed (approved or denied, not <code>New Applications Age Total</code>), plus still pended. SSI = household applications disposed.</li>
-        <li>Channels: applications received (all / SSI) or the student source total.</li>
-        <li>Denial details: applications denied.</li>
-        <li>Age / Language / Race / Gender / Household size: the count those percents (or stacked counts) are of. Students = the matching Age/Language/Race/Gender total. SSI language = households disposed. SSI race = persons in applications disposed. SSI household size = SSI-only households added. Student Age hover also has average age; SSI household-size and volume hover have SSI average age. Student volume hover notes ICT transfers.</li>
-        <li>Exemptions &amp; deductions: the count those percents are of (student age total, or SSI household applications disposed). Hover lists each overlapping rate; they do not sum to 100%.</li>
-        <li>Timeliness percents: After 30 days is applications disposed; after 3 days is expedited applications found entitled; recertifications overdue is recertifications disposed. Hover lists that count on each row. Days to process: initial applications approved (CF18, with expedited / non-expedited in single-place hover) or SSI household applications disposed. How long did approvals take? is share of those CF18 approval-count buckets. Recertification overdue-day buckets are Item 9.a.1 (continuing eligible, federal funding) — current-era CF296 only.</li>
+        <li>College students, from the Monthly tab’s <code>New Applications …</code> block: Age (17 and under / 18–49 / 50 and over — CDSS names the middle band <code>New Applications Age 8 to 49</code>), Language (English / Spanish / Other), Race/ethnicity, Gender. Denominators are the matching Age / Language / Race / Gender Totals. Age Total is persons, not a checksum of approved + denied + pended.</li>
+        <li>SSI language is <code>SSI Disposed HH Language - [X]</code> (households). SSI race is <code>SSI Person Race/Ethnicity - [X]</code> (persons in applications disposed). Household size is SSI-only households added that month: <code>SSI-only HHs of 1 added in the month</code>, <code>SSI-only HHs of 2 added in the month</code>, and <code>SSI only-HHs of 3+ added in the month</code>, divided by <code>Total SSI-only HHs added in the month</code>.</li>
+        <li>Language Other lumps every listed language except English and Spanish (including Missing for students).</li>
+        <li>Exemptions &amp; deductions are overlapping shares of <code>New Applications Age Total</code> (students) or some-SSI approved + denied (SSI), not a 100% stack. Students: Employment and Training, Other E&amp;T, LPIE, employed 20 hours, care of a child, work study. SSI: <code>Claim Homeless Deduction - SSI</code>, <code>Claim Shelter Deduction - SSI</code>, <code>Claim Standard Medical Deduction - SSI</code>.</li>
       </ul>
       <h3 class="footer-wonk-h">Timeliness</h3>
       <ul class="footer-notes">
-        <li>After 30 days and after 3 days (expedited) overlay on one chart. Both are all applications only — CF296 has no student or SSI timeliness cells. Date and place follow Application Trends. Lines overlay (unlike the outcome stacks).</li>
         <li>Processed after 30 days = (Item 2.a.1 approved over 30, county-caused + Item 2.b.3 denied over 30, county-caused) ÷ Item 2 applications disposed. Applicant-caused delays are not in those cells.</li>
-        <li>Expedited after 3 days = (Item 3.a.2 issued in 4–7 days + Item 3.a.3 issued over 7 days) ÷ Item 3.a found entitled to expedited service. If those buckets are missing, entitled minus issued in 1–3 days.</li>
-        <li>Region and size-group percent lines are combined counts, not an average of percentages, and are dashed.</li>
-        <li>Days to process (all applications): CF18 average days to approval of initial applications, weighted by the expedited and non-expedited approval-count buckets. Prefer CF18 in any month it exists. Earlier months use the Quarterly tab’s <code>Average Days to Approve</code>, held flat across the three months of that quarter. Region and size-group days use the same CF18 count weights; they are blank in the quarterly-only era (no counts to weight). Statewide CF18 is recomputed from county counts — the sheet’s Statewide average cells are an unweighted mean of county averages.</li>
-        <li>Days to process (SSI): Monthly tab <code>Average Days to Dispose - SSI</code> (households with at least some SSI). Region/size lines are weighted by SSI approved + denied. <code>SSI Only Average Days to Dispose Application</code> is not on this chart. The SSI line is a checkbox on Average Days to Process (on by default), not tied to Compare populations. College students have no days-to-process column on the Monthly tab.</li>
-        <li>Recertifications: Processed late = Item 10 overdue recertifications (CWD caused; legacy files omit “CWD caused”) ÷ Item 9 recertifications disposed. The expedited 3-day clock and CF18 average days (initial applications only) do not apply. Current-era Item 9.a.1 day buckets (1–30 / 31–60 / 61–90 / 91+) are continuing-eligible recerts overdue with federal funding, not all Item 10 overdue cases. Legacy CF296 has no those buckets.</li>
-        <li>How long did approvals take? (applications, closed by default): 100% stacks of CF18 expedited (1–3 / 4–7 / after 7) and non-expedited (1–7 / 8–15 / 16–22 / 23–30 / after 30) approval counts. Hover: of N approvals, X% (count) in that band.</li>
+        <li>Expedited after 3 days = (Item 3.a.2 issued in 4–7 days + Item 3.a.3 issued over 7 days) ÷ Item 3.a found entitled to expedited service. If those buckets are missing, entitled minus issued in 1–3 days. CF296 has no student or SSI timeliness cells.</li>
+        <li>Recertifications: Item 10 overdue (CWD caused) ÷ Item 9 recertifications disposed. Current-era Item 9.a.1 day buckets (1–30 / 31–60 / 61–90 / 91+) are continuing-eligible recerts overdue with federal funding, not all Item 10 cases. Legacy CF296 has none of those buckets.</li>
+        <li>Days to process (all applications): CF18 average days to approval of initial applications, weighted by the expedited and non-expedited approval-count buckets. Prefer CF18 in any month it exists. Earlier months use the Quarterly tab’s <code>Average Days to Approve</code>, held flat across the three months of that quarter. Statewide CF18 is recomputed from county counts — the sheet’s Statewide average cells are an unweighted mean of county averages.</li>
+        <li>Days to process (SSI): Monthly tab <code>Average Days to Dispose - SSI</code>. <code>SSI Only Average Days to Dispose Application</code> is not on this chart. College students have no days-to-process column.</li>
+        <li>Region and size-group rates use combined counts, not an average of percentages. Days use the same CF18 count weights (blank in the quarterly-only era).</li>
+        <li>How long did approvals take?: CF18 expedited (1–3 / 4–7 / after 7) and non-expedited (1–7 / 8–15 / 16–22 / 23–30 / after 30) approval counts.</li>
       </ul>
     </details>
     <p class="footer-credit">Designed by Diana Jensen, built with help from Cursor.</p>
@@ -2904,6 +2885,54 @@ function sumDisposed(geos, month, mode) {
   if (!any) return null;
   return { disposed: disposed, estimated: estimated };
 }
+function calloutBenefit(mode, month) {
+  const hh = benefitPerHousehold(month, DATA.benefit_by_month || {});
+  if (mode === 'ssi') {
+    const ssiMap = DATA.ssi_benefit_by_month || {};
+    const ssi = benefitPerHousehold(month, ssiMap);
+    if (ssi.period && ssiMap[ssi.period] != null) {
+      return Object.assign({ source: 'ssi' }, ssi);
+    }
+    return Object.assign({ source: 'all' }, hh);
+  }
+  if (mode === 'students') {
+    const perMap = DATA.benefit_per_person_by_month || {};
+    const per = benefitPerHousehold(month, perMap);
+    if (per.period && perMap[per.period] != null) {
+      return Object.assign({ source: 'person' }, per);
+    }
+    return Object.assign({ source: 'all' }, hh);
+  }
+  return Object.assign({ source: 'all' }, hh);
+}
+function calloutRateNote(mode, benefit, solo) {
+  const who = solo
+    ? 'Estimates use '
+    : (mode === 'ssi' ? 'SSI household rows use '
+      : (mode === 'students' ? 'College student rows use '
+        : 'All applications use '));
+  if (benefit.value == null) {
+    return who.replace(' use ', ' need ') + 'a California issuance figure, which was not available';
+  }
+  const rate = '$' + Math.round(benefit.value).toLocaleString('en-US');
+  const when = benefit.period ? ' in ' + fmtMonth(benefit.period) : '';
+  if (mode === 'ssi' && benefit.source === 'ssi') {
+    return who + rate + ' per newly approved some-SSI household' + when;
+  }
+  if (mode === 'ssi') {
+    return who + rate + ' per household-month' + when +
+      '. Average Approved Benefit for SSI was not available, so this is the all-household rate';
+  }
+  if (mode === 'students' && benefit.source === 'person') {
+    return who + rate + ' per person-month' + when +
+      '. CDSS does not publish a student-specific issuance, and many student households are likely one person';
+  }
+  if (mode === 'students') {
+    return who + rate + ' per household-month' + when +
+      '. Per-person issuance was not available';
+  }
+  return who + rate + ' per household-month' + when;
+}
 function fillProceduralCallout() {
   const body = document.getElementById('proceduralImpact');
   const noteEl = document.getElementById('proceduralImpactNote');
@@ -2913,7 +2942,6 @@ function fillProceduralCallout() {
   const geos = paneEntities(counties, regions, sizes);
   const modes = visibleOutcomeModes();
   const placeLabel = joinPlaceNames(geos.map(placeDisplayName));
-  const benefit = benefitPerHousehold(month, DATA.benefit_by_month || {});
   const rows = modes.map(mode => ({
     mode: mode,
     pack: sumDisposed(geos, month, mode)
@@ -2930,7 +2958,9 @@ function fillProceduralCallout() {
     if (pack.estimated) text = '~' + text;
     return text;
   }
-  function dollarsText(pack) {
+  function dollarsText(pack, mode) {
+    const benefit = calloutBenefit(mode, month);
+    if (benefit.value == null) return 'n/a';
     return fmtMoney(extraCases(pack) * benefit.value) + '/month';
   }
   const filled = rows.filter(r => r.pack && r.pack.disposed > 0);
@@ -2943,27 +2973,24 @@ function fillProceduralCallout() {
       ', if 1% of ' + applicantsNoun(r.mode) +
       ' were approved instead of procedurally denied in ' + fmtMonth(month) +
       ', that would represent ' + casesText(r.pack) +
-      ' receiving an estimated ' + dollarsText(r.pack) + '.</p>';
+      ' receiving an estimated ' + dollarsText(r.pack, r.mode) + '.</p>';
   } else {
     const items = rows.map(r => {
       if (!r.pack || r.pack.disposed <= 0) {
         return '<li>' + popLabel(r.mode) + ': n/a for this month</li>';
       }
       return '<li>' + popLabel(r.mode) + ': ' + casesText(r.pack) +
-        ' receiving an estimated ' + dollarsText(r.pack) + '</li>';
+        ' receiving an estimated ' + dollarsText(r.pack, r.mode) + '</li>';
     }).join('');
     body.innerHTML = '<p>' + inPlacePhrase(placeLabel) +
       ', if 1% of applicants were approved instead of procedurally denied in ' +
       fmtMonth(month) + ', that would represent:</p><ul>' + items + '</ul>';
   }
-  const rate = Math.round(benefit.value);
-  const rateMonth = benefit.period ? fmtMonth(benefit.period) : null;
-  const live = !!(DATA.benefit_by_month && benefit.period && DATA.benefit_by_month[benefit.period] != null);
-  let note = 'Estimates use $' + rate.toLocaleString('en-US') + ' per household-month';
-  if (live) note += ' (California average issuance in ' + rateMonth + ')';
-  else note += ' (fallback; CDSS issuances were not available for this month)';
-  note += '. College student and SSI household rows use that same all-household rate — CDSS does not publish a type-specific issuance. 1% is of applications disposed that month. This is one month of benefits, and some of those households may not have been eligible.';
-  noteEl.textContent = note;
+  const solo = modes.length === 1;
+  noteEl.textContent = modes.map(mode =>
+    calloutRateNote(mode, calloutBenefit(mode, month), solo)
+  ).join('. ') +
+    '. 1% is of applications disposed that month. This is one month of benefits, and some of those households may not have been eligible.';
 }
 
 function buildAreaCharts() {
@@ -3420,6 +3447,10 @@ function buildTimelinessCharts() {
   }));
   buildDaysChart(labels, geos, counties, regions, sizes);
   if (timelinessClock === 'applications' && daysBucketOpen) buildDaysBucketCharts(labels, geos);
+  requestAnimationFrame(() => {
+    timelinessCharts.forEach(c => c.resize());
+    daysBucketCharts.forEach(c => c.resize());
+  });
 }
 
 function fillLineLegend(legendEl, series, labelOf, always) {

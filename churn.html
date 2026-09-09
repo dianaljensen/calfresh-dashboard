@@ -918,23 +918,19 @@
       </summary>
       <h3 class="footer-wonk-h">Measurement 1 (recertification and SAR 7 due)</h3>
       <ul class="footer-notes">
-        <li>100% = Item 1 (C2 recertification / C1 SAR 7): households scheduled that Data Cohort Month. A household is in one column or the other, never both (ACL 18-117). Combined sums the two columns. Side by side (and Recertification / SAR 7) show each clock on its own.</li>
-        <li>No loss of benefits = Items 2 + 4 + 6a (timely eligible, untimely eligible, late with no loss).</li>
-        <li>Late with loss = Item 6b. Item 6 = 6a + 6b exactly; the chart uses the split, not Item 6. Item 7 (average days of lost benefits for those households) is in the Estimated Lost Benefits fold-out, and is still on hover.</li>
-        <li>Reapplications = Items 9–16 (new application in the next 1–4 calendar months). That band sits on top of the stack. Fold-outs under the due chart split that same band: Reapplication Outcomes (eligible vs ineligible) and Time to reapply (when they came back). Combined fold-outs sum Recertification and SAR 7 reapplications. Lag months are calendar months after the due month, not 1–30 / 31–90 days.</li>
-        <li>Recertification ineligible / SAR 7 ineligible (dark grey) = Items 3 + 5 + 8 (timely, untimely, and late ineligible). That is the recertification or SAR 7 determination, not a later new application.</li>
-        <li>Stack bottom→top: no loss, late with loss, recert/SAR 7 ineligible, no renewal and no return, reapplications. Snapshot due-chart hover and Recertification / SAR 7 Outcomes by County hover list those bands top-to-bottom as drawn (no nested splits — those live in the reapplication fold-outs). County hover also trails the group’s combined Sort-by rate. County Report type Combined sums Recertification and SAR 7 counts, like the snapshot Combined chart (default Combined, sort by No loss, group by county size).</li>
-        <li>No renewal and no return within 4 months = Item 1 minus the bands above. Item 1 is not an auto-sum of the outcome cells; the leftover is this grey band (often ~20% statewide). If the parts overshoot Item 1, that month is left blank rather than drawing a negative leftover.</li>
-        <li>The reapplication fold-outs are of Items 9–16 only (households who missed and came back), not of Item 1. They match the orange band on the stack above. Reapplication Outcomes is eligible vs ineligible of those reapplications. Time to reapply is when they came back: four bars (Next month / 2 / 3 / 4 months later). % is of those reapplications (the four bars sum to 100%). Hover is plain language: of the reapplications, X% (count) came back that month; then eligible vs ineligible of that month.</li>
-        <li>Dollar estimates are not a CF18 cell. The call-out total is late-with-loss plus eligible-reapplication dollars. Late-with-loss dollars = Item 6b households × (Item 7 days ÷ 30) × average issuance per household. Eligible-reapplication dollars = Items 9+11+13+15 households × 1/2/3/4 months of lag × the same rate. Average issuance is California Total Issuances ÷ CalFresh Households from the CDSS Data Dashboard Monthly tab for that month (or the latest month at or before it). If that is missing, $198 per household-month is the fallback. The estimate does not include no-return or ineligible reapplications.</li>
+        <li>100% = Item 1 (C2 recertification / C1 SAR 7): households scheduled that Data Cohort Month. A household is in one column or the other, never both (ACL 18-117). Combined sums the two columns.</li>
+        <li>No loss of benefits = Items 2 + 4 + 6a. Late with loss = Item 6b. Item 6 = 6a + 6b exactly; the chart uses the split. Item 7 (average days of lost benefits) is in Estimated Lost Benefits.</li>
+        <li>Recertification / SAR 7 ineligible = Items 3 + 5 + 8.</li>
+        <li>Reapplications = Items 9–16. Reapplication Outcomes is eligible vs ineligible of those. Time to reapply is the next / 2 / 3 / 4 calendar months after the due month (% of Items 9–16). Lag months are calendar months, not 1–30 / 31–90 days.</li>
+        <li>No renewal and no return within 4 months = Item 1 minus the bands above. Item 1 is not an auto-sum of the outcome cells. If the parts overshoot Item 1, that month is left blank.</li>
+        <li>Lost-benefits dollars: Item 6b households × (Item 7 days ÷ 30) × average issuance per household, plus Items 9+11+13+15 × 1/2/3/4 months of lag × the same rate. Average issuance is California Total Issuances ÷ CalFresh Households; if that month is missing, the latest month at or before it. Does not include no-return or ineligible reapplications.</li>
       </ul>
       <h3 class="footer-wonk-h">Measurement 2 (who applied)</h3>
       <ul class="footer-notes">
-        <li>100% = Item 17 (C37): all CalFresh/CFAP applications disposed that month.</li>
-        <li>New / not recently on = Item 17 − Item 18.</li>
-        <li>Other Recently On = Item 18 − Item 19. Item 18 is participated in the prior four months, not necessarily a missed report.</li>
-        <li>Recent SAR 7 Due = C39. Recent Recert Due = C40. Hover nests restoration and 1 vs 2–4 months prior (approved vs denied) under each due band — the case was restored or closed in those months before the application (ACL 18-117 Items 20–28), not after. Applicants’ Prior CalFresh Connection by County uses this same stack. Sort by Recent Recert &amp; SAR 7 Due is C39 + C40 (combined counts, not an average of the two rates). Counties with a starred Item 17 are blank.</li>
-        <li>This mix uses a forest / olive / wine / rose palette. It is not the due-chart orange and blue.</li>
+        <li>100% = Item 17 (C37): CalFresh/CFAP applications disposed that month.</li>
+        <li>New / not recently on = Item 17 − Item 18. Other Recently On = Item 18 − Item 19. Item 18 is participated in the prior four months.</li>
+        <li>Recent SAR 7 Due = C39. Recent Recert Due = C40. Restoration and 1 vs 2–4 months prior (approved vs denied) are ACL Items 20–28 — the case was restored or closed before the application, not after.</li>
+        <li>Sort by Recent Recert &amp; SAR 7 Due is C39 + C40 (combined counts). Counties with a starred Item 17 are blank.</li>
       </ul>
       <h3 class="footer-wonk-h">Small cells (*)</h3>
       <ul class="footer-notes">
@@ -943,7 +939,7 @@
       </ul>
       <h3 class="footer-wonk-h">CalSAWS</h3>
       <ul class="footer-notes">
-        <li>Consortia (C-IV / CalWIN / LRS) are obsolete as a filter. The month picker shows full CF18 history with a caveat that pre-consolidation months may not be strictly comparable.</li>
+        <li>Months before CalSAWS consolidation may not be strictly comparable.</li>
       </ul>
     </details>
     <p class="footer-credit">Designed by Diana Jensen, built with help from Cursor.</p>
@@ -1987,8 +1983,8 @@ function fillLostCallout(recert, sar7) {
     const lateEl = document.getElementById(prefix + 'LateDollars');
     const reappEl = document.getElementById(prefix + 'ReappDollars');
     const totalEl = document.getElementById(prefix + 'LostTotal');
-    const lateDollars = late ? late.householdMonths * benefit.value : null;
-    const reappDollars = (reapp && reapp.households) ? reapp.householdMonths * benefit.value : null;
+    const lateDollars = (late && benefit.value != null) ? late.householdMonths * benefit.value : null;
+    const reappDollars = (reapp && reapp.households && benefit.value != null) ? reapp.householdMonths * benefit.value : null;
     if (!late) {
       daysEl.textContent = 'n/a';
       subEl.textContent = 'No late-with-loss households in this month.';
@@ -2011,12 +2007,14 @@ function fillLostCallout(recert, sar7) {
   fillClock('recert', recert);
   fillClock('sar7', sar7);
   updateLostHero();
-  const rate = Math.round(benefit.value);
-  const rateMonth = benefit.period ? fmtMonth(benefit.period) : null;
-  const live = !!(DATA.benefit_by_month && benefit.period && DATA.benefit_by_month[benefit.period] != null);
-  let note = 'Estimates use $' + rate.toLocaleString('en-US') + ' per household-month';
-  if (live) note += ' (California average issuance in ' + rateMonth + ')';
-  else note += ' (fallback; CDSS issuances were not available for this month)';
+  let note;
+  if (benefit.value == null) {
+    note = 'California issuance was not available, so dollar estimates are n/a';
+  } else {
+    note = 'Estimates use $' + Math.round(benefit.value).toLocaleString('en-US') +
+      ' per household-month' +
+      (benefit.period ? ' in ' + fmtMonth(benefit.period) : '');
+  }
   note += '. Late with loss converts Item 7 days to months with a 30-day month. Eligible reapplications count 1–4 months of lag. Does not include no-return or ineligible reapplications.';
   document.getElementById('lostBenefitsNote').textContent = note;
 }

@@ -90,13 +90,25 @@ Not Q&A: same shape as the footer. Live items match `outcomes.html`.
 - Some CalWIN counties reported 0 SSI applications received from December 2019 through May 2022. SSI outcomes still exist those months.
 - SSI household outcomes are displayed according to best available data from the CDSS Data Dashboard Monthly tab. When ineligible + procedural is close to denied, the mix is shown as approved / ineligible / procedural / other. CalWIN counties ~2020–May 2022 show total denials, but not a break-out of ineligible vs. procedural, and are shown as a single lumped Denied in warm grey. Months where the ineligible / procedural split overshoots total denials are also shown this way.
 - SSI Denial details is households with only SSI recipients: ineligible vs procedural, a subset of some-SSI denials.
-- The procedural denials call-out is a 1% counterfactual of applications disposed in the last month of the date range, for the Application Trends place. Dollars use California average issuance (Total Issuances ÷ households). College student and SSI rows use that same all-household rate.
 
-Leftovers from the old Q&A that are **not** Data notes (info-tip, Definitions, or methods): All / student / SSI don’t overlay; procedural vs ineligible; GetCalFresh sunset; county size groups.
+Leftovers from the old Q&A that are **not** Data notes (info-tip, Definitions, or methods): All / student / SSI don’t overlay; procedural vs ineligible; GetCalFresh sunset; county size groups. The 1% call-out recap is on the call-out itself plus Wonky **Note 13**, not Data notes.
 
 ### Wonky & math-y details (live, collapsed after Data notes)
 
 `#methods` on `outcomes.html`. Label is **Wonky & math-y details**. Starts closed. Grouped under short headings. The Data notes Channels link opens it.
+
+The live fold is formulas, column names, and item numbers — not hover recipes, UI defaults, or palettes (2026-09-09). Internal leftovers that used to live on the page:
+
+- Isolated stack slices (a complete month between two gaps still draws)
+- Hover denoms (Note 12) — standing UI, not the fold
+- Student exemption types omitted: JTPA, Trade Act, Tribal TANF, WIOA, Title 4, state/local training, CalFresh E&T, CalGrant TANF, CalWORKs, Disabled
+- Parallel SSI-only deduction claim columns are unused
+- Do not blank SSI months that have approved and denied
+- SSI channel blanking when SSA GCF exceeds Online SSI is still on the page; CalWIN 0 online/non-online Dec 2019–May 2022 stays a Data note
+- Timeliness UI (checkbox, date/place follow Application Trends, closed fold-out, dashed lines)
+- Churn county defaults (sort by No loss, group by county size), stack order, palette, hover top-to-bottom
+- Consortia are obsolete as a filter (standing rule); the fold only notes pre-CalSAWS months may not be comparable
+- CFAP “do not label state-only”; SNB/TNB hex colors
 
 The live bullets match the fold. Internal note numbers below are just our scratch map.
 
@@ -115,7 +127,7 @@ The live bullets match the fold. Internal note numbers below are just our scratc
 - **Note 11 detail (SSI mix):** Households with at least some SSI. When ineligible + procedural is close to denied: Approved / Ineligible / Procedurally Denied / Other. Otherwise Approved / lumped Denied `#A89890` (warm grey, never procedural orange): CalWIN ~2020–May 2022, and months where the split overshoots (including a bad November 2025 statewide ineligible reading). No pended or withdrawn column. Do not blank months that have approved and denied.
 - **Note 11b detail:** SSI Denial details is `SSI Only - Ineligible Denials` vs `SSI Only Procedural Denials`: households with only SSI recipients, a subset of some-SSI denials.
 - **Note 12 detail (hover, not a view note):** Stacked mix hover includes the count those percents are of: applications disposed (all), college student applications disposed (approved or denied, not `New Applications Age Total`), SSI household applications disposed. Student mix hover also notes applications still pended. Channels hover is applications received (all / SSI) or the student source total. Denial details hover is applications denied.
-- **Note 13 detail (procedural 1% estimate):** 1% × applications disposed in the last month of the Application Trends date range × California average issuance (Total Issuances ÷ CalFresh Households; $198 fallback). College student and SSI rows use that population’s disposed count and the same all-household rate. One month of benefits. Not a CDSS cell.
+- **Note 13 detail (procedural 1% estimate):** 1% × applications disposed in the last month of the Application Trends date range. All applications × California issuance per household (Total Issuances ÷ CalFresh Households; if that month is missing, the latest month at or before it). College students × issuance per person (Total Issuances ÷ CalFresh Persons) because CDSS has no student-specific issuance and many student households are likely one person. SSI households × Average Approved Benefit - SSI (newly approved some-SSI households). One month of benefits. Not a CDSS cell.
 - Isolated stack slices (complete month between two gaps still draws)
 
 ---
