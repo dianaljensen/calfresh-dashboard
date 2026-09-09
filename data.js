@@ -302,7 +302,7 @@ const OUTCOME_PART_KEYS = ['approved', 'ineligible', 'procedural', 'withdrawn'];
 const STUDENT_OUTCOME_PART_KEYS = ['approved', 'denied', 'pended'];
 const SSI_RAW_KEYS = ['approved', 'denied', 'ineligible', 'procedural', 'ssiOnlyIneligible', 'ssiOnlyProcedural'];
 const SSI_VOLUME_KEYS = ['onlineApps', 'nonOnlineApps'];
-const SSI_SERIES_KEYS = SSI_RAW_KEYS.concat(SSI_VOLUME_KEYS).concat(['avgAge', 'daysDispose']);
+const SSI_SERIES_KEYS = SSI_RAW_KEYS.concat(SSI_VOLUME_KEYS).concat(['avgAge', 'daysDispose', 'avgApprovedBenefit']);
 const DAYS_BUCKET_KEYS = [
   'es1to3', 'es4to7', 'esOver7',
   'ne1to7', 'ne8to15', 'ne16to22', 'ne23to30', 'neOver30'
@@ -383,7 +383,6 @@ const CHURN_REAPP_ELIG_MONTHS = [
   { key: 'new4Elig', months: 4 }
 ];
 const CHURN_DAYS_PER_MONTH = 30;
-const CHURN_BENEFIT_FALLBACK = 198;
 const QUARTER_MONTHS = {
   Q1: ['01', '02', '03'],
   Q2: ['04', '05', '06'],
@@ -1372,6 +1371,10 @@ function ingestMasterExplore(parsed, months, all_counties) {
   const ssiDeductionCols = mapCols(SSI_DEDUCTION_COLS);
   const ssiAvgAgeCol = findCol(map, ['Average Age of SSI Persons Newly Applying']);
   const ssiDaysCol = findCol(map, ['Average Days to Dispose - SSI']);
+  const ssiApprovedBenefitCol = findCol(map, [
+    'Average Approved Benefit - SSI',
+    'Average Approved Benefit SSI'
+  ]);
 
   const missing = [];
   if (!countyCol || !monthCol || !yearCol) missing.push('County / Month / Calendar Year');
@@ -1443,6 +1446,10 @@ function ingestMasterExplore(parsed, months, all_counties) {
     if (ssiAvg != null) ssiRow.avgAge[period] = ssiAvg;
     const ssiDays = parseNumber(row[ssiDaysCol]);
     if (ssiDays != null) ssiRow.daysDispose[period] = ssiDays;
+    if (ssiApprovedBenefitCol) {
+      const ssiBen = parseNumber(row[ssiApprovedBenefitCol]);
+      if (ssiBen != null) ssiRow.avgApprovedBenefit[period] = ssiBen;
+    }
 
     const chRow = ensure(channel_series, county, CHANNEL_RAW_KEYS);
     CHANNEL_RAW_KEYS.forEach(k => {
@@ -2657,7 +2664,29 @@ function statewideBenefitByMonth(monthlyRows) {
   return map;
 }
 
+function statewideBenefitPerPersonByMonth(monthlyRows) {
+  const map = {};
+  (monthlyRows || []).forEach(r => {
+    if (r.county !== 'Statewide') return;
+    if (r.dollars_issued == null || r.persons == null || r.persons <= 0) return;
+    map[r.period] = r.dollars_issued / r.persons;
+  });
+  return map;
+}
+
+function statewideSsiApprovedBenefitByMonth(ssiSeries) {
+  const src = ssiSeries && ssiSeries.Statewide && ssiSeries.Statewide.avgApprovedBenefit;
+  const map = {};
+  if (!src) return map;
+  Object.keys(src).forEach(period => {
+    if (src[period] != null) map[period] = src[period];
+  });
+  return map;
+}
+
 function benefitPerHousehold(period, byMonth) {
+  // Prefer that month. If issuances lag (usually one month), use the latest
+  // month at or before it. Do not use a hardcoded dollar rate.
   const map = byMonth || {};
   if (period && map[period] != null) return { value: map[period], period: period };
   const keys = Object.keys(map).sort();
@@ -2667,7 +2696,7 @@ function benefitPerHousehold(period, byMonth) {
     }
   }
   if (keys.length) return { value: map[keys[keys.length - 1]], period: keys[keys.length - 1] };
-  return { value: CHURN_BENEFIT_FALLBACK, period: null };
+  return { value: null, period: null };
 }
 
 function dueLateLossHouseholdMonths(row) {
@@ -3148,7 +3177,10 @@ async function startLiveOutcomesDashboard(initDashboard) {
       DATA.months,
       DATA.all_counties
     );
-    DATA.benefit_by_month = statewideBenefitByMonth(csvToMonthlyRows(monthlyLoaded.parsed));
+    const monthlyRows = csvToMonthlyRows(monthlyLoaded.parsed);
+    DATA.benefit_by_month = statewideBenefitByMonth(monthlyRows);
+    DATA.benefit_per_person_by_month = statewideBenefitPerPersonByMonth(monthlyRows);
+    DATA.ssi_benefit_by_month = statewideSsiApprovedBenefitByMonth(DATA.ssi_series);
     const fetchedAt = [
       cf296Loaded.fetchedAt, legacyLoaded.fetchedAt, metaLoaded.fetchedAt,
       monthlyLoaded.fetchedAt, cf18Loaded.fetchedAt, quarterlyLoaded.fetchedAt
