@@ -265,6 +265,12 @@
     white-space: nowrap; display: inline-flex; align-items: center;
     flex-shrink: 0;
   }
+  /* Folded prompt is the only “click me” cue on a tinted bar — muted grey
+     disappeared into the background (tester, 2026-09-13). */
+  .compact-filters:not(.filters-open) .shared-filters-prompt {
+    color: var(--accent); font-weight: 600;
+  }
+  .compact-filters:not(.filters-open) .filters-toggle-mark { color: var(--accent); }
   .compact-filters.filters-open .shared-filters-prompt-expand { display: none; }
   .compact-filters:not(.filters-open) .shared-filters-prompt-collapse { display: none; }
   .compact-filters:not(.filters-open) .shared-controls-body { display: none; }
@@ -514,9 +520,22 @@
   .groupby-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
   .chart-legend { display: flex; gap: 16px; margin-left: auto; font-size: 11px; color: var(--muted); align-items: center; flex-wrap: wrap; }
   .legend-item { display: inline-flex; align-items: center; }
-  .legend-swatch { display: inline-block; width: 18px; height: 0; margin-right: 5px; }
+  .legend-swatch { display: inline-block; width: 24px; height: 0; margin-right: 5px; }
   .legend-swatch.solid { border-top: 2px solid rgba(31,36,48,0.45); }
-  .legend-swatch.dashed { border-top: 1.5px dashed #555; }
+  .legend-swatch.dashed { border-top: 2px dashed #555; }
+  .line-legend {
+    display: flex; gap: 8px 16px; flex-wrap: wrap;
+    font-size: 11px; color: var(--muted);
+    margin: 0 0 8px; align-items: center;
+  }
+  .line-legend[hidden] { display: none; }
+  .line-legend-item {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin: 0; padding: 0; border: 0; background: none;
+    font: inherit; font-size: 11px; color: var(--muted); cursor: pointer;
+  }
+  .line-legend-item.is-off { opacity: 0.45; text-decoration: line-through; }
+  .line-legend-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #bucketChartHolder { height: 420px; overflow-x: auto; }
   footer.source-note { margin-top: 34px; font-size: 11.5px; color: var(--muted); line-height: 1.6; border-top: 1px solid var(--line); padding-top: 14px; }
   footer.source-note a { color: var(--accent); }
@@ -649,7 +668,7 @@
       <div class="card-filters">
         <div class="card-filters-clear">
           <button type="button" id="clearCompareBtn" class="range-btn">Clear filters</button>
-          <div class="filter-hint">Click a name to add or remove it.</div>
+            <div class="filter-hint">Click a name to add or remove it. County size and Regions replace each other.</div>
         </div>
         <div class="filter-group multi">
           <div class="filter-label-row">
@@ -666,7 +685,7 @@
             <label for="sizeCompareSelect">County size</label>
             <span class="info-tip">
               <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeCompareTip" aria-label="About the County size filter">i</button>
-              <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Leave empty to include all sizes. Selecting a size keeps only matching counties on these two charts (independent of the county bar chart and Caseload movement below). X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Region lines use only members of the selected sizes. Clicking a county of another size adds that size to the filter.</span>
+              <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Leave empty to include all sizes. Selecting a size keeps only matching counties on these two charts (independent of the county bar chart and Caseload movement below) and clears Regions. X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Clicking a county of another size adds that size to the filter.</span>
             </span>
           </div>
           <select id="sizeCompareSelect" multiple></select>
@@ -677,7 +696,7 @@
               <label for="regionCompareSelect">Regions</label>
               <span class="info-tip">
                 <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="regionsTip" aria-label="About the Regions filter">i</button>
-                <span id="regionsTip" class="info-tip-bubble" role="tooltip">Adds one dashed line per region (population-weighted). Pick one region and no counties to see participant types as a regional total.</span>
+                <span id="regionsTip" class="info-tip-bubble" role="tooltip">Adds one dashed line per region (population-weighted). Pick one region and no counties to see participant types as a regional total. Picking a region clears County size.</span>
               </span>
             </div>
             <select id="regionCompareSelect" multiple></select>
@@ -687,7 +706,7 @@
               <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
               <span class="info-tip">
                 <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="drillGroupTip" aria-label="About drill into group">i</button>
-                <span id="drillGroupTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate (or size filter) stays on the chart. If both a region and a size are selected, Counties follows the region — still limited to the selected sizes. Turning the switch off clears Counties.</span>
+                <span id="drillGroupTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate (or size filter) stays on the chart. Picking a region clears County size, and picking a size clears Regions. Turning the switch off clears Counties.</span>
               </span>
             </div>
             <button type="button" id="drillRegionBtn" class="drill-toggle" aria-pressed="false" disabled
@@ -709,6 +728,7 @@
       <div class="chart-plot">
         <h2 id="totalTitle">Total CalFresh Participants</h2>
         <p class="caption" id="totalCaption">California, monthly persons, 2014–2026</p>
+        <div class="line-legend" id="totalLineLegend" hidden role="group" aria-label="Chart lines"></div>
         <div class="chart-hover" id="totalChartHover" aria-live="polite"></div>
         <div class="chart-holder"><canvas id="totalChart" aria-hidden="true"></canvas></div>
         <div class="ref-line-legend ref-line-legend-inline" id="totalRefLineLegend"></div>
@@ -761,6 +781,7 @@
           <button type="button" id="yoyPeriodBtn" class="range-btn">Show Quarterly Change</button>
         </div>
         <p class="caption" id="yoyCaption">Year-over-year change, selected counties</p>
+        <div class="line-legend" id="yoyLineLegend" hidden role="group" aria-label="Chart lines"></div>
         <div class="chart-hover" id="yoyChartHover" aria-live="polite"></div>
         <div class="chart-holder"><canvas id="yoyChart" aria-hidden="true"></canvas></div>
         <div class="ref-line-legend ref-line-legend-inline" id="yoyRefLineLegend"></div>
@@ -888,7 +909,7 @@
         <div class="card-filters">
           <div class="card-filters-clear">
             <button type="button" id="movementClearBtn" class="range-btn">Clear filters</button>
-            <div class="filter-hint">Click a name to add or remove it. These filters are only for this chart; they start matching the two charts above.</div>
+            <div class="filter-hint">Click a name to add or remove it. County size and Regions replace each other. These filters are only for this chart; they start matching the two charts above.</div>
           </div>
           <div class="filter-group multi">
             <div class="filter-label-row">
@@ -905,7 +926,7 @@
               <label for="movementSizeSelect">County size</label>
               <span class="info-tip">
                 <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementSizeTip" aria-label="About the County size filter">i</button>
-                <span id="movementSizeTip" class="info-tip-bubble" role="tooltip">Leave empty to include all sizes. Independent of the charts above. X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Clicking a county of another size adds that size to the filter.</span>
+                <span id="movementSizeTip" class="info-tip-bubble" role="tooltip">Leave empty to include all sizes. Independent of the charts above. Picking a size clears Regions. X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Clicking a county of another size adds that size to the filter.</span>
               </span>
             </div>
             <select id="movementSizeSelect" multiple></select>
@@ -916,7 +937,7 @@
                 <label for="movementRegionSelect">Regions</label>
                 <span class="info-tip">
                   <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementRegionsTip" aria-label="About the Regions filter">i</button>
-                  <span id="movementRegionsTip" class="info-tip-bubble" role="tooltip">Adds one chart per region (combined counts of member counties). Independent of the charts above.</span>
+                  <span id="movementRegionsTip" class="info-tip-bubble" role="tooltip">Adds one chart per region (combined counts of member counties). Independent of the charts above. Picking a region clears County size.</span>
                 </span>
               </div>
               <select id="movementRegionSelect" multiple></select>
@@ -926,7 +947,7 @@
                 <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
                 <span class="info-tip">
                   <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementDrillTip" aria-label="About drill into group">i</button>
-                  <span id="movementDrillTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate (or size filter) stays on the chart. If both a region and a size are selected, Counties follows the region — still limited to the selected sizes. Turning the switch off clears Counties.</span>
+                  <span id="movementDrillTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate (or size filter) stays on the chart. Picking a region clears County size, and picking a size clears Regions. Turning the switch off clears Counties.</span>
                 </span>
               </div>
               <button type="button" id="movementDrillBtn" class="drill-toggle" aria-pressed="false" disabled
@@ -1025,6 +1046,41 @@ function dashSwatchStyle(color, dash) {
     pos += len;
   });
   return 'display:inline-block;width:24px;height:2px;background-image:repeating-linear-gradient(to right,' + stops.join(',') + ');background-repeat:repeat-x;';
+}
+function lineSwatchStyle(color, dash) {
+  if (dash && dash.length) return dashSwatchStyle(color, dash);
+  return 'display:inline-block;width:24px;height:2px;background:' + color + ';';
+}
+function renderLineLegend(containerId, chart, show) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!show || !chart) {
+    el.replaceChildren();
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  el.replaceChildren();
+  chart.data.datasets.forEach((ds, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'line-legend-item';
+    btn.setAttribute('aria-pressed', 'true');
+    btn.title = 'Show or hide this line';
+    const swatch = document.createElement('span');
+    swatch.setAttribute('aria-hidden', 'true');
+    swatch.style.cssText = lineSwatchStyle(ds.borderColor, ds.borderDash);
+    btn.appendChild(swatch);
+    btn.appendChild(document.createTextNode(ds.label));
+    btn.addEventListener('click', () => {
+      const on = !chart.isDatasetVisible(i);
+      chart.setDatasetVisibility(i, on);
+      chart.update();
+      btn.classList.toggle('is-off', !on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    el.appendChild(btn);
+  });
 }
 
 // Reference-line legend only lists lines that actually fall in the visible
@@ -1287,6 +1343,16 @@ function enablePlainClickToggle(select) {
       select.dispatchEvent(new Event('change', { bubbles: true }));
     });
   });
+}
+function clearSelectOptions(sel) {
+  Array.from(sel.options).forEach(o => { o.selected = false; });
+}
+// County size and Regions are alternative groupings, not an AND filter.
+// Selecting in one list clears the other so drill / overlays stay readable
+// (tester, 2026-09-13).
+function exclusivePlaceGroup(changedSel, otherSel) {
+  if (!changedSel.selectedOptions.length) return;
+  clearSelectOptions(otherSel);
 }
 
 // "California"/"Statewide" reads fine as-is; real counties need " County" appended
@@ -3052,11 +3118,9 @@ function buildTotalChart(counties, regions) {
       plugins: {
         // Participant Types checkboxes already label every series in single-entity
         // mode. In multi-entity comparison mode those checkboxes are locked, so
-        // the Chart.js legend identifies the county/region lines instead -- same
-        // treatment as the Annual % Change chart.
-        legend: (singleFocus && !addStatewideLine)
-          ? { display: false }
-          : { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        // the HTML line legend identifies the county/region lines instead — dashed
+        // swatches match the canvas (Chart.js boxes made dashes look solid).
+        legend: { display: false },
         monthYearAxis: true,
         tooltip: {
           // Canvas overlay covered the lines (Steph, 2026-08-27). Render the
@@ -3138,6 +3202,7 @@ function buildTotalChart(counties, regions) {
   document.querySelector('#totalChartTable caption').textContent = shownLayers.length
     ? titleText + ', ' + shownLayers.join(', ')
     : titleText + ', monthly persons';
+  renderLineLegend('totalLineLegend', totalChart, !(singleFocus && !addStatewideLine));
   renderRefLineLegend('totalRefLineLegend', labels, totalChart);
 
   if (caveats.length) {
@@ -3288,7 +3353,7 @@ function buildYoyChart(counties, regions) {
       interaction: { mode: 'nearest', intersect: false, axis: 'x' },
       layout: { padding: { top: 12, bottom: 30 } },
       plugins: {
-        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        legend: { display: false },
         monthYearAxis: true,
         negativeBand: true,
         tooltip: {
@@ -3328,6 +3393,7 @@ function buildYoyChart(counties, regions) {
   const windowBit = yoyPeriod === 'quarterly' ? 'Change vs three months earlier' : 'Year-over-year change';
   document.getElementById('yoyCaption').textContent =
     windowBit + ' — ' + captionParts.filter(Boolean).join(', ');
+  renderLineLegend('yoyLineLegend', yoyChart, true);
   renderRefLineLegend('yoyRefLineLegend', labels, yoyChart);
 
   const yoyEntityNames = datasets.map(d => d.label === 'California' ? 'California' : d.label);
@@ -3371,8 +3437,9 @@ syncYoyPeriodUi();
 const drillRegionBtn = document.getElementById('drillRegionBtn');
 let drillActive = false;
 
-// Prefer a single region (existing behavior, including when a size filter is
-// also on). If no region is selected, a single size group is also drillable.
+// Prefer a single region. If no region is selected, a single size group is
+// also drillable. Size and region lists are exclusive, so both-at-once is
+// only a leftover from an older combined-filter recipe.
 function currentDrillTarget() {
   const regions = currentRegions();
   const sizes = currentSizes();
@@ -3482,11 +3549,13 @@ compareSelect.addEventListener('change', () => {
   rebuildTimeSeriesCharts();
 });
 regionCompareSelect.addEventListener('change', () => {
+  exclusivePlaceGroup(regionCompareSelect, sizeCompareSelect);
   updateDrillButtonState();
   applyDrillIfActive();
   rebuildTimeSeriesCharts();
 });
 sizeCompareSelect.addEventListener('change', () => {
+  exclusivePlaceGroup(sizeCompareSelect, regionCompareSelect);
   dropCountiesOutsideSizes();
   updateDrillButtonState();
   applyDrillIfActive();
@@ -3695,11 +3764,13 @@ movementCompareSelect.addEventListener('change', () => {
   onMovementFiltersChange();
 });
 movementRegionSelect.addEventListener('change', () => {
+  exclusivePlaceGroup(movementRegionSelect, movementSizeSelect);
   setMovementDrillUi(movementDrillActive);
   applyMovementDrillIfActive();
   onMovementFiltersChange();
 });
 movementSizeSelect.addEventListener('change', () => {
+  exclusivePlaceGroup(movementSizeSelect, movementRegionSelect);
   dropMovementCountiesOutsideSizes();
   setMovementDrillUi(movementDrillActive);
   applyMovementDrillIfActive();

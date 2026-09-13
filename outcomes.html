@@ -662,7 +662,7 @@
               <label for="sizeCompareSelect">County size</label>
               <span class="info-tip">
                 <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeCompareTip" aria-label="About the County size filter">i</button>
-                <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Adds one stacked chart per size group, using the combined counts of counties in that group (not an average of percentages). Leave empty to skip size-group charts. X-Large is the 6 largest counties by CalFresh households. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Independent of the bar chart below.</span>
+                <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Adds one stacked chart per size group, using the combined counts of counties in that group (not an average of percentages). Leave empty to skip size-group charts. Picking a size clears Regions. X-Large is the 6 largest counties by CalFresh households. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Independent of the bar chart below.</span>
               </span>
             </div>
             <select id="sizeCompareSelect" class="filter-sizes" multiple></select>
@@ -673,7 +673,7 @@
                 <label for="regionCompareSelect">Regions</label>
                 <span class="info-tip">
                   <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="regionsTip" aria-label="About the Regions filter">i</button>
-                  <span id="regionsTip" class="info-tip-bubble" role="tooltip">Adds one stacked chart per region, using the combined application counts of member counties (not an average of percentages).</span>
+                  <span id="regionsTip" class="info-tip-bubble" role="tooltip">Adds one stacked chart per region, using the combined application counts of member counties (not an average of percentages). Picking a region clears County size.</span>
                 </span>
               </div>
               <select id="regionCompareSelect" class="filter-regions" multiple></select>
@@ -683,7 +683,7 @@
                 <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
                 <span class="info-tip">
                   <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="drillGroupTip" aria-label="About drill into group">i</button>
-                  <span id="drillGroupTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate stays on the chart. If both a region and a size are selected, Counties follows the region — still limited to the selected sizes. Turning the switch off clears Counties.</span>
+                  <span id="drillGroupTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate stays on the chart. Picking a region clears County size, and picking a size clears Regions. Turning the switch off clears Counties.</span>
                 </span>
               </div>
               <button type="button" class="drill-toggle" aria-pressed="false" disabled
@@ -3772,7 +3772,7 @@ function syncGeoRangeUi() {
     if (countyLabel) countyLabel.textContent = hidePlaces ? 'County' : 'Counties';
     const hint = root.querySelector('.geo-filter-hint');
     if (hint) {
-      hint.textContent = hidePlaces ? 'Click a county to view it.' : 'Click a name to add or remove it.';
+      hint.textContent = hidePlaces ? 'Click a county to view it.' : 'Click a name to add or remove it. County size and Regions replace each other.';
     }
     const summaryEl = root.querySelector('.shared-filters-summary');
     if (summaryEl) summaryEl.textContent = summary;
@@ -3836,8 +3836,9 @@ document.querySelectorAll('.explore-mode-btn').forEach(btn => {
   });
 });
 
-// Prefer a single region (existing behavior, including when a size filter is
-// also on). If no region is selected, a single size group is also drillable.
+// Prefer a single region. If no region is selected, a single size group is
+// also drillable. Size and region lists are exclusive, so both-at-once is
+// only a leftover from an older combined-filter recipe.
 function currentDrillTarget() {
   const regions = currentRegions();
   const sizes = currentSizes();
@@ -3929,9 +3930,11 @@ function onPlaceFilterChange(root, which) {
       if (!target || !countiesMatchDrill(target)) drillActive = false;
     }
   } else if (which === 'sizes') {
+    if (selectedSizes.length) selectedRegions = [];
     dropCountiesOutsideSizes();
     applyDrillIfActive();
   } else if (which === 'regions') {
+    if (selectedRegions.length) selectedSizes = [];
     applyDrillIfActive();
   }
   maybeSwitchToPlaces();

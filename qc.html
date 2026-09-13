@@ -93,6 +93,17 @@
   .qc-callout p:last-child { margin-bottom: 0; }
   .qc-callout .qc-callout-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
   .caption { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
+  .qc-legend {
+    display: flex; gap: 10px 18px; flex-wrap: wrap;
+    font-size: 11px; color: var(--muted);
+    margin: 0 0 8px; align-items: center;
+  }
+  .qc-legend-item { display: inline-flex; align-items: center; }
+  .qc-legend-swatch {
+    display: inline-block; width: 28px; height: 0;
+    margin-right: 6px; border-top: 2px solid; flex-shrink: 0;
+  }
+  .qc-legend-swatch.is-dashed { border-top-style: dashed; }
   .chart-plot { position: relative; }
   .chart-holder { height: 320px; }
   .chart-hover {
@@ -237,6 +248,7 @@
     </div>
     <p class="caption" id="qcCaption"></p>
     <div class="chart-plot">
+      <div class="qc-legend" id="qcLegend"></div>
       <div class="chart-hover" id="qcChartHover" aria-live="polite"></div>
       <div class="chart-holder"><canvas id="qcChart" aria-hidden="true"></canvas></div>
     </div>
@@ -489,6 +501,24 @@ function syncRangeUi() {
   document.getElementById('rangeReset').classList.toggle('active', rangePreset === 'full');
 }
 
+function renderQcLegend(datasets) {
+  const el = document.getElementById('qcLegend');
+  if (!el) return;
+  el.replaceChildren();
+  datasets.forEach(ds => {
+    const item = document.createElement('span');
+    item.className = 'qc-legend-item';
+    const swatch = document.createElement('span');
+    swatch.className = 'qc-legend-swatch' + (ds.borderDash ? ' is-dashed' : '');
+    swatch.style.borderColor = ds.borderColor;
+    item.appendChild(swatch);
+    const label = document.createElement('span');
+    label.textContent = ds.label;
+    item.appendChild(label);
+    el.appendChild(item);
+  });
+}
+
 function buildQcChart() {
   const counties = currentCounties();
   const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
@@ -523,7 +553,7 @@ function buildQcChart() {
       interaction: { mode: 'index', intersect: false, axis: 'x' },
       layout: { padding: { top: 8, bottom: 30 } },
       plugins: {
-        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        legend: { display: false },
         monthYearAxis: true,
         tooltip: {
           enabled: false,
@@ -548,6 +578,7 @@ function buildQcChart() {
       }
     }
   });
+  renderQcLegend(datasets);
   document.getElementById('qcCaption').textContent =
     counties.map(c => c === 'Statewide' ? 'California' : c).join(', ') +
     ', cumulative federal fiscal year rates';
