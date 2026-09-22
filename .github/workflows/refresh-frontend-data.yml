@@ -1,0 +1,34 @@
+name: Refresh frontend data
+
+on:
+  schedule:
+    # Daily late morning Pacific; the Sheet pipeline already runs weekly.
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-frontend-data
+  cancel-in-progress: true
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install export dependencies
+        run: npm install papaparse
+      - name: Export slim JSON from the published Sheet
+        run: node scripts/export-frontend-data.js
+      - name: Commit if the data changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Refresh dashboard data from the published Sheet
+          file_pattern: data/*
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com

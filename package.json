@@ -1,5 +1,9 @@
 {
+  "scripts": {
+    "export-data": "node scripts/export-frontend-data.js"
+  },
   "dependencies": {
-    "jsdom": "^30.0.1"
+    "jsdom": "^30.0.1",
+    "papaparse": "^5.7.0"
   }
 }

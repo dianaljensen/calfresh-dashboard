@@ -1,6 +1,7 @@
-// Live spreadsheet feed for the participation view.
-// Fetches the Publish-to-web CSV for specific tabs of "CalFresh Data - Consolidated".
-// That 2PACX URL is public; spreadsheet-ID gviz URLs are not (they 401 unless signed in).
+// Live spreadsheet feed for the dashboard views.
+// Pages load slim JSON from /data (written by scripts/export-frontend-data.js and
+// refreshed by GitHub Actions from the published Sheet). If a pack is missing,
+// fall back to Publish-to-web CSVs. Spreadsheet-ID gviz URLs 401 when signed out.
 
 const PUBLISHED_SHEET = {
   base: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTFzUHnRs-aXlIQhySWVRbTPZtSkM3--uskf8F3dCxnsEXRoIWePnuL8KoigtOP6W-hh22xLDNfivRK',
@@ -567,7 +568,7 @@ async function fetchCsv(gid, label) {
 // copy in IndexedDB so reloads can paint from disk, then refresh in the background.
 const CSV_CACHE_DB = 'calfresh-csv-v1';
 const CSV_CACHE_STORE = 'csv';
-const MONTHLY_ROWS_KEY = 'monthly-rows-v3';
+const MONTHLY_ROWS_KEY = 'monthly-rows-v4';
 const COUNTY_META_KEY = 'county-meta-v1';
 const csvRefreshInflight = {};
 let csvCacheDbPromise = null;
@@ -637,6 +638,31 @@ function setFeedStatus(statusEl, fetchedAt) {
   statusEl.textContent = 'Data sources last refreshed ' + when + '.';
 }
 
+const FRONTEND_DATA_DIR = 'data';
+
+function packFetchedAt(pack) {
+  if (!pack || !pack.generatedAt) return Date.now();
+  const ts = Date.parse(pack.generatedAt);
+  return isFinite(ts) ? ts : Date.now();
+}
+
+async function fetchFrontendPack(name) {
+  try {
+    const res = await fetch(FRONTEND_DATA_DIR + '/' + name + '.json');
+    if (!res.ok) return null;
+    const body = await res.json();
+    if (!body || typeof body !== 'object') return null;
+    return body;
+  } catch (err) {
+    return null;
+  }
+}
+
+function packToParsed(pack) {
+  if (!pack || !Array.isArray(pack.fields) || !Array.isArray(pack.rows)) return null;
+  return { data: pack.rows, meta: { fields: pack.fields } };
+}
+
 function refreshCsvInBackground(gid, label) {
   if (csvRefreshInflight[gid]) return csvRefreshInflight[gid];
   csvRefreshInflight[gid] = fetchCsvText(gid, label).then(async text => {
@@ -645,7 +671,13 @@ function refreshCsvInBackground(gid, label) {
       await csvCacheSet(gid, { text: text, fetchedAt: Date.now() });
     }
     if (gid === PUBLISHED_SHEET.monthlyGid) {
-      const rows = csvToMonthlyRows(parseCsv(text, label));
+      let rows = csvToMonthlyRows(parseCsv(text, label));
+      try {
+        const pitText = await fetchCsvText(PUBLISHED_SHEET.pointInTimeGid, 'Master_PointInTime');
+        rows = mergeDualIntoMonthly(rows, csvToDualRows(parseCsv(pitText, 'Master_PointInTime')));
+      } catch (err) {
+        console.warn('Background Point-in-Time merge failed:', err);
+      }
       await csvCacheSet(MONTHLY_ROWS_KEY, { text: JSON.stringify(rows), fetchedAt: Date.now() });
       await csvCacheSet(COUNTY_META_KEY, {
         text: JSON.stringify(countyMetaFromMonthlyRows(rows)),
@@ -681,6 +713,10 @@ async function loadCsv(gid, label) {
 }
 
 async function loadMonthlyRows() {
+  const pack = await fetchFrontendPack('monthly-rows');
+  if (pack && Array.isArray(pack.rows) && pack.rows.length) {
+    return { rows: pack.rows, fromCache: true, fetchedAt: packFetchedAt(pack) };
+  }
   const cached = await csvCacheGet(MONTHLY_ROWS_KEY);
   if (cached && cached.text) {
     refreshCsvInBackground(PUBLISHED_SHEET.monthlyGid, 'Master_Monthly');
@@ -695,13 +731,109 @@ async function loadMonthlyRows() {
     }
   }
   const loaded = await loadCsv(PUBLISHED_SHEET.monthlyGid, 'Master_Monthly');
-  const rows = csvToMonthlyRows(loaded.parsed);
+  let rows = csvToMonthlyRows(loaded.parsed);
+  try {
+    const pit = await loadCsv(PUBLISHED_SHEET.pointInTimeGid, 'Master_PointInTime');
+    rows = mergeDualIntoMonthly(rows, csvToDualRows(pit.parsed));
+  } catch (err) {
+    console.warn('Point-in-Time dual enrollment could not be merged:', err);
+  }
   csvCacheSet(MONTHLY_ROWS_KEY, { text: JSON.stringify(rows), fetchedAt: loaded.fetchedAt });
   csvCacheSet(COUNTY_META_KEY, {
     text: JSON.stringify(countyMetaFromMonthlyRows(rows)),
     fetchedAt: loaded.fetchedAt
   });
   return { rows: rows, fromCache: loaded.fromCache, fetchedAt: loaded.fetchedAt };
+}
+
+async function loadAgeRows() {
+  const pack = await fetchFrontendPack('age-rows');
+  if (pack && Array.isArray(pack.rows)) {
+    return { rows: pack.rows, fromCache: true, fetchedAt: packFetchedAt(pack) };
+  }
+  const loaded = await loadCsv(PUBLISHED_SHEET.annualGid, 'Master_Annual');
+  return {
+    rows: csvToAgeRows(loaded.parsed),
+    fromCache: loaded.fromCache,
+    fetchedAt: loaded.fetchedAt
+  };
+}
+
+async function loadOutcomeRows() {
+  const pack = await fetchFrontendPack('outcome-rows');
+  if (pack && Array.isArray(pack.rows) && pack.rows.length) {
+    return { rows: pack.rows, fromCache: true, fetchedAt: packFetchedAt(pack) };
+  }
+  const [cf296Loaded, legacyLoaded] = await Promise.all([
+    loadCsv(PUBLISHED_SHEET.cf296Gid, 'CF296'),
+    loadCsv(PUBLISHED_SHEET.cf296LegacyGid, 'CF296_Legacy')
+  ]);
+  return {
+    rows: parseCf296OutcomeRows(legacyLoaded.parsed, cf296Loaded.parsed),
+    fromCache: cf296Loaded.fromCache && legacyLoaded.fromCache,
+    fetchedAt: Math.min(cf296Loaded.fetchedAt || Date.now(), legacyLoaded.fetchedAt || Date.now())
+  };
+}
+
+async function loadMonthlyParsed() {
+  try {
+    const [csvRes, meta] = await Promise.all([
+      fetch(FRONTEND_DATA_DIR + '/master-monthly.csv'),
+      fetchFrontendPack('meta')
+    ]);
+    if (csvRes && csvRes.ok) {
+      const text = await csvRes.text();
+      if (text && text.indexOf(',') !== -1 && !/^\s*<!DOCTYPE html/i.test(text)) {
+        return {
+          parsed: parseCsv(text, 'Master_Monthly'),
+          fromCache: true,
+          fetchedAt: packFetchedAt(meta || {})
+        };
+      }
+    }
+  } catch (err) {
+    // Fall through to the published Sheet.
+  }
+  return loadCsv(PUBLISHED_SHEET.monthlyGid, 'Master_Monthly');
+}
+
+async function loadCf18DaysRows() {
+  const pack = await fetchFrontendPack('cf18-days-rows');
+  if (pack && Array.isArray(pack.rows)) {
+    return { rows: pack.rows, fromCache: true, fetchedAt: packFetchedAt(pack) };
+  }
+  const loaded = await loadCsv(PUBLISHED_SHEET.cf18Gid, 'CF18');
+  return {
+    rows: csvToCf18DaysRows(loaded.parsed),
+    fromCache: loaded.fromCache,
+    fetchedAt: loaded.fetchedAt
+  };
+}
+
+async function loadCf18ChurnRows() {
+  const pack = await fetchFrontendPack('cf18-churn-rows');
+  if (pack && Array.isArray(pack.rows) && pack.rows.length) {
+    return { rows: pack.rows, fromCache: true, fetchedAt: packFetchedAt(pack) };
+  }
+  const loaded = await loadCsv(PUBLISHED_SHEET.cf18Gid, 'CF18');
+  return {
+    rows: csvToCf18ChurnRows(loaded.parsed),
+    fromCache: loaded.fromCache,
+    fetchedAt: loaded.fetchedAt
+  };
+}
+
+async function loadQuarterlyDaysRows() {
+  const pack = await fetchFrontendPack('quarterly-days-rows');
+  if (pack && Array.isArray(pack.rows)) {
+    return { rows: pack.rows, fromCache: true, fetchedAt: packFetchedAt(pack) };
+  }
+  const loaded = await loadCsv(PUBLISHED_SHEET.quarterlyGid, 'Master_Quarterly');
+  return {
+    rows: csvToQuarterlyDaysRows(loaded.parsed),
+    fromCache: loaded.fromCache,
+    fetchedAt: loaded.fetchedAt
+  };
 }
 
 async function loadCountyMeta() {
@@ -787,6 +919,71 @@ function csvToMonthlyRows(parsed) {
     if (!hasAny) return null; // CDSS placeholder rows for months not yet reported
     return rec;
   }).filter(Boolean);
+}
+
+// Headers the charts actually read from Master_Monthly. The export script keeps
+// only these so /data/master-monthly.json is a slice of the 303-column tab.
+function monthlyParserKeepFields(fields) {
+  const map = headerMap(fields);
+  const keep = [];
+  function add(cands) {
+    const col = findCol(map, cands);
+    if (col && keep.indexOf(col) === -1) keep.push(col);
+  }
+  add(['County']);
+  add(['Month']);
+  add(['Calendar Year']);
+  add(['CalFresh Persons']);
+  add(['CalFresh Households']);
+  add(['Child Only Persons', 'Persons in Child-Only Households']);
+  add(['Total Issuances']);
+  add(['Caseload Total Student Count']);
+  add(['All Federal Persons']);
+  add(['All CFAP Persons']);
+  add(['Total SSI Persons in SNB Households']);
+  add(['Total SSI Persons in TNB Households']);
+  add(['State Issuances']);
+  add(['EBT_SNB_dollars']);
+  add(['EBT_TNB_dollars']);
+  add(['Unemployment Monthly', 'Unemployment Rate']);
+  add(['Active Error Rate']);
+  add(['Negative Error Rate']);
+  add([
+    'Negative Error Rate on Completed Cases',
+    'Negative Error Rate Cases Completed'
+  ]);
+  add(['Applications Approved Containing at Least One Student']);
+  add(['Applications Denied Containing at Least One Student']);
+  add(['Applications Pended Containing at Least One Student']);
+  add(['New Apps with at Least Some SSI - Approved']);
+  add(['New Apps with at Least Some SSI - Denied']);
+  add(['Ineligible Denials - SSI']);
+  add(['Procedural Denials - SSI']);
+  add(['SSI Only - Ineligible Denials']);
+  add(['SSI Only Procedural Denials']);
+  add(['Online Apps - SSI']);
+  add(['Non-Online Apps - SSI']);
+  add(['Applications Received']);
+  add(['Online Applications Received']);
+  add(['All_GCF_apps_submit']);
+  add(['CfA_GCF_apps_submit']);
+  add(['CBO_GCF_apps_submit']);
+  add(['SSA_GCF_apps_submit']);
+  add(['Average Age of SSI Persons Newly Applying']);
+  add(['Average Days to Dispose - SSI']);
+  add(['Average Approved Benefit - SSI', 'Average Approved Benefit SSI']);
+  STUDENT_DENIAL_REASON_COLS.forEach(d => add([d.header]));
+  STUDENT_SOURCE_COLS.forEach(d => add([d.header]));
+  STUDENT_AGE_COLS.forEach(d => add([d.header]));
+  STUDENT_LANGUAGE_COLS.forEach(d => add([d.header]));
+  STUDENT_RACE_COLS.forEach(d => add([d.header]));
+  STUDENT_GENDER_COLS.forEach(d => add([d.header]));
+  STUDENT_EXEMPTION_COLS.forEach(d => add([d.header]));
+  SSI_LANGUAGE_COLS.forEach(d => add([d.header]));
+  SSI_RACE_COLS.forEach(d => add([d.header]));
+  SSI_HH_SIZE_COLS.forEach(d => add([d.header]));
+  SSI_DEDUCTION_COLS.forEach(d => add([d.header]));
+  return keep;
 }
 
 function csvToDualRows(parsed) {
@@ -2803,8 +3000,8 @@ function buildChurnData(churnRows, county_meta) {
     monthsSet.add(r.period);
     if (r.county !== 'Statewide') countiesSet.add(r.county);
     const s = ensure(r.county);
-    if (r.due.sar7) s.sar7[r.period] = r.due.sar7;
-    if (r.due.recert) s.recert[r.period] = r.due.recert;
+    if (r.due && r.due.sar7) s.sar7[r.period] = r.due.sar7;
+    if (r.due && r.due.recert) s.recert[r.period] = r.due.recert;
     if (r.apps) s.apps[r.period] = r.apps;
   });
   const months = Array.from(monthsSet).sort();
@@ -3126,18 +3323,17 @@ async function startLiveOutcomesDashboard(initDashboard) {
     statusEl.className = 'prototype-note';
     statusEl.innerHTML = 'Loading current data...';
 
-    const [cf296Loaded, legacyLoaded, metaLoaded, monthlyLoaded, cf18Loaded, quarterlyLoaded] = await Promise.all([
-      loadCsv(PUBLISHED_SHEET.cf296Gid, 'CF296'),
-      loadCsv(PUBLISHED_SHEET.cf296LegacyGid, 'CF296_Legacy'),
-      loadCountyMeta(),
-      loadCsv(PUBLISHED_SHEET.monthlyGid, 'Master_Monthly'),
-      loadCsv(PUBLISHED_SHEET.cf18Gid, 'CF18'),
-      loadCsv(PUBLISHED_SHEET.quarterlyGid, 'Master_Quarterly')
+    const [outcomeLoaded, monthlyLoaded, cf18Loaded, quarterlyLoaded] = await Promise.all([
+      loadOutcomeRows(),
+      loadMonthlyParsed(),
+      loadCf18DaysRows(),
+      loadQuarterlyDaysRows()
     ]);
 
+    const monthlyRows = csvToMonthlyRows(monthlyLoaded.parsed);
     DATA = buildOutcomesData(
-      parseCf296OutcomeRows(legacyLoaded.parsed, cf296Loaded.parsed),
-      metaLoaded.meta || {}
+      outcomeLoaded.rows,
+      countyMetaFromMonthlyRows(monthlyRows)
     );
     DATA.student_series = buildStudentSeries(
       csvToStudentOutcomeRows(monthlyLoaded.parsed),
@@ -3172,18 +3368,17 @@ async function startLiveOutcomesDashboard(initDashboard) {
     DATA.student_exemption_stack = STUDENT_EXEMPTION_STACK;
     DATA.ssi_deduction_stack = SSI_DEDUCTION_STACK;
     DATA.days_series = buildDaysSeries(
-      csvToCf18DaysRows(cf18Loaded.parsed),
-      csvToQuarterlyDaysRows(quarterlyLoaded.parsed),
+      cf18Loaded.rows,
+      quarterlyLoaded.rows,
       DATA.months,
       DATA.all_counties
     );
-    const monthlyRows = csvToMonthlyRows(monthlyLoaded.parsed);
     DATA.benefit_by_month = statewideBenefitByMonth(monthlyRows);
     DATA.benefit_per_person_by_month = statewideBenefitPerPersonByMonth(monthlyRows);
     DATA.ssi_benefit_by_month = statewideSsiApprovedBenefitByMonth(DATA.ssi_series);
     const fetchedAt = [
-      cf296Loaded.fetchedAt, legacyLoaded.fetchedAt, metaLoaded.fetchedAt,
-      monthlyLoaded.fetchedAt, cf18Loaded.fetchedAt, quarterlyLoaded.fetchedAt
+      outcomeLoaded.fetchedAt, monthlyLoaded.fetchedAt,
+      cf18Loaded.fetchedAt, quarterlyLoaded.fetchedAt
     ]
       .filter(t => typeof t === 'number' && isFinite(t));
     setFeedStatus(statusEl, fetchedAt.length ? Math.min.apply(null, fetchedAt) : Date.now());
@@ -3205,12 +3400,12 @@ async function startLiveChurnDashboard(initDashboard) {
     statusEl.innerHTML = 'Loading current data...';
 
     const [cf18Loaded, monthlyLoaded] = await Promise.all([
-      loadCsv(PUBLISHED_SHEET.cf18Gid, 'CF18'),
+      loadCf18ChurnRows(),
       loadMonthlyRows()
     ]);
 
     DATA = buildChurnData(
-      csvToCf18ChurnRows(cf18Loaded.parsed),
+      cf18Loaded.rows,
       countyMetaFromMonthlyRows(monthlyLoaded.rows || [])
     );
     DATA.benefit_by_month = statewideBenefitByMonth(monthlyLoaded.rows || []);
@@ -3234,31 +3429,27 @@ async function startLiveDashboard(initDashboard) {
     statusEl.className = 'prototype-note';
     statusEl.innerHTML = 'Loading current data...';
 
-    const [monthlyParsed, annualParsed, pitParsed, cf296Loaded, legacyLoaded] = await Promise.all([
-      fetchCsv(PUBLISHED_SHEET.monthlyGid, 'Master_Monthly'),
-      fetchCsv(PUBLISHED_SHEET.annualGid, 'Master_Annual'),
-      fetchCsv(PUBLISHED_SHEET.pointInTimeGid, 'Master_PointInTime'),
-      loadCsv(PUBLISHED_SHEET.cf296Gid, 'CF296'),
-      loadCsv(PUBLISHED_SHEET.cf296LegacyGid, 'CF296_Legacy')
+    const [monthlyLoaded, ageLoaded, outcomeLoaded] = await Promise.all([
+      loadMonthlyRows(),
+      loadAgeRows(),
+      loadOutcomeRows()
     ]);
 
-    const monthlyRows = mergeDualIntoMonthly(
-      csvToMonthlyRows(monthlyParsed),
-      csvToDualRows(pitParsed)
-    );
     const payload = {
-      monthly: toColumnBlock(monthlyRows, MONTHLY_ROW_COLUMNS),
-      age_bands: toColumnBlock(csvToAgeRows(annualParsed), [
+      monthly: toColumnBlock(monthlyLoaded.rows || [], MONTHLY_ROW_COLUMNS),
+      age_bands: toColumnBlock(ageLoaded.rows || [], [
         'county', 'period', 'elderly', 'a1859', 'children'
       ])
     };
 
     DATA = buildDashboardData(payload);
     DATA.movement_series = buildOutcomesData(
-      parseCf296OutcomeRows(legacyLoaded.parsed, cf296Loaded.parsed),
+      outcomeLoaded.rows,
       DATA.county_meta
     ).series;
-    const fetchedAt = [cf296Loaded.fetchedAt, legacyLoaded.fetchedAt]
+    const fetchedAt = [
+      monthlyLoaded.fetchedAt, ageLoaded.fetchedAt, outcomeLoaded.fetchedAt
+    ]
       .filter(t => typeof t === 'number' && isFinite(t));
     setFeedStatus(statusEl, fetchedAt.length ? Math.min.apply(null, fetchedAt) : Date.now());
     const gapsNote = document.getElementById('reportingGapsNote');
@@ -3297,4 +3488,20 @@ async function startLiveQcDashboard(initDashboard) {
     statusEl.innerHTML = '<strong>Could not load live spreadsheet data.</strong> ' +
       String(err.message || err);
   }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    PUBLISHED_SHEET: PUBLISHED_SHEET,
+    parseCsv: parseCsv,
+    csvToMonthlyRows: csvToMonthlyRows,
+    csvToDualRows: csvToDualRows,
+    csvToAgeRows: csvToAgeRows,
+    mergeDualIntoMonthly: mergeDualIntoMonthly,
+    monthlyParserKeepFields: monthlyParserKeepFields,
+    parseCf296OutcomeRows: parseCf296OutcomeRows,
+    csvToCf18DaysRows: csvToCf18DaysRows,
+    csvToCf18ChurnRows: csvToCf18ChurnRows,
+    csvToQuarterlyDaysRows: csvToQuarterlyDaysRows
+  };
 }
