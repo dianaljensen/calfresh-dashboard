@@ -685,7 +685,7 @@
             <label for="sizeCompareSelect">County size</label>
             <span class="info-tip">
               <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="sizeCompareTip" aria-label="About the County size filter">i</button>
-              <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Leave empty to include all sizes. Selecting a size keeps only matching counties on these two charts (independent of the county bar chart and Caseload movement below) and clears Regions. X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Clicking a county of another size adds that size to the filter.</span>
+              <span id="sizeCompareTip" class="info-tip-bubble" role="tooltip">Adds one dashed line per size group: combined participant counts on Total Participants, and a population-weighted rate on Annual % Change. The line is there as soon as the size is selected, and it stays when Drill into size group lists the member counties. Picking a size clears Regions. Counties outside the selected sizes drop off these two charts; California can stay selected. Independent of the county bar chart below. X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Clicking a county of another size adds that size.</span>
             </span>
           </div>
           <select id="sizeCompareSelect" multiple></select>
@@ -706,7 +706,7 @@
               <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
               <span class="info-tip">
                 <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="drillGroupTip" aria-label="About drill into group">i</button>
-                <span id="drillGroupTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate (or size filter) stays on the chart. Picking a region clears County size, and picking a size clears Regions. Turning the switch off clears Counties.</span>
+                <span id="drillGroupTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate stays on the chart. Picking a region clears County size, and picking a size clears Regions. Turning the switch off clears Counties.</span>
               </span>
             </div>
             <button type="button" id="drillRegionBtn" class="drill-toggle" aria-pressed="false" disabled
@@ -926,7 +926,7 @@
               <label for="movementSizeSelect">County size</label>
               <span class="info-tip">
                 <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementSizeTip" aria-label="About the County size filter">i</button>
-                <span id="movementSizeTip" class="info-tip-bubble" role="tooltip">Leave empty to include all sizes. Independent of the charts above. Picking a size clears Regions. X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Clicking a county of another size adds that size to the filter.</span>
+                <span id="movementSizeTip" class="info-tip-bubble" role="tooltip">Adds one chart per size group (combined counts of counties in that group). The chart is there as soon as the size is selected, and it stays when Drill into size group lists the member counties. Independent of the charts above. Picking a size clears Regions. X-Large is the 6 largest counties by CalFresh households (the “big six”), not Los Angeles alone. Large &gt; 25,000 households, Medium 5,000–25,000, Small &lt; 5,000. Clicking a county of another size adds that size.</span>
               </span>
             </div>
             <select id="movementSizeSelect" multiple></select>
@@ -947,7 +947,7 @@
                 <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
                 <span class="info-tip">
                   <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="movementDrillTip" aria-label="About drill into group">i</button>
-                  <span id="movementDrillTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate (or size filter) stays on the chart. Picking a region clears County size, and picking a size clears Regions. Turning the switch off clears Counties.</span>
+                  <span id="movementDrillTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate stays on the chart. Picking a region clears County size, and picking a size clears Regions. Turning the switch off clears Counties.</span>
                 </span>
               </div>
               <button type="button" id="movementDrillBtn" class="drill-toggle" aria-pressed="false" disabled
@@ -2112,6 +2112,16 @@ Array.from(sizeCompareSelect.options).forEach(o => movementSizeSelect.appendChil
 const REGION_COLORS = ['#a05195', '#665191', '#2f4b7c', '#003f5c', '#d45087', '#f95d6a', '#ff7c43', '#ffa600', '#488f31'];
 const REGION_COLOR_BY_NAME = {};
 REGION_ORDER.forEach((r, i) => { REGION_COLOR_BY_NAME[r] = REGION_COLORS[i % REGION_COLORS.length]; });
+// Dashed size-group lines, distinct from county COMPARE_COLORS and from the
+// orange Total Participants line. Size and region lists are exclusive, so these
+// do not have to avoid the region palette, but drill puts county lines beside
+// the size aggregate.
+const SIZE_COLOR_BY_NAME = {
+  'X-Large': '#2C5985',
+  'Large': '#5B4B8A',
+  'Medium': '#2E6F62',
+  'Small': '#8B5E3C'
+};
 
 // Default: California. Add Statewide comparison is disabled while California
 // is already in Counties; it still adds a dashed reference when a county or
@@ -2178,7 +2188,9 @@ function selectionFrom(countySel, regionSel, sizeSel) {
   const sizes = Array.from(sizeSel.selectedOptions).map(o => o.value);
   const counties = Array.from(countySel.selectedOptions).map(o => o.value).filter(c => countyMatchesSizes(c, sizes));
   const regions = Array.from(regionSel.selectedOptions).map(o => o.value).filter(r => regionMemberCounties(r, sizes).length > 0);
-  if (!counties.length && !regions.length) return { counties: ['Statewide'], regions: [], sizes };
+  // A size group is its own place. Do not substitute California when that is
+  // the only selection — the charts draw the size aggregate instead.
+  if (!counties.length && !regions.length && !sizes.length) return { counties: ['Statewide'], regions: [], sizes };
   return { counties, regions, sizes };
 }
 function currentSelection() {
@@ -2192,10 +2204,6 @@ function countyMatchesSizes(c, sizes) {
   if (c === 'Statewide') return true;
   const size = DATA.county_meta[c] && DATA.county_meta[c].size;
   return sizes.includes(size);
-}
-function sizeCaptionSuffix(sizes) {
-  if (!sizes.length) return '';
-  return ' (' + sizes.map(s => SIZE_DISPLAY[s] || s).join(', ') + ')';
 }
 function countiesWithStateLast(counties) {
   return counties.filter(c => c !== 'Statewide').concat(counties.filter(c => c === 'Statewide'));
@@ -2222,26 +2230,28 @@ function selectionNames(counties, regions, sizes) {
     .concat(regions.map(r => r + ' (region)'))
     .concat((sizes || []).map(s => SIZE_DISPLAY[s] || s));
 }
-function isSingleFocusEntity(counties, regions) {
+function isSingleFocusEntity(counties, regions, sizes) {
+  // Participant types are one county or one region. A size group is a
+  // comparison line (like a second place), not an overlay target.
+  if (sizes && sizes.length) return false;
   return (counties.length === 1 && regions.length === 0) ||
          (regions.length === 1 && counties.length === 0);
 }
-function selectionCaption(counties, regions) {
-  const base = counties.map(c => c === 'Statewide' ? 'California' : c + ' County')
+function selectionCaption(counties, regions, sizes) {
+  sizes = sizes || [];
+  return counties.map(c => c === 'Statewide' ? 'California' : c + ' County')
     .concat(regions.map(r => r + ' region'))
+    .concat(sizes.map(s => (SIZE_DISPLAY[s] || s) + ' counties'))
     .join(', ');
-  const sizes = currentSizes();
-  const hasSizedEntity = counties.some(c => c !== 'Statewide') || regions.length > 0;
-  return hasSizedEntity ? base + sizeCaptionSuffix(sizes) : base;
 }
 // Statewide caseload is an order of magnitude above almost every county/region,
 // so putting it on the counts chart next to them flattens the others to a line
 // (the original reason these two charts had separate filters). Annual % Change
 // is a rate, so California can stay there as a reference. Drop Statewide from
 // Total Participants whenever anything else is selected.
-function omitStatewideFromTotal(counties, regions) {
+function omitStatewideFromTotal(counties, regions, sizes) {
   return counties.includes('Statewide') &&
-    (counties.some(c => c !== 'Statewide') || regions.length > 0);
+    (counties.some(c => c !== 'Statewide') || regions.length > 0 || (sizes && sizes.length > 0));
 }
 function updateFiltersSummary(counties, regions, sizes) {
   const names = counties.map(c => c === 'Statewide' ? 'California' : c)
@@ -2256,8 +2266,8 @@ function updateMovementFiltersSummary(counties, regions, sizes) {
   movementFiltersSummary.textContent = names.length ? names.join(' · ') : 'California';
 }
 
-function applyOverlayLock(counties, regions) {
-  const allow = isSingleFocusEntity(counties, regions) && !statewideCompareTotal;
+function applyOverlayLock(counties, regions, sizes) {
+  const allow = isSingleFocusEntity(counties, regions, sizes) && !statewideCompareTotal;
   const toggles = [...Object.values(layerCheckboxes), ageBandCheckbox, allParticipantsCheckbox, cfapCheckbox];
   if (allow) {
     layersControlEl.classList.remove('is-locked');
@@ -2278,7 +2288,7 @@ function applyOverlayLock(counties, regions) {
   allParticipantsCheckbox.checked = true;
   layersControlEl.classList.add('is-locked');
   toggles.forEach(el => { el.disabled = true; });
-  layersLockNoteEl.textContent = statewideCompareTotal && isSingleFocusEntity(counties, regions)
+  layersLockNoteEl.textContent = statewideCompareTotal && isSingleFocusEntity(counties, regions, sizes)
     ? 'Turn off Statewide comparison on this chart to use participant types.'
     : 'Participant types are available when one county or one region is selected.';
   layersLockNoteEl.classList.add('show');
@@ -2464,11 +2474,11 @@ function buildMovementCharts() {
 function rebuildTopCharts() {
   updateRangeLabel();
   const { counties, regions, sizes } = currentSelection();
-  applyOverlayLock(counties, regions);
+  applyOverlayLock(counties, regions, sizes);
   updateFiltersSummary(counties, regions, sizes);
   updateStatewideToggleState(counties);
-  buildTotalChart(counties, regions);
-  buildYoyChart(counties, regions);
+  buildTotalChart(counties, regions, sizes);
+  buildYoyChart(counties, regions, sizes);
   if (movementFollowsTop) {
     copyTopFiltersToMovement();
     buildMovementCharts();
@@ -2718,6 +2728,19 @@ function personsValues(county, region, labels) {
   return labels.map(m => DATA.series[county].persons[m]);
 }
 
+function sizePersonsValues(size, labels) {
+  return computeCountSeries(sizeMemberCounties(size), labels, (c, m) =>
+    DATA.series[c] && DATA.series[c].persons[m]
+  );
+}
+
+function sizeChangeValues(size, labels) {
+  const members = sizeMemberCounties(size);
+  if (!members.length) return null;
+  const series = computeAggregateSeries(members.map(c => ({ county: c })), labels, yoyPriorMonth);
+  return labels.map(m => series[m]);
+}
+
 function statewideComparePersonsDataset(labels) {
   return {
     label: 'California',
@@ -2798,14 +2821,15 @@ function totalChartTitleText(singleFocus, county, region) {
   return 'CalFresh Participants';
 }
 
-function buildTotalChart(counties, regions) {
+function buildTotalChart(counties, regions, sizes) {
   counties = counties || [];
   regions = regions || [];
-  const dropStatewide = omitStatewideFromTotal(counties, regions);
+  sizes = sizes || [];
+  const dropStatewide = omitStatewideFromTotal(counties, regions, sizes);
   const rawCounties = counties;
   counties = dropStatewide ? counties.filter(c => c !== 'Statewide') : counties;
   const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
-  const singleFocus = isSingleFocusEntity(counties, regions);
+  const singleFocus = isSingleFocusEntity(counties, regions, sizes);
   const singleCounty = (counties.length === 1 && regions.length === 0) ? counties[0] : null;
   const singleRegion = (regions.length === 1 && counties.length === 0) ? regions[0] : null;
   const entityName = singleRegion
@@ -3048,6 +3072,25 @@ function buildTotalChart(counties, regions) {
         _labelFormat: v => (v/1000).toFixed(1) + 'K'
       });
     });
+    sizes.forEach(s => {
+      const color = SIZE_COLOR_BY_NAME[s] || '#2C5985';
+      datasets.push({
+        label: SIZE_DISPLAY[s] || s,
+        data: sizePersonsValues(s, labels),
+        borderColor: color,
+        backgroundColor: color,
+        fill: false,
+        borderDash: [5, 3],
+        stack: 'size_' + s,
+        pointRadius: 0,
+        borderWidth: 2,
+        tension: 0.15,
+        spanGaps: false,
+        order: 2,
+        _firstLast: true,
+        _labelFormat: v => (v/1000).toFixed(1) + 'K'
+      });
+    });
   }
 
   const addStatewideLine = statewideCompareTotal && !rawCounties.includes('Statewide');
@@ -3192,7 +3235,7 @@ function buildTotalChart(counties, regions) {
       }
     }
   });
-  const placeBit = selectionCaption(counties, regions) + (addStatewideLine ? ', California' : '');
+  const placeBit = selectionCaption(counties, regions, sizes) + (addStatewideLine ? ', California' : '');
   const shownLayers = singleFocus ? totalChartShownNames(singleCounty, singleRegion) : [];
   const titleText = totalChartTitleText(singleFocus, singleCounty, singleRegion);
   const dateBit = fmtMonth(labels[0]) + ' to ' + fmtMonth(labels[labels.length-1]);
@@ -3256,24 +3299,24 @@ Object.keys(layerCheckboxes).forEach(key => {
       activeOverlays.dollars_issued = false;
     }
     activeOverlays[key] = layerCheckboxes[key].checked;
-    const { counties, regions } = currentSelection();
-    buildTotalChart(counties, regions);
+    const { counties, regions, sizes } = currentSelection();
+    buildTotalChart(counties, regions, sizes);
   });
 });
 allParticipantsCheckbox.addEventListener('change', () => {
   showTotal = allParticipantsCheckbox.checked;
-  const { counties, regions } = currentSelection();
-  buildTotalChart(counties, regions);
+  const { counties, regions, sizes } = currentSelection();
+  buildTotalChart(counties, regions, sizes);
 });
 cfapCheckbox.addEventListener('change', () => {
   cfapMode = cfapCheckbox.checked;
-  const { counties, regions } = currentSelection();
-  buildTotalChart(counties, regions);
+  const { counties, regions, sizes } = currentSelection();
+  buildTotalChart(counties, regions, sizes);
 });
 ageBandCheckbox.addEventListener('change', () => {
   ageBandMode = ageBandCheckbox.checked;
-  const { counties, regions } = currentSelection();
-  buildTotalChart(counties, regions);
+  const { counties, regions, sizes } = currentSelection();
+  buildTotalChart(counties, regions, sizes);
 });
 
 let yoyPeriod = 'annual';
@@ -3290,8 +3333,9 @@ function syncYoyPeriodUi() {
     : 'Show Quarterly Change';
 }
 
-function buildYoyChart(counties, regions) {
+function buildYoyChart(counties, regions, sizes) {
   regions = regions || [];
+  sizes = sizes || [];
   const labels = DATA.months.slice(rangeStart, rangeEnd + 1);
   const ctx = document.getElementById('yoyChart');
 
@@ -3334,7 +3378,26 @@ function buildYoyChart(counties, regions) {
     };
   }).filter(Boolean);
 
-  const datasets = countyDatasets.concat(regionDatasets);
+  const sizeDatasets = sizes.map(s => {
+    const data = sizeChangeValues(s, labels);
+    if (!data) return null;
+    const color = SIZE_COLOR_BY_NAME[s] || '#2C5985';
+    return {
+      label: SIZE_DISPLAY[s] || s,
+      data,
+      borderColor: color,
+      backgroundColor: color,
+      borderDash: [5, 3],
+      pointRadius: 0,
+      borderWidth: 2,
+      tension: 0.15,
+      spanGaps: false,
+      _firstLast: true,
+      _labelFormat: v => v.toFixed(1) + '%'
+    };
+  }).filter(Boolean);
+
+  const datasets = countyDatasets.concat(regionDatasets, sizeDatasets);
   const addStatewideLine = statewideCompareYoy && !(counties || []).includes('Statewide');
   if (addStatewideLine) datasets.push(statewideCompareYoyDataset(labels));
   if (yoyChart) yoyChart.destroy();
@@ -3386,10 +3449,9 @@ function buildYoyChart(counties, regions) {
     }
   });
   const sizedNames = counties.map(c => c === 'Statewide' ? 'California' : c)
-    .concat(regions.map(r => r + ' (region avg.)'));
-  const sizeBit = (counties.some(c => c !== 'Statewide') || regions.length > 0)
-    ? sizeCaptionSuffix(currentSizes()) : '';
-  const captionParts = [sizedNames.join(', ') + sizeBit];
+    .concat(regions.map(r => r + ' (region avg.)'))
+    .concat(sizes.map(s => (SIZE_DISPLAY[s] || s) + ' counties'));
+  const captionParts = [sizedNames.join(', ')];
   if (addStatewideLine) captionParts.push('California');
   const windowBit = yoyPeriod === 'quarterly' ? 'Change vs three months earlier' : 'Year-over-year change';
   document.getElementById('yoyCaption').textContent =
@@ -3416,22 +3478,22 @@ statewideCompareTotalBtn.addEventListener('click', () => {
   if (statewideCompareTotalBtn.disabled) return;
   statewideCompareTotal = !statewideCompareTotal;
   syncStatewideToggleUi(statewideCompareTotalBtn, statewideCompareTotal);
-  const { counties, regions } = currentSelection();
-  applyOverlayLock(counties, regions);
-  buildTotalChart(counties, regions);
+  const { counties, regions, sizes } = currentSelection();
+  applyOverlayLock(counties, regions, sizes);
+  buildTotalChart(counties, regions, sizes);
 });
 statewideCompareYoyBtn.addEventListener('click', () => {
   if (statewideCompareYoyBtn.disabled) return;
   statewideCompareYoy = !statewideCompareYoy;
   syncStatewideToggleUi(statewideCompareYoyBtn, statewideCompareYoy);
-  const { counties, regions } = currentSelection();
-  buildYoyChart(counties, regions);
+  const { counties, regions, sizes } = currentSelection();
+  buildYoyChart(counties, regions, sizes);
 });
 document.getElementById('yoyPeriodBtn').addEventListener('click', () => {
   yoyPeriod = yoyPeriod === 'annual' ? 'quarterly' : 'annual';
   syncYoyPeriodUi();
-  const { counties, regions } = currentSelection();
-  buildYoyChart(counties, regions);
+  const { counties, regions, sizes } = currentSelection();
+  buildYoyChart(counties, regions, sizes);
 });
 syncYoyPeriodUi();
 
