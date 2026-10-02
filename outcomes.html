@@ -520,6 +520,7 @@
   }
   .layers-caveat.show { display: block; }
   .groupby-control { display: flex; align-items: center; gap: 8px; margin: 4px 0 14px; flex-wrap: wrap; }
+  .timeliness-counties { margin: 0 0 14px; }
   .groupby-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
   .chart-legend { display: flex; gap: 16px; margin-left: auto; font-size: 11px; color: var(--muted); align-items: center; flex-wrap: wrap; }
   .legend-item { display: inline-flex; align-items: center; }
@@ -825,10 +826,21 @@
       <h2>Timeliness</h2>
       <span class="info-tip">
         <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="timelinessTip" aria-label="About timeliness">i</button>
-        <span id="timelinessTip" class="info-tip-bubble" role="tooltip">Share decided after the deadline, plus average days to process (applications) or overdue-day buckets (recertifications). Higher is later. Lines overlay. Date and place follow Application Trends.</span>
+        <span id="timelinessTip" class="info-tip-bubble" role="tooltip">Share decided after the deadline, plus average days to process (applications) or overdue-day buckets (recertifications). Higher is later. Lines overlay. The county list here is the same as Application Trends. The date range stays up there.</span>
       </span>
     </div>
     <p class="caption" id="timelinessCaption">All applications</p>
+    <div class="filter-group multi timeliness-counties">
+      <div class="filter-label-row">
+        <label for="timelinessCounties" id="timelinessCountiesLabel">County</label>
+        <span class="info-tip">
+          <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="timelinessCountiesTip" aria-label="About the Timeliness county filter">i</button>
+          <span id="timelinessCountiesTip" class="info-tip-bubble" role="tooltip">Same county list as Application Trends. Changing it here changes that section too.</span>
+        </span>
+      </div>
+      <select id="timelinessCounties" multiple></select>
+      <div class="filter-hint" id="timelinessCountiesHint">Click a county to view it. Same list as Application Trends.</div>
+    </div>
     <div class="groupby-control" role="group" aria-label="Timeliness clock">
       <span class="groupby-label">Show</span>
       <button type="button" class="range-btn groupby-btn timeliness-clock-btn active" data-clock="applications" aria-pressed="true">Applications</button>
@@ -1804,6 +1816,18 @@ let rangeStart = lastNMonthsStart(DEFAULT_RANGE_MONTHS);
 let rangeEnd = monthCount - 1;
 
 mountGeoRange('trendsGeoRange', 'trends');
+
+(function fillTimelinessCounties() {
+  const sel = document.getElementById('timelinessCounties');
+  allEntities.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c === 'Statewide' ? 'California (Statewide)' : c;
+    sel.appendChild(opt);
+  });
+  enablePlainClickToggle(sel);
+  sel.addEventListener('change', onTimelinessCountiesChange);
+})();
 
 function updateRangeLabel() {
   syncGeoRangeUi();
@@ -3787,6 +3811,16 @@ function syncGeoRangeUi() {
     const drillHint = root.querySelector('.drill-hint');
     if (drillHint) drillHint.textContent = drillUi.hint;
   });
+  const timeSel = document.getElementById('timelinessCounties');
+  if (timeSel) writeSelectValues(timeSel, selectedCounties);
+  const timeLabel = document.getElementById('timelinessCountiesLabel');
+  if (timeLabel) timeLabel.textContent = pops ? 'County' : 'Counties';
+  const timeHint = document.getElementById('timelinessCountiesHint');
+  if (timeHint) {
+    timeHint.textContent = pops
+      ? 'Click a county to view it. Same list as Application Trends.'
+      : 'Click a name to add or remove it. Same list as Application Trends.';
+  }
   syncingFilters = false;
 }
 function onRangeInput(root, which) {
@@ -3912,6 +3946,15 @@ function includeSizesOfSelectedCounties() {
     const s = DATA.county_meta[c] && DATA.county_meta[c].size;
     if (s && selectedSizes.indexOf(s) === -1) selectedSizes.push(s);
   });
+}
+function onTimelinessCountiesChange() {
+  if (syncingFilters) return;
+  const trendsRoot = document.querySelector('#trendsGeoRange .section-controls');
+  writeSelectValues(
+    trendsRoot.querySelector('.filter-counties'),
+    selectedFromSelect(document.getElementById('timelinessCounties'))
+  );
+  onPlaceFilterChange(trendsRoot, 'counties');
 }
 function onPlaceFilterChange(root, which) {
   if (syncingFilters) return;
