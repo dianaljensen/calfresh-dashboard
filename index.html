@@ -340,6 +340,10 @@
   .chart-statewide-toggle {
     display: inline-flex; width: auto; max-width: 100%; margin: 10px 0 0;
   }
+  .chart-toggle-row {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .chart-toggle-row .chart-statewide-toggle { margin-top: 10px; }
   .range-slider { position: relative; height: 28px; margin: 0 4px; }
   .range-track { position: absolute; top: 50%; left: 0; right: 0; height: 6px; margin-top: -3px; background: var(--grid); border-radius: 3px; pointer-events: none; }
   .range-track-fill {
@@ -696,7 +700,7 @@
               <label for="regionCompareSelect">Regions</label>
               <span class="info-tip">
                 <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="regionsTip" aria-label="About the Regions filter">i</button>
-                <span id="regionsTip" class="info-tip-bubble" role="tooltip">Adds one dashed line per region (population-weighted). Pick one region and no counties to see participant types as a regional total. Picking a region clears County size.</span>
+                <span id="regionsTip" class="info-tip-bubble" role="tooltip">Adds one dashed line per region (population-weighted). On Total Participants that line shows until you turn on Drill. On Annual % Change, Show region aggregate turns it on or off. Pick one region and no counties to see participant types as a regional total. Picking a region clears County size.</span>
               </span>
             </div>
             <select id="regionCompareSelect" multiple></select>
@@ -706,7 +710,7 @@
               <span class="drill-panel-spacer" aria-hidden="true">Regions</span>
               <span class="info-tip">
                 <button type="button" class="info-tip-btn" aria-expanded="false" aria-controls="drillGroupTip" aria-label="About drill into group">i</button>
-                <span id="drillGroupTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties; the group itself stays selected so its aggregate stays on the chart. Picking a region clears County size, and picking a size clears Regions. Turning the switch off clears Counties.</span>
+                <span id="drillGroupTip" class="info-tip-bubble" role="tooltip">Turn on when exactly one region or exactly one size group is selected. Counties then follows that group’s member counties, and the group stays selected. On Total Participants, a region aggregate is hidden while Drill is on. A size-group aggregate stays. Annual % Change can still show the region aggregate with Show region aggregate. Picking a region clears County size, and picking a size clears Regions. Turning the switch off clears Counties.</span>
               </span>
             </div>
             <button type="button" id="drillRegionBtn" class="drill-toggle" aria-pressed="false" disabled
@@ -786,11 +790,19 @@
         <div class="chart-holder"><canvas id="yoyChart" aria-hidden="true"></canvas></div>
         <div class="ref-line-legend ref-line-legend-inline" id="yoyRefLineLegend"></div>
       </div>
+      <div class="chart-toggle-row">
       <button type="button" id="statewideCompareYoyBtn" class="drill-toggle chart-statewide-toggle"
         aria-pressed="true" aria-label="Add Statewide comparison, on">
         <span>Add Statewide comparison</span>
         <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
       </button>
+      <button type="button" id="regionAggregateYoyBtn" class="drill-toggle chart-statewide-toggle"
+        aria-pressed="true" aria-label="Show region aggregate, on" disabled
+        title="Select a region to turn this on">
+        <span id="regionAggregateYoyLabel">Show region aggregate</span>
+        <span class="drill-toggle-switch" aria-hidden="true"><span class="drill-toggle-knob"></span></span>
+      </button>
+      </div>
       <table class="sr-only" id="yoyChartTable">
         <caption>Annual percentage change in CalFresh participants, year-over-year, by county</caption>
         <thead><tr><th scope="col">Month</th></tr></thead>
@@ -2063,12 +2075,25 @@ const allParticipantsSwatch = document.getElementById('allParticipantsSwatch');
 const allParticipantsToggle = document.getElementById('allParticipantsToggle');
 const statewideCompareTotalBtn = document.getElementById('statewideCompareTotalBtn');
 const statewideCompareYoyBtn = document.getElementById('statewideCompareYoyBtn');
+const regionAggregateYoyBtn = document.getElementById('regionAggregateYoyBtn');
 let statewideCompareTotal = false;
 let statewideCompareYoy = true;
+let showRegionAggregateYoy = true;
 
 function syncStatewideToggleUi(btn, on) {
   btn.setAttribute('aria-pressed', on ? 'true' : 'false');
   btn.setAttribute('aria-label', on ? 'Add Statewide comparison, on' : 'Add Statewide comparison, off');
+}
+function syncRegionAggregateToggle(regions) {
+  const available = (regions || []).length > 0;
+  const label = (regions || []).length > 1 ? 'Show region aggregates' : 'Show region aggregate';
+  regionAggregateYoyBtn.disabled = !available;
+  regionAggregateYoyBtn.title = available
+    ? 'Dashed line for the selected region, on or off'
+    : 'Select a region to turn this on';
+  document.getElementById('regionAggregateYoyLabel').textContent = label;
+  regionAggregateYoyBtn.setAttribute('aria-pressed', showRegionAggregateYoy ? 'true' : 'false');
+  regionAggregateYoyBtn.setAttribute('aria-label', label + (showRegionAggregateYoy ? ', on' : ', off'));
 }
 function updateStatewideToggleState(counties) {
   const already = counties.includes('Statewide');
@@ -3053,7 +3078,7 @@ function buildTotalChart(counties, regions, sizes) {
         _labelFormat: v => (v/1000).toFixed(1) + 'K'
       });
     });
-    regions.forEach(r => {
+    if (!drillActive) regions.forEach(r => {
       const color = REGION_COLOR_BY_NAME[r];
       datasets.push({
         label: r,
@@ -3235,7 +3260,7 @@ function buildTotalChart(counties, regions, sizes) {
       }
     }
   });
-  const placeBit = selectionCaption(counties, regions, sizes) + (addStatewideLine ? ', California' : '');
+  const placeBit = selectionCaption(counties, drillActive ? [] : regions, sizes) + (addStatewideLine ? ', California' : '');
   const shownLayers = singleFocus ? totalChartShownNames(singleCounty, singleRegion) : [];
   const titleText = totalChartTitleText(singleFocus, singleCounty, singleRegion);
   const dateBit = fmtMonth(labels[0]) + ' to ' + fmtMonth(labels[labels.length-1]);
@@ -3358,7 +3383,8 @@ function buildYoyChart(counties, regions, sizes) {
   // bucket chart's existing "Aggregate rate" convention. Colors come from a
   // fixed per-region lookup (not the county cycling palette) so a given
   // region reads the same color every time it's picked, across rebuilds.
-  const regionDatasets = regions.map(r => {
+  syncRegionAggregateToggle(regions);
+  const regionDatasets = (showRegionAggregateYoy ? regions : []).map(r => {
     const members = regionMemberCounties(r, currentSizes());
     if (!members.length) return null;
     const memberRows = members.map(c => ({ county: c }));
@@ -3449,7 +3475,7 @@ function buildYoyChart(counties, regions, sizes) {
     }
   });
   const sizedNames = counties.map(c => c === 'Statewide' ? 'California' : c)
-    .concat(regions.map(r => r + ' (region avg.)'))
+    .concat(showRegionAggregateYoy ? regions.map(r => r + ' (region avg.)') : [])
     .concat(sizes.map(s => (SIZE_DISPLAY[s] || s) + ' counties'));
   const captionParts = [sizedNames.join(', ')];
   if (addStatewideLine) captionParts.push('California');
@@ -3486,6 +3512,12 @@ statewideCompareYoyBtn.addEventListener('click', () => {
   if (statewideCompareYoyBtn.disabled) return;
   statewideCompareYoy = !statewideCompareYoy;
   syncStatewideToggleUi(statewideCompareYoyBtn, statewideCompareYoy);
+  const { counties, regions, sizes } = currentSelection();
+  buildYoyChart(counties, regions, sizes);
+});
+regionAggregateYoyBtn.addEventListener('click', () => {
+  if (regionAggregateYoyBtn.disabled) return;
+  showRegionAggregateYoy = !showRegionAggregateYoy;
   const { counties, regions, sizes } = currentSelection();
   buildYoyChart(counties, regions, sizes);
 });
