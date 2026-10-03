@@ -52,7 +52,7 @@
     'aria-controls': 'quirkDialog',
     'aria-label': QUIRK_LABEL
   }, [
-    el('img', { src: 'assets/quirk/doodle-ostrich.png', alt: '', height: '80' }),
+    el('img', { src: 'assets/quirk/doodle-ostrich.png', alt: '', height: '112' }),
     el('span', { className: 'quirk-doodle-tip', text: QUIRK_LABEL })
   ]);
   row.appendChild(doodle);

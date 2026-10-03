@@ -7,7 +7,7 @@
   justify-content: space-between;
   gap: 12px;
   position: relative;
-  min-height: 80px;
+  min-height: 112px;
   margin: 0 0 16px;
 }
 .quirk-brand-row .brand {
@@ -94,7 +94,7 @@
 }
 .quirk-doodle img {
   width: auto;
-  height: 80px;
+  height: 112px;
   display: block;
   pointer-events: none;
 }
