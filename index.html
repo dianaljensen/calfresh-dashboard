@@ -431,6 +431,7 @@
     border-radius: 6px; background: rgba(24, 27, 36, 0.97); color: #fff;
   }
   .chart-hover.is-active { display: block; }
+  .chart-hover.map-hover { max-width: min(320px, calc(100vw - 16px)); }
   .chart-hover-title { font-weight: 700; margin-bottom: 2px; }
   .chart-hover-note { opacity: 0.92; margin-bottom: 4px; }
   .chart-hover-row + .chart-hover-note { margin-top: 6px; margin-bottom: 0; }
@@ -541,6 +542,38 @@
   .line-legend-item.is-off { opacity: 0.45; text-decoration: line-through; }
   .line-legend-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #bucketChartHolder { height: 420px; overflow-x: auto; }
+  #bucketChartHolder[hidden], #bucketMapWrap[hidden] { display: none !important; }
+  .county-map-wrap { margin-top: 2px; }
+  .county-map { width: min(100%, 560px); margin: 0 auto; }
+  .county-map svg { display: block; width: 100%; height: auto; }
+  .county-map path { cursor: pointer; vector-effect: non-scaling-stroke; }
+  .county-map path:hover { stroke: #1f2430; stroke-width: 1.5px; }
+  .map-legend {
+    display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+    justify-content: center; margin: 12px auto 0; max-width: 560px;
+    font-size: 11px; color: var(--muted);
+  }
+  .map-scale-block { flex: 1 1 200px; max-width: 280px; }
+  .map-scale {
+    position: relative; height: 12px; border-radius: 3px; border: 1px solid var(--line);
+  }
+  .map-scale-mark {
+    position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--ink);
+    transform: translateX(-50%);
+  }
+  .map-scale-ticks {
+    position: relative; height: 16px; margin-top: 3px;
+    font-size: 10.5px; color: var(--ink);
+  }
+  .map-scale-ticks span { position: absolute; top: 0; white-space: nowrap; }
+  .map-scale-ticks .map-scale-min { left: 0; }
+  .map-scale-ticks .map-scale-max { right: 0; }
+  .map-scale-ticks .map-scale-zero { transform: translateX(-50%); }
+  .map-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .map-legend-swatch {
+    width: 12px; height: 12px; border-radius: 2px; border: 1px solid var(--line); flex: none;
+  }
+  .map-legend-note { font-weight: 600; color: var(--ink); }
   footer.source-note { margin-top: 34px; font-size: 11.5px; color: var(--muted); line-height: 1.6; border-top: 1px solid var(--line); padding-top: 14px; }
   footer.source-note a { color: var(--accent); }
   footer.source-note .footer-section-label {
@@ -602,6 +635,7 @@
        hide the interactive controls, the "Showing" text label already states
        the active date range as plain text. */
     .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover, .quirk-doodle, .quirk-dialog { display: none; }
+    .county-map path, .map-scale, .map-legend-swatch { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .shared-controls-body { display: block !important; }
     .compact-filters .time-range-header .time-range-label { display: inline !important; }
     .shared-filters, .bucket-filter-lists { display: flex !important; border-top: 0; padding-top: 0; }
@@ -816,6 +850,7 @@
     <div class="bucket-title-row">
       <h2 id="bucketTitle">Annual % Change by County</h2>
       <button type="button" id="bucketPeriodBtn" class="range-btn">Show Quarterly Change</button>
+      <button type="button" id="bucketMapBtn" class="range-btn" aria-pressed="false" aria-controls="bucketMapWrap">Show this as a map</button>
     </div>
     <div class="groupby-control">
       <span class="groupby-label">Month</span>
@@ -826,7 +861,7 @@
       <button type="button" class="range-btn groupby-btn active" data-groupby="size">County size</button>
       <button type="button" class="range-btn groupby-btn" data-groupby="region">Region</button>
       <button type="button" class="range-btn groupby-btn" data-groupby="none">None (all counties)</button>
-      <div class="chart-legend">
+      <div class="chart-legend" id="bucketLineLegend">
         <span class="legend-item"><span class="legend-swatch solid"></span>California rate</span>
         <span class="legend-item"><span class="legend-swatch dashed"></span><span id="groupLineLegendLabel">Aggregate rate by group</span></span>
       </div>
@@ -869,6 +904,10 @@
       <p class="caption" id="bucketSub"></p>
       <div class="chart-hover" id="bucketChartHover" aria-live="polite"></div>
       <div class="chart-holder" id="bucketChartHolder"><canvas id="bucketChart" aria-hidden="true"></canvas></div>
+      <div id="bucketMapWrap" class="county-map-wrap" hidden>
+        <div id="bucketMap" class="county-map" aria-hidden="true"></div>
+        <div class="map-legend" id="bucketMapLegend"></div>
+      </div>
     </div>
     <table class="sr-only" id="bucketChartTable">
       <caption>Annual percentage change by county, grouped by county size</caption>
@@ -1221,7 +1260,7 @@ function wrapText(text, maxChars) {
 function clearHoverTooltip(el) {
   if (!el) return;
   el.replaceChildren();
-  el.classList.remove('is-active');
+  el.classList.remove('is-active', 'map-hover');
 }
 function renderHoverTooltip(el, tooltip) {
   if (!el) return;
@@ -1881,7 +1920,8 @@ const plotTitleAlignPlugin = {
   afterLayout(chart) {
     const plot = chart.canvas && chart.canvas.closest('.chart-plot');
     const area = chart.chartArea;
-    if (!plot || !area) return;
+    const holder = chart.canvas && chart.canvas.closest('.chart-holder');
+    if (!plot || !area || (holder && holder.hidden)) return;
     const next = Math.max(0, Math.round(area.left)) + 'px';
     if (plot.style.getPropertyValue('--plot-title-inset') !== next) {
       plot.style.setProperty('--plot-title-inset', next);
@@ -4081,6 +4121,288 @@ function computeGroups(filteredRows, mode) {
   return groups;
 }
 
+function countyInBucketFilters(county) {
+  const size = DATA.county_meta[county] && DATA.county_meta[county].size;
+  const selectedRegions = Array.from(regionFilterEl.selectedOptions).map(o => o.value);
+  const selectedSizes = Array.from(sizeFilterEl.selectedOptions).map(o => o.value);
+  const selectedCounties = Array.from(countyFilterEl.selectedOptions).map(o => o.value);
+  return (selectedRegions.length === 0 || selectedRegions.includes(COUNTY_REGIONS[county])) &&
+    (selectedSizes.length === 0 || (size && selectedSizes.includes(size))) &&
+    (selectedCounties.length === 0 || selectedCounties.includes(county));
+}
+function filteredBucketRows() {
+  return countyRowsForMonth(selectedBucketMonth).filter(r => countyInBucketFilters(r.county));
+}
+
+// Same teal / rust as the bar chart, anchored at 0 so a small change stays pale
+// and the strongest increase or decrease in this view takes the full color.
+const MAP_PAPER = [247, 244, 239];
+const MAP_UP = [75, 165, 186];
+const MAP_DOWN = [181, 83, 63];
+function mixRgb(a, b, t) {
+  const u = Math.max(0, Math.min(1, t));
+  return 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * u)).join(',') + ')';
+}
+function bucketHeatColor(value, scaleMin, scaleMax) {
+  if (!(scaleMax > scaleMin)) return mixRgb(MAP_PAPER, MAP_PAPER, 0);
+  if (value >= 0) return mixRgb(MAP_PAPER, MAP_UP, scaleMax > 0 ? value / scaleMax : 0);
+  return mixRgb(MAP_PAPER, MAP_DOWN, scaleMin < 0 ? value / scaleMin : 0);
+}
+
+let bucketMapOpen = false;
+let bucketMapSvg = null;
+let bucketMapLoading = null;
+
+function positionBucketMapHover(clientX) {
+  const el = document.getElementById('bucketChartHover');
+  if (!el || !bucketMapSvg) return;
+  const plot = bucketMapSvg.closest('.chart-plot');
+  if (!plot) return;
+  const plotRect = plot.getBoundingClientRect();
+  const svgRect = bucketMapSvg.getBoundingClientRect();
+  const tipW = el.offsetWidth;
+  const tipH = el.offsetHeight;
+  const left = Math.max(plotRect.left + 8, Math.min(clientX - tipW / 2, plotRect.right - tipW - 8));
+  let top = svgRect.top - tipH - 8;
+  const floor = stickyControlsFloor();
+  if (floor + tipH + 8 <= svgRect.top) {
+    if (top < floor) top = floor;
+  } else if (top < 8) {
+    top = 8;
+  }
+  el.style.left = left + 'px';
+  el.style.top = top + 'px';
+}
+
+function mapPctText(v) {
+  if (v === null || v === undefined || isNaN(v)) return null;
+  return Number(v).toFixed(1) + '%';
+}
+// Whole region, not the filtered subset — same population-weighted rate as the
+// region line on Annual % Change. Filtering the map does not change it.
+function regionAggregateRate(county) {
+  const region = COUNTY_REGIONS[county];
+  if (!region) return { region: null, rate: null };
+  const rows = [];
+  DATA.all_counties.forEach(c => {
+    if (COUNTY_REGIONS[c] === region) rows.push({ county: c });
+  });
+  return {
+    region: region,
+    rate: computeAggregateRate(rows, selectedBucketMonth, bucketPriorMonth(selectedBucketMonth))
+  };
+}
+function showBucketMapHover(path, clientX) {
+  const el = document.getElementById('bucketChartHover');
+  if (!el || !path) return;
+  const name = path.getAttribute('data-county');
+  const inView = path.dataset.inView === '1';
+  const hasValue = path.dataset.value !== '';
+  const periodNote = bucketPeriod === 'quarterly' ? 'from three months earlier' : 'from the prior year';
+  const before = [
+    'As of ' + fmtMonth(selectedBucketMonth) +
+    ', the % change in total participants ' + periodNote + ' was:'
+  ];
+  const body = [];
+  const labelColors = [];
+  body.push({ lines: [entityPhrase(name) + ': ' + (hasValue ? Number(path.dataset.value).toFixed(1) + '%' : 'no rate this month')] });
+  labelColors.push({ backgroundColor: path.dataset.swatch || '#ccc' });
+  const statewide = mapPctText(bucketRate('Statewide', selectedBucketMonth));
+  if (statewide) {
+    body.push({ lines: ['California rate: ' + statewide] });
+    labelColors.push({ backgroundColor: '#c5cdd6' });
+  }
+  const regionInfo = regionAggregateRate(name);
+  const regionPct = mapPctText(regionInfo.rate);
+  if (regionInfo.region && regionPct) {
+    body.push({ lines: [regionInfo.region + ' rate: ' + regionPct] });
+    labelColors.push({ backgroundColor: REGION_COLOR_BY_NAME[regionInfo.region] || '#555' });
+  }
+  const footer = [];
+  if (!inView) footer.push('Left out of the chart by the current filters.');
+  el.classList.add('map-hover');
+  renderHoverTooltip(el, {
+    opacity: 1,
+    title: [],
+    beforeBody: before,
+    body: body,
+    labelColors: labelColors,
+    footer: footer
+  });
+  positionBucketMapHover(clientX);
+}
+
+function renderBucketMapLegend(info) {
+  const el = document.getElementById('bucketMapLegend');
+  if (!el) return;
+  el.replaceChildren();
+  if (info.hasValues) {
+    const block = document.createElement('div');
+    block.className = 'map-scale-block';
+    const scale = document.createElement('div');
+    scale.className = 'map-scale';
+    const span = info.scaleMax - info.scaleMin;
+    const zeroPct = span > 0 ? ((0 - info.scaleMin) / span) * 100 : 50;
+    if (span > 0) {
+      scale.style.background = 'linear-gradient(to right, rgb(181,83,63) 0%, rgb(247,244,239) ' +
+        zeroPct + '%, rgb(75,165,186) 100%)';
+      if (zeroPct > 8 && zeroPct < 92) {
+        const mark = document.createElement('span');
+        mark.className = 'map-scale-mark';
+        mark.style.left = zeroPct + '%';
+        scale.appendChild(mark);
+      }
+    } else {
+      scale.style.background = mixRgb(MAP_PAPER, MAP_PAPER, 0);
+    }
+    const ticks = document.createElement('div');
+    ticks.className = 'map-scale-ticks';
+    const minLabel = document.createElement('span');
+    minLabel.className = 'map-scale-min';
+    minLabel.textContent = info.scaleMin.toFixed(1) + '%';
+    const maxLabel = document.createElement('span');
+    maxLabel.className = 'map-scale-max';
+    maxLabel.textContent = info.scaleMax.toFixed(1) + '%';
+    ticks.appendChild(minLabel);
+    ticks.appendChild(maxLabel);
+    if (span > 0 && zeroPct > 14 && zeroPct < 86) {
+      const zeroLabel = document.createElement('span');
+      zeroLabel.className = 'map-scale-zero';
+      zeroLabel.style.left = zeroPct + '%';
+      zeroLabel.textContent = '0%';
+      ticks.appendChild(zeroLabel);
+    }
+    block.appendChild(scale);
+    block.appendChild(ticks);
+    el.appendChild(block);
+  }
+  const statewide = bucketRate('Statewide', selectedBucketMonth);
+  if (statewide !== null && statewide !== undefined) {
+    const note = document.createElement('div');
+    note.className = 'map-legend-note';
+    note.textContent = 'California rate: ' + statewide.toFixed(1) + '%';
+    el.appendChild(note);
+  }
+  if (info.excludedN > 0) {
+    const item = document.createElement('div');
+    item.className = 'map-legend-item';
+    const sw = document.createElement('span');
+    sw.className = 'map-legend-swatch';
+    sw.style.background = 'repeating-linear-gradient(135deg, #f3f0ea, #f3f0ea 2px, #c4bfb6 2px, #c4bfb6 3px)';
+    item.appendChild(sw);
+    const text = document.createElement('span');
+    text.textContent = 'Not in this view';
+    item.appendChild(text);
+    el.appendChild(item);
+  }
+  if (info.missingN > 0) {
+    const item = document.createElement('div');
+    item.className = 'map-legend-item';
+    const sw = document.createElement('span');
+    sw.className = 'map-legend-swatch';
+    sw.style.background = '#e6e1d8';
+    item.appendChild(sw);
+    const text = document.createElement('span');
+    text.textContent = 'No rate this month';
+    item.appendChild(text);
+    el.appendChild(item);
+  }
+}
+
+function paintBucketMap() {
+  if (!bucketMapSvg) return;
+  const byCounty = {};
+  countyRowsForMonth(selectedBucketMonth).forEach(r => { byCounty[r.county] = r.yoy; });
+  const values = Object.keys(byCounty).filter(countyInBucketFilters).map(c => byCounty[c]).filter(v => v !== null && v !== undefined && !isNaN(v));
+  const scaleMin = values.length ? Math.min(0, Math.min.apply(null, values)) : 0;
+  const scaleMax = values.length ? Math.max(0, Math.max.apply(null, values)) : 0;
+  let excludedN = 0;
+  let missingN = 0;
+  bucketMapSvg.querySelectorAll('path[data-county]').forEach(path => {
+    const name = path.getAttribute('data-county');
+    const value = byCounty[name];
+    const hasValue = value !== undefined && value !== null && !isNaN(value);
+    const inView = countyInBucketFilters(name);
+    let fill;
+    let swatch;
+    if (!inView) {
+      excludedN += 1;
+      fill = 'url(#county-excluded)';
+      swatch = '#f3f0ea';
+    } else if (!hasValue) {
+      missingN += 1;
+      fill = '#e6e1d8';
+      swatch = fill;
+    } else {
+      fill = bucketHeatColor(value, scaleMin, scaleMax);
+      swatch = fill;
+    }
+    path.setAttribute('fill', fill);
+    path.dataset.value = hasValue ? String(value) : '';
+    path.dataset.inView = inView ? '1' : '0';
+    path.dataset.swatch = swatch;
+  });
+  renderBucketMapLegend({ scaleMin, scaleMax, excludedN, missingN, hasValues: values.length > 0 });
+}
+
+function ensureBucketMap() {
+  if (bucketMapSvg) return Promise.resolve(bucketMapSvg);
+  if (bucketMapLoading) return bucketMapLoading;
+  const holder = document.getElementById('bucketMap');
+  bucketMapLoading = fetch('assets/ca-counties.svg')
+    .then(r => {
+      if (!r.ok) throw new Error('map');
+      return r.text();
+    })
+    .then(text => {
+      holder.innerHTML = text;
+      bucketMapSvg = holder.querySelector('svg');
+      holder.addEventListener('mouseover', (e) => {
+        const path = e.target.closest && e.target.closest('path[data-county]');
+        if (!path || !bucketMapOpen) return;
+        showBucketMapHover(path, e.clientX);
+      });
+      holder.addEventListener('mousemove', (e) => {
+        const path = e.target.closest && e.target.closest('path[data-county]');
+        if (!path || !bucketMapOpen) return;
+        const hover = document.getElementById('bucketChartHover');
+        if (hover && hover.classList.contains('is-active')) positionBucketMapHover(e.clientX);
+      });
+      holder.addEventListener('mouseleave', () => {
+        clearHoverTooltip(document.getElementById('bucketChartHover'));
+      });
+      return bucketMapSvg;
+    })
+    .catch(() => {
+      holder.textContent = 'The county map could not be loaded.';
+      return null;
+    });
+  return bucketMapLoading;
+}
+
+function setBucketMapOpen(open) {
+  bucketMapOpen = open;
+  document.getElementById('bucketChartHolder').hidden = open;
+  document.getElementById('bucketMapWrap').hidden = !open;
+  const btn = document.getElementById('bucketMapBtn');
+  btn.textContent = open ? 'Show the chart' : 'Show this as a map';
+  btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+  const lineLegend = document.getElementById('bucketLineLegend');
+  if (lineLegend) lineLegend.hidden = open;
+  const plot = document.getElementById('bucketChart').closest('.chart-plot');
+  if (open && plot) plot.style.setProperty('--plot-title-inset', '0px');
+  clearHoverTooltip(document.getElementById('bucketChartHover'));
+  if (open) {
+    ensureBucketMap().then(() => {
+      if (!bucketMapOpen) return;
+      paintBucketMap();
+      if (plot) plot.scrollIntoView({ block: 'nearest' });
+    });
+  } else if (bucketChart) {
+    requestAnimationFrame(() => bucketChart.resize());
+  }
+}
+
 function updateBucketFiltersSummary() {
   const el = document.getElementById('bucketFiltersSummary');
   if (!el) return;
@@ -4095,15 +4417,7 @@ function updateBucketFiltersSummary() {
 function buildBucketChart() {
   updateBucketFiltersSummary();
   document.getElementById('bucketSub').textContent = fmtMonth(selectedBucketMonth);
-  const selectedRegions = Array.from(regionFilterEl.selectedOptions).map(o => o.value);
-  const selectedSizes = Array.from(sizeFilterEl.selectedOptions).map(o => o.value);
-  const selectedCounties = Array.from(countyFilterEl.selectedOptions).map(o => o.value);
-
-  const filteredRows = countyRowsForMonth(selectedBucketMonth).filter(r =>
-    (selectedRegions.length === 0 || selectedRegions.includes(COUNTY_REGIONS[r.county])) &&
-    (selectedSizes.length === 0 || selectedSizes.includes(r.size)) &&
-    (selectedCounties.length === 0 || selectedCounties.includes(r.county))
-  );
+  const filteredRows = filteredBucketRows();
 
   if (groupColHeaderEl) groupColHeaderEl.textContent = GROUP_COL_LABELS[groupByMode] || 'Group';
 
@@ -4247,12 +4561,16 @@ function buildBucketChart() {
     const group = groupRanges.find(g => i >= g.start && i <= g.end);
     return [c, group ? group.name : '', mergedValues[i].toFixed(1) + '%'];
   }));
+  if (bucketMapSvg) paintBucketMap();
 }
 
 [regionFilterEl, sizeFilterEl, countyFilterEl].forEach(el => el.addEventListener('change', buildBucketChart));
 [compareSelect, regionCompareSelect, sizeCompareSelect, movementCompareSelect, movementRegionSelect, movementSizeSelect, regionFilterEl, sizeFilterEl, countyFilterEl]
   .forEach(enablePlainClickToggle);
 buildBucketChart();
+document.getElementById('bucketMapBtn').addEventListener('click', () => {
+  setBucketMapOpen(!bucketMapOpen);
+});
 
 // Once a region/size/county multi-select has anything picked, there's no
 // visible "back to all" option on the control itself -- clicking an option
