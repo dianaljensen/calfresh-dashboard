@@ -848,7 +848,7 @@
 
   <div class="card link-b">
     <div class="bucket-title-row">
-      <h2 id="bucketTitle">Annual % Change by County</h2>
+      <h2 id="bucketTitle">Annual % Change in CalFresh Participation by County</h2>
       <button type="button" id="bucketPeriodBtn" class="range-btn">Show Quarterly Change</button>
       <button type="button" id="bucketMapBtn" class="range-btn" aria-pressed="false" aria-controls="bucketMapWrap">Show this as a map</button>
     </div>
@@ -900,7 +900,7 @@
       </div>
     </div>
     <div class="chart-plot">
-      <h3 class="chart-plot-title" id="bucketPlotTitle">Annual % Change by County</h3>
+      <h3 class="chart-plot-title" id="bucketPlotTitle">Annual % Change in CalFresh Participation by County</h3>
       <p class="caption" id="bucketSub"></p>
       <div class="chart-hover" id="bucketChartHover" aria-live="polite"></div>
       <div class="chart-holder" id="bucketChartHolder"><canvas id="bucketChart" aria-hidden="true"></canvas></div>
@@ -3977,7 +3977,9 @@ function bucketRate(county, month) {
   return changePct(county, month, bucketPeriod);
 }
 function bucketChartTitle() {
-  return bucketPeriod === 'quarterly' ? 'Quarterly % Change by County' : 'Annual % Change by County';
+  return bucketPeriod === 'quarterly'
+    ? 'Quarterly % Change in CalFresh Participation by County'
+    : 'Annual % Change in CalFresh Participation by County';
 }
 function bucketRateLabel() {
   return bucketPeriod === 'quarterly' ? 'Quarterly % change' : 'Annual % change';
