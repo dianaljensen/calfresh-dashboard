@@ -52,7 +52,7 @@
     'aria-controls': 'quirkDialog',
     'aria-label': QUIRK_LABEL
   }, [
-    el('img', { src: 'assets/quirk/doodle-ostrich.png', alt: '', height: '112' }),
+    el('img', { src: 'assets/quirk/doodle-ostrich.png', alt: '', height: '140' }),
     el('span', { className: 'quirk-doodle-tip', text: QUIRK_LABEL })
   ]);
   row.appendChild(doodle);
@@ -65,11 +65,12 @@
     if (!stacked) inlineTitleW = title.offsetWidth;
     const rowR = row.getBoundingClientRect();
     const brandR = brand.getBoundingClientRect();
-    const doodleR = doodle.getBoundingClientRect();
+    const img = doodle.querySelector('img');
+    const sideR = (img || doodle).getBoundingClientRect();
     const titleW = inlineTitleW || title.offsetWidth;
     const mid = rowR.left + rowR.width / 2;
     const cramped = (mid - titleW / 2) < (brandR.right + TITLE_GAP)
-      || (mid + titleW / 2) > (doodleR.left - TITLE_GAP);
+      || (mid + titleW / 2) > (sideR.left - TITLE_GAP);
     row.classList.toggle('quirk-brand-row--stacked', cramped);
   }
   let titleLayoutTick = 0;
