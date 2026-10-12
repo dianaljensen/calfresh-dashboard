@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="quirk.css">
+<link rel="stylesheet" href="views.css">
 <style>
   :root {
     --ink: #1f2430;
@@ -59,17 +60,6 @@
   .copy-email:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
   .copy-email-status { margin-left: 0.45em; color: var(--muted); font-weight: 600; font-size: 11px; }
   .copy-email-status:empty { display: none; }
-  nav.site-nav {
-    display: flex; gap: 2px; flex-wrap: wrap; margin: 0 0 14px;
-    border-bottom: 1px solid var(--line);
-  }
-  nav.site-nav a {
-    padding: 8px 12px 10px; font-size: 13px; font-weight: 600;
-    color: var(--muted); text-decoration: none;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-  }
-  nav.site-nav a:hover { color: var(--ink); }
-  nav.site-nav a[aria-current="page"] { color: var(--accent); border-bottom-color: var(--accent); }
   .prototype-note, .live-note {
     font-size: 13px; padding: 10px 14px; border-radius: 8px; margin: 16px 0 24px; line-height: 1.5;
   }
@@ -181,7 +171,7 @@
     overflow: hidden; clip: rect(0,0,0,0); border: 0;
   }
   @media print {
-    .quirk-doodle { display: none; }
+    .quirk-doodle, .site-nav-tour { display: none; }
   }
 </style>
 </head>
@@ -198,13 +188,29 @@
     </a>
     <p class="site-title" aria-label="CalFresh Data Explorer"><span class="site-title-name">CalFresh</span><span class="site-title-role">Data Explorer</span></p>
     </div>
+    <div class="site-nav-block">
     <nav class="site-nav" aria-label="Dashboard views">
-      <a href="index.html">Participation Trends</a>
-      <a href="outcomes.html">Applications</a>
-      <a href="churn.html">Churn</a>
-      <a href="qc.html" aria-current="page">Quality Control</a>
+      <a class="view-card view-participation" href="index.html">
+        <span class="view-name">Participation Trends</span>
+        <span class="view-blurb">How many people are on CalFresh, and how that changes.</span>
+      </a>
+      <a class="view-card view-applications" href="outcomes.html">
+        <span class="view-name">Applications</span>
+        <span class="view-blurb">What happens after someone applies, and how long that takes.</span>
+      </a>
+      <a class="view-card view-churn" href="churn.html">
+        <span class="view-name">Churn</span>
+        <span class="view-blurb">Households that miss a report and later come back.</span>
+      </a>
+      <a class="view-card view-qc" href="qc.html" aria-current="page">
+        <span class="view-name">Quality Control</span>
+        <span class="view-blurb">Whether the benefit amount, or a denial, was right.</span>
+      </a>
     </nav>
+    <a class="site-nav-tour" href="https://www.youtube.com/@DianaJensen-510" target="_blank" rel="noopener noreferrer">Watch a Tutorial<span class="sr-only"> on YouTube</span></a>
+    </div>
     <h1>Quality Control</h1>
+    <p class="page-lead">Two checks on county decisions: did households get the right amount, and was a denial or closing the right call?</p>
     <p class="sub">This is a working prototype I developed for the love of the data visualization game.<br>All data is from public sources, hopefully a little easier to explore now.<br>Send me suggestions or corrections at <button type="button" class="copy-email" data-email="diana@djconsults.com" title="Copy email address" aria-label="Copy diana@djconsults.com">diana@djconsults.com</button>.<span class="copy-email-status" aria-live="polite"></span></p>
   </header>
 
@@ -258,6 +264,24 @@
       <tbody></tbody>
     </table>
   </div>
+
+  <section class="keep-exploring" aria-labelledby="keepExploringTitle">
+    <h2 id="keepExploringTitle">Look at another view</h2>
+    <div class="view-grid">
+      <a class="view-card view-participation" href="index.html">
+        <span class="view-name">Participation Trends</span>
+        <span class="view-blurb">How many people are on CalFresh, and how that changes.</span>
+      </a>
+      <a class="view-card view-applications" href="outcomes.html">
+        <span class="view-name">Applications</span>
+        <span class="view-blurb">What happens after someone applies, and how long that takes.</span>
+      </a>
+      <a class="view-card view-churn" href="churn.html">
+        <span class="view-name">Churn</span>
+        <span class="view-blurb">Households that miss a report and later come back.</span>
+      </a>
+    </div>
+  </section>
 
   <footer class="source-note">
     <span class="footer-section-label">Sources</span>

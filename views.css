@@ -1,0 +1,134 @@
+/* Compact view tabs (same idea as the djconsults.com portfolio pill)
+   and the prompt at the bottom of each page. Shared so the four pages stay in step. */
+
+.site-nav-block { margin: 0 0 14px; }
+
+nav.site-nav,
+.keep-exploring .view-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(31, 36, 48, 0.08);
+}
+
+nav.site-nav,
+.keep-exploring .view-grid {
+  width: fit-content;
+  max-width: 100%;
+}
+
+a.view-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #4d6a86;
+  text-align: center;
+  white-space: nowrap;
+}
+
+a.view-card:hover { color: var(--dark-blue); }
+
+a.view-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+a.view-card[aria-current="page"] {
+  background: var(--dark-blue);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(44, 89, 133, 0.35);
+}
+
+a.view-card[aria-current="page"]:hover { color: #fff; }
+
+.view-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: inherit;
+}
+
+.view-blurb {
+  position: absolute;
+  z-index: 40;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 240px;
+  padding: 8px 10px;
+  white-space: normal;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(31, 36, 48, 0.18);
+  opacity: 0;
+  pointer-events: none;
+}
+
+a.view-card:hover .view-blurb,
+a.view-card:focus-visible .view-blurb {
+  opacity: 1;
+}
+
+a.site-nav-tour {
+  display: block;
+  width: fit-content;
+  margin: 8px 0 0;
+  padding: 2px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+a.site-nav-tour:hover { color: var(--ink); }
+
+a.site-nav-tour:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+header.page-head p.page-lead {
+  margin: 0 0 8px;
+  max-width: 42em;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.keep-exploring { margin: 28px 0 8px; }
+
+.keep-exploring h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .view-name { font-size: 13px; }
+  a.view-card { padding: 8px 10px; }
+}
+
+@media print {
+  a.site-nav-tour,
+  .view-blurb { display: none; }
+  nav.site-nav,
+  .keep-exploring .view-grid { box-shadow: none; }
+}
