@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="quirk.css">
+<link rel="stylesheet" href="views.css">
 <style>
   :root {
     --ink: #1f2430;
@@ -24,19 +25,6 @@
     --denied: #A89890;
     --light-gray: #C0C0C0;
     --grid: #ececec;
-  }
-  nav.site-nav {
-    display: flex; gap: 2px; flex-wrap: wrap; margin: 0 0 14px;
-    border-bottom: 1px solid var(--line);
-  }
-  nav.site-nav a {
-    padding: 8px 12px 10px; font-size: 13px; font-weight: 600;
-    color: var(--muted); text-decoration: none;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-  }
-  nav.site-nav a:hover { color: var(--ink); }
-  nav.site-nav a[aria-current="page"] {
-    color: var(--accent); border-bottom-color: var(--accent);
   }
   * { box-sizing: border-box; }
   body {
@@ -634,7 +622,7 @@
     /* Range slider and multiselect boxes don't render usefully on paper --
        hide the interactive controls, the "Showing" text label already states
        the active date range as plain text. */
-    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover, .quirk-doodle, .quirk-dialog { display: none; }
+    .range-slider, .range-btn, .range-hint, .shared-filters-toggle, .drill-toggle, .chart-hover, .quirk-doodle, .quirk-dialog, .site-nav-tour { display: none; }
     .county-map path, .map-scale, .map-legend-swatch { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .shared-controls-body { display: block !important; }
     .compact-filters .time-range-header .time-range-label { display: inline !important; }
@@ -656,12 +644,27 @@
     </a>
     <p class="site-title" aria-label="CalFresh Data Explorer"><span class="site-title-name">CalFresh</span><span class="site-title-role">Data Explorer</span></p>
     </div>
+    <div class="site-nav-block">
     <nav class="site-nav" aria-label="Dashboard views">
-      <a href="index.html" aria-current="page">Participation Trends</a>
-      <a href="outcomes.html">Applications</a>
-      <a href="churn.html">Churn</a>
-      <a href="qc.html">Quality Control</a>
+      <a class="view-card view-participation" href="index.html" aria-current="page">
+        <span class="view-name">Participation Trends</span>
+        <span class="view-blurb">How many people are on CalFresh, and how that changes.</span>
+      </a>
+      <a class="view-card view-applications" href="outcomes.html">
+        <span class="view-name">Applications</span>
+        <span class="view-blurb">What happens after someone applies, and how long that takes.</span>
+      </a>
+      <a class="view-card view-churn" href="churn.html">
+        <span class="view-name">Churn</span>
+        <span class="view-blurb">Households that miss a report and later come back.</span>
+      </a>
+      <a class="view-card view-qc" href="qc.html">
+        <span class="view-name">Quality Control</span>
+        <span class="view-blurb">Whether the benefit amount, or a denial, was right.</span>
+      </a>
     </nav>
+    <a class="site-nav-tour" href="https://www.youtube.com/@DianaJensen-510" target="_blank" rel="noopener noreferrer">Watch a Tutorial<span class="sr-only"> on YouTube</span></a>
+    </div>
     <h1>Participation Trends</h1>
     <p class="sub">This is a working prototype I developed for the love of the data visualization game.<br>All data is from public sources, hopefully a little easier to explore now.<br>Send me suggestions or corrections at <button type="button" class="copy-email" data-email="diana@djconsults.com" title="Copy email address" aria-label="Copy diana@djconsults.com">diana@djconsults.com</button>.<span class="copy-email-status" aria-live="polite"></span></p>
   </header>
@@ -1022,6 +1025,24 @@
       <tbody></tbody>
     </table>
   </div>
+
+  <section class="keep-exploring" aria-labelledby="keepExploringTitle">
+    <h2 id="keepExploringTitle">Look at another view</h2>
+    <div class="view-grid">
+      <a class="view-card view-applications" href="outcomes.html">
+        <span class="view-name">Applications</span>
+        <span class="view-blurb">What happens after someone applies, and how long that takes.</span>
+      </a>
+      <a class="view-card view-churn" href="churn.html">
+        <span class="view-name">Churn</span>
+        <span class="view-blurb">Households that miss a report and later come back.</span>
+      </a>
+      <a class="view-card view-qc" href="qc.html">
+        <span class="view-name">Quality Control</span>
+        <span class="view-blurb">Whether the benefit amount, or a denial, was right.</span>
+      </a>
+    </div>
+  </section>
 
   <footer class="source-note">
     <span class="footer-section-label">Sources</span>
