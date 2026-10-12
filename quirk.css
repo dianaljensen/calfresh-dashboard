@@ -1,14 +1,22 @@
 /* Optional Notice quirk break. Lives in the header corner; must not compete
    with charts, nav, the DJ lockup, sticky filters, or chart hover (z-index 30). */
 
+@font-face {
+  font-family: "Diana Handwriting";
+  src: url("assets/fonts/DianaHandwriting-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 .quirk-brand-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   position: relative;
-  min-height: 112px;
-  margin: 0 0 16px;
+  min-height: 140px;
+  margin: 0 0 54px;
 }
 .quirk-brand-row .brand {
   margin: 0;
@@ -33,14 +41,14 @@
   line-height: 1;
 }
 .site-title-name {
-  font-size: 30px;
+  font-size: 36px;
   font-weight: 800;
   color: var(--dark-blue);
   letter-spacing: -0.02em;
   line-height: 1.05;
 }
 .site-title-role {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 400;
   color: var(--accent);
   letter-spacing: 0.18em;
@@ -56,6 +64,7 @@
     "brand doodle"
     "title title";
   min-height: 0;
+  margin-bottom: 16px;
 }
 .quirk-brand-row--stacked .brand { grid-area: brand; }
 .quirk-brand-row--stacked .quirk-doodle { grid-area: doodle; justify-self: end; }
@@ -66,26 +75,26 @@
   justify-self: center;
   padding-top: 6px;
 }
-.quirk-brand-row--stacked .site-title-name { font-size: 26px; }
-.quirk-brand-row--stacked .site-title-role { font-size: 10px; letter-spacing: 0.16em; }
+.quirk-brand-row--stacked .site-title-name { font-size: 32px; }
+.quirk-brand-row--stacked .site-title-role { font-size: 12px; letter-spacing: 0.16em; }
 
 .quirk-doodle {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   flex-shrink: 0;
   margin: 0;
   padding: 4px;
   border: 0;
   background: none;
   cursor: pointer;
-  opacity: 0.82;
-  transform: rotate(-9deg);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  opacity: 0.92;
   z-index: 2;
 }
 .quirk-doodle:hover,
 .quirk-doodle:focus-visible {
   opacity: 1;
-  transform: rotate(-4deg) scale(1.06);
 }
 .quirk-doodle:focus-visible {
   outline: 2px solid var(--accent);
@@ -94,40 +103,48 @@
 }
 .quirk-doodle img {
   width: auto;
-  height: 112px;
+  height: 140px;
   display: block;
   pointer-events: none;
+  transform: rotate(-8deg);
+  transform-origin: center bottom;
+  transition: transform 0.15s ease;
+}
+.quirk-doodle:hover img,
+.quirk-doodle:focus-visible img {
+  transform: rotate(-3deg) scale(1.05);
 }
 
 .quirk-doodle-tip {
   position: absolute;
-  right: calc(100% + 12px);
-  top: 50%;
-  transform: translateY(-50%);
-  width: max-content;
-  max-width: 13rem;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: #1f2430;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.35;
-  text-align: left;
+  top: calc(100% - 2px);
+  right: 0;
+  display: block;
+  width: 9rem;
+  margin: 0;
+  padding: 0;
+  background: none;
+  color: var(--dark-blue);
+  font-family: "Diana Handwriting", cursive;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.05;
+  text-align: right;
   white-space: normal;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: 0 4px 16px rgba(31, 36, 48, 0.18);
 }
-.quirk-doodle:hover .quirk-doodle-tip,
-.quirk-doodle:focus-visible .quirk-doodle-tip { opacity: 1; }
 
-@media (max-width: 640px) {
+.quirk-brand-row--stacked .quirk-doodle-tip {
+  position: static;
+  width: 8rem;
+  margin-top: 2px;
+}
+
+@media (max-width: 720px) {
+  .quirk-brand-row { margin-bottom: 48px; }
+  .quirk-doodle img { height: 120px; }
   .quirk-doodle-tip {
-    right: 0;
-    top: calc(100% + 8px);
-    transform: none;
-    max-width: 12.5rem;
+    width: 7.5rem;
+    font-size: 18px;
   }
 }
 
