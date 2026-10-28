@@ -181,3 +181,37 @@ URL (Master_Monthly, Master_Annual, Master_PointInTime). `pipeline/Participation
 and `pipeline/WebApi.gs` were a 401-workaround that is unused now that that published
 link is confirmed working; do not paste them into Apps Script unless we later want a
 slimmer extract than the ~6 MB monthly CSV.
+
+## Adding Alerts.gs: email when a run has problems (2026-10-23)
+
+Google's built-in failure email only fires when a run crashes. Most real problems here
+don't crash: a failed download is logged to Pipeline_Log as an ERROR and the run carries
+on, and a CDSS page redesign can make the script skip new data every week with no error
+at all. `Alerts.gs` emails you in those cases. You get nothing when a run is clean.
+
+You'll get an email when:
+- a run logs an ERROR (every week it keeps happening)
+- a run logs a WARN you haven't been emailed about before (each distinct warning is sent once)
+- the master dashboard file hasn't been downloaded successfully in 42 days (`STALE_AFTER_DAYS` in Config.gs), repeated weekly until it recovers
+- a run crashes outright (immediately, on top of Google's own digest email)
+
+This one does need a new permission (sending email as you), so there's one consent step.
+
+1. In the Apps Script editor, add a new file named `Alerts.gs` and paste in
+   `pipeline/Alerts.gs` from this folder.
+2. Replace the contents of `Main.gs` and `Config.gs` with the versions in this folder.
+   (Check `ALERT_EMAIL` in Config.gs is the address you want.)
+3. Open `appsscript.json` in the editor and replace it with the version in this folder.
+   The only change is one added line: `script.send_mail`.
+4. Save (Cmd+S). Select **testAlerts** in the function dropdown and click **Run**.
+   Google will ask you to approve the new permission: "Send email as you." Approve it.
+   You should get a "CalFresh pipeline: test alert" email within a minute.
+5. Done. The existing Monday trigger picks this up automatically; no need to reinstall it.
+
+Don't skip step 4. If the new permission isn't approved, the Monday run will fail with an
+authorization error until it is.
+
+The first Monday after install, you may get one email listing warnings the pipeline was
+already logging quietly. That's expected; each one is only sent once. The stale-data
+clock also starts on that first run, so it can't fire until 42 days after install at the
+earliest.

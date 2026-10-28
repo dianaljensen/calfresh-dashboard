@@ -13,6 +13,8 @@
 //                           run automatically every week from here on.
 //   PIPELINE_MAIN()       — the recurring job itself. You generally don't need to
 //                           run this by hand; the weekly trigger does it.
+//   testAlerts()          — (in Alerts.gs) sends a test alert email; run once after
+//                           adding Alerts.gs to approve the send-email permission.
 
 function testDiscovery() {
   Logger.log('--- Dashboard master ---');
@@ -31,6 +33,13 @@ function buildChangeQueue_() {
   var queue = [];
 
   var dashInfo = discoverDashboardFile_();
+  if (!dashInfo.updatedText) {
+    // Without this, a blank date compares equal to last week's blank date and the master
+    // file is silently skipped forever. Alerts.gs emails this warning the first time it appears.
+    logWarn_('Master', 'Could not find the "Updated:" date on the CDSS dashboard page, so change ' +
+      'detection can\'t tell whether there is new data. SourceDiscovery.gs likely needs updating ' +
+      'against the live page HTML: ' + CONFIG.DASHBOARD_PAGE_URL);
+  }
   var lastDash = props.getProperty('lastDashboardUpdatedText');
   if (dashInfo.updatedText !== lastDash) {
     queue.push({ type: 'dashboard', url: dashInfo.url, updatedText: dashInfo.updatedText });
@@ -63,6 +72,7 @@ function processJob_(job) {
   if (job.type === 'dashboard') {
     ingestDashboardMaster_({ url: job.url, updatedText: job.updatedText });
     props.setProperty('lastDashboardUpdatedText', job.updatedText);
+    recordMasterIngest_(); // feeds the stale-data check in Alerts.gs
 
   } else if (job.type === 'cf296') {
     ingestCF296FiscalYear_({ fiscalYear: job.fiscalYear, url: job.url });
@@ -79,6 +89,19 @@ function processJob_(job) {
 }
 
 function PIPELINE_MAIN() {
+  try {
+    runPipeline_();
+  } catch (e) {
+    // Most failures are caught per-job inside runPipeline_ and logged; this is for the
+    // rest (e.g. a CDSS page that won't load at all). Email right away, then re-throw so
+    // the run still shows as Failed in Executions and Google's own digest email fires too.
+    logError_('Main', 'Run crashed before finishing: ' + e);
+    alertOnCrash_(e);
+    throw e;
+  }
+}
+
+function runPipeline_() {
   var startedAt = startClock_();
   var props = PropertiesService.getScriptProperties();
   var queueJson = props.getProperty('pendingQueue');
@@ -88,6 +111,7 @@ function PIPELINE_MAIN() {
     queue = JSON.parse(queueJson);
     logInfo_('Main', 'Resuming previous run — ' + queue.length + ' job(s) left in the queue.');
   } else {
+    startRunHealthWindow_(); // Alerts.gs reviews the log from this point on
     queue = buildChangeQueue_();
     logInfo_('Main', 'Starting new run — ' + queue.length + ' source(s) changed since last check.');
   }
@@ -129,6 +153,9 @@ function PIPELINE_MAIN() {
   // see CaseloadStudents.gs for why "Caseload Total Student Count" is trustworthy here.
   computeCaseloadStudents_();
   logInfo_('Main', 'Run complete — all queued sources processed, retention enforced.');
+  // Emails you only if this run logged an error, a new warning, or the data has gone
+  // stale. See Alerts.gs.
+  checkRunHealth_();
 }
 
 // This is the function name the continuation trigger actually calls
@@ -151,6 +178,7 @@ function runInitialBackfill() {
   });
 
   PropertiesService.getScriptProperties().setProperty('pendingQueue', JSON.stringify(queue));
+  startRunHealthWindow_();
   logInfo_('Backfill', 'Queued ' + queue.length + ' file(s) for full historical backfill.' +
     ' This will very likely need several continuation runs to finish (6-minute execution cap)' +
     ' — it will keep going on its own every ' + CONFIG.CONTINUATION_DELAY_MINUTES +
