@@ -71,5 +71,12 @@ var CONFIG = {
   // server error (502s, "Service Spreadsheets failed", etc — seen twice during the
   // 2026-07-16 backfill, both resolved on a plain retry) before giving up on it and
   // logging a permanent failure.
-  MAX_JOB_ATTEMPTS: 3
+  MAX_JOB_ATTEMPTS: 3,
+
+  // --- Alerts (see Alerts.gs) ---
+  // Where problem emails go. Only sent when a run has errors, a new warning, or stale data.
+  ALERT_EMAIL: 'diana@djconsults.com',
+  // Email if the master dashboard file hasn't been successfully downloaded in this many
+  // days. CDSS usually updates every 1–3 weeks, so 6 weeks means something is off.
+  STALE_AFTER_DAYS: 42
 };
