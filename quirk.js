@@ -1,20 +1,94 @@
 (function () {
   const NOTICE = 'https://www.notice-wonder-repeat.net';
-  const QUIRK_LABEL = 'Distract me with something quirky!';
-  const SERIES_TITLE = 'Animals with Appropriate Accessories';
-  const SERIES_HOOK = 'When I\'m not thinking about CalFresh, I sometimes think about what accessories animals would use to highlight their unique qualities.';
 
-  const ITEMS = [
-    { id: 'snowy-bison-1', title: 'Snowy bison', src: 'assets/quirk/snowy-bison-1.jpg' },
-    { id: 'snowy-bison-2', title: 'Snowy bison II', src: 'assets/quirk/snowy-bison-2.jpg' },
-    { id: 'beaver-bling', title: 'Beaver w/ Grill', src: 'assets/quirk/beaver-bling.png' },
-    { id: 'sunmaxxing-cat', title: 'Sunmaxxing cat', src: 'assets/quirk/sunmaxxing-cat.png' },
-    { id: 'giraffe', title: 'Giraffe', src: 'assets/quirk/giraffe.png' },
-    { id: 'ostrich', title: 'Ostrich', src: 'assets/quirk/ostrich.png' },
-    { id: 'brave-penguin', title: 'Brave penguin', src: 'assets/quirk/brave-penguin.png' },
-    { id: 'punk-elephant', title: 'Punk elephant', src: 'assets/quirk/punk-elephant.png' }
+  // One set per calendar day, in this order. ?quirk=animals|rockets|trees|charts previews one.
+  const SETS = [
+    {
+      id: 'animals',
+      label: 'Distract me with something quirky!',
+      title: 'Animals with Appropriate Accessories',
+      hook: 'When I\'m not thinking about CalFresh, I sometimes think about what accessories animals would use to highlight their unique qualities.',
+      doodle: 'assets/quirk/doodle-ostrich.png',
+      play: NOTICE + '/#animals',
+      startId: 'ostrich',
+      items: [
+        { id: 'snowy-bison-1', title: 'Snowy bison', src: 'assets/quirk/snowy-bison-1.jpg' },
+        { id: 'snowy-bison-2', title: 'Snowy bison II', src: 'assets/quirk/snowy-bison-2.jpg' },
+        { id: 'beaver-bling', title: 'Beaver w/ Grill', src: 'assets/quirk/beaver-bling.png' },
+        { id: 'sunmaxxing-cat', title: 'Sunmaxxing cat', src: 'assets/quirk/sunmaxxing-cat.png' },
+        { id: 'giraffe', title: 'Giraffe', src: 'assets/quirk/giraffe.png' },
+        { id: 'ostrich', title: 'Ostrich', src: 'assets/quirk/ostrich.png' },
+        { id: 'brave-penguin', title: 'Brave penguin', src: 'assets/quirk/brave-penguin.png' },
+        { id: 'punk-elephant', title: 'Punk elephant', src: 'assets/quirk/punk-elephant.png' }
+      ]
+    },
+    {
+      id: 'rockets',
+      label: 'Other ways to paint a rocket',
+      title: 'Other ideas for ways to paint rocketships',
+      hook: 'When I need to think about something other than CalFresh, I sometimes think about how a re-imagining of the traditional white rocket paint job might make life a little more fun.',
+      doodle: 'assets/quirk/doodle-shark.png',
+      play: NOTICE + '/#joys',
+      startId: 'shark',
+      items: [
+        { id: 'popsicle', title: 'Popsicle rocket', src: 'assets/quirk/rockets/popsicle.jpg' },
+        { id: 'shark', title: 'Shark rocket', src: 'assets/quirk/rockets/shark.jpg' },
+        { id: 'gnome', title: 'Gnome rocket', src: 'assets/quirk/rockets/gnome.jpg' }
+      ]
+    },
+    {
+      id: 'trees',
+      label: 'Distract me with trees and flowers',
+      title: 'Trees & Flowers',
+      hook: 'If you need a little pick-me-up, I highly recommend becoming momentarily obsessed with the striking beauty of a tree or flower.',
+      doodle: 'assets/quirk/doodle-fuchsia.png',
+      cornerHeight: '110',
+      play: NOTICE + '/#trees',
+      startId: 'fuchsia',
+      items: [
+        { id: 'oak', title: 'Oak', src: 'assets/quirk/trees/oak.jpg' },
+        { id: 'bark', title: 'Bark detail', src: 'assets/quirk/trees/bark.jpg' },
+        { id: 'leaf-wiggle', title: 'Leaf wiggle', src: 'assets/quirk/trees/leaf-wiggle.jpg' },
+        { id: 'new-growth', title: 'New growth', src: 'assets/quirk/trees/new-growth.jpg' },
+        { id: 'wisteria', title: 'Wisteria', src: 'assets/quirk/trees/wisteria.jpg' },
+        { id: 'magnolia', title: 'Magnolia blossoms', src: 'assets/quirk/trees/magnolia.jpg' },
+        { id: 'cypress', title: 'Monterey cypress grove', src: 'assets/quirk/trees/cypress.jpg' },
+        { id: 'palm', title: 'Palm tree', src: 'assets/quirk/trees/palm.jpg' },
+        { id: 'fuchsia', title: 'Fuchsia', src: 'assets/quirk/trees/fuchsia.jpg' },
+        { id: 'sketch', title: 'Tree sketch', src: 'assets/quirk/trees/sketch.png' }
+      ]
+    },
+    {
+      id: 'charts',
+      label: 'Charts about other things',
+      title: 'Charts about other things I\'ve noticed',
+      hook: 'When I\'m not making charts about CalFresh, I make charts about other things I\'ve noticed.',
+      doodle: 'assets/quirk/doodle-dentistry.png',
+      startId: 'dentistry',
+      items: [
+        { id: 'parabola', title: 'Another parabola observed in nature', src: 'assets/quirk/charts/parabola.png' },
+        { id: 'binoculars', title: 'Binoculars', src: 'assets/quirk/charts/binoculars.png' },
+        { id: 'boogies', title: 'Types of boogies', src: 'assets/quirk/charts/boogies.png' },
+        { id: 'standardization', title: 'Standardization and how it makes me feel', src: 'assets/quirk/charts/standardization.png' },
+        { id: 'sweet-caroline', title: 'Sweet Caroline', src: 'assets/quirk/charts/sweet-caroline.png' },
+        { id: 'dentistry', title: 'Modern dentistry', src: 'assets/quirk/charts/dentistry.png' }
+      ]
+    }
   ];
-  const START_INDEX = ITEMS.findIndex(item => item.id === 'ostrich');
+
+  function pickSet() {
+    const want = new URLSearchParams(window.location.search).get('quirk');
+    const found = want && SETS.find(item => item.id === want);
+    if (found) return found;
+    const now = new Date();
+    const day = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
+    return SETS[((day % SETS.length) + SETS.length) % SETS.length];
+  }
+
+  const set = pickSet();
+  const QUIRK_LABEL = set.label;
+  const ITEMS = set.items;
+  const START_INDEX = Math.max(0, ITEMS.findIndex(item => item.id === set.startId));
 
   function el(tag, attrs, children) {
     const node = document.createElement(tag);
@@ -44,15 +118,16 @@
   const title = header.querySelector('.site-title');
   if (title && title.parentElement !== row) row.appendChild(title);
 
+  const cornerHeight = set.cornerHeight || '140';
   const doodle = el('button', {
-    className: 'quirk-doodle',
+    className: 'quirk-doodle' + (set.cornerHeight ? ' quirk-doodle--compact' : ''),
     type: 'button',
     'aria-expanded': 'false',
     'aria-haspopup': 'dialog',
     'aria-controls': 'quirkDialog',
     'aria-label': QUIRK_LABEL
   }, [
-    el('img', { src: 'assets/quirk/doodle-ostrich.png', alt: '', height: '140' }),
+    el('img', { src: set.doodle, alt: '', height: cornerHeight }),
     el('span', { className: 'quirk-doodle-tip', text: QUIRK_LABEL })
   ]);
   row.appendChild(doodle);
@@ -82,6 +157,11 @@
     });
   }
   layoutSiteTitle();
+  const doodleImg = doodle.querySelector('img');
+  if (doodleImg) {
+    if (doodleImg.complete) scheduleTitleLayout();
+    else doodleImg.addEventListener('load', scheduleTitleLayout);
+  }
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(() => {
       row.classList.remove('quirk-brand-row--stacked');
@@ -92,20 +172,20 @@
   window.addEventListener('resize', scheduleTitleLayout);
   if (window.ResizeObserver) new ResizeObserver(scheduleTitleLayout).observe(row);
 
-  const titleEl = el('h2', { className: 'quirk-title', id: 'quirkTitle', text: SERIES_TITLE });
-  const hookEl = el('p', { className: 'quirk-hook', text: SERIES_HOOK });
+  const titleEl = el('h2', { className: 'quirk-title', id: 'quirkTitle', text: set.title });
+  const hookEl = el('p', { className: 'quirk-hook', text: set.hook });
   const imgEl = el('img', { alt: '' });
   const figure = el('figure', { className: 'quirk-figure' }, [imgEl]);
   const prevBtn = el('button', {
     className: 'quirk-nav',
     type: 'button',
-    'aria-label': 'Previous animal',
+    'aria-label': 'Previous picture',
     text: '←'
   });
   const nextBtn = el('button', {
     className: 'quirk-nav',
     type: 'button',
-    'aria-label': 'Next animal',
+    'aria-label': 'Next picture',
     text: '→'
   });
   const countEl = el('span', { className: 'quirk-count' });
@@ -116,7 +196,7 @@
   ]);
   const playEl = el('a', {
     className: 'quirk-play',
-    href: NOTICE,
+    href: set.play || NOTICE,
     target: '_blank',
     rel: 'noopener noreferrer',
     text: 'Play along at Notice'

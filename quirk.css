@@ -56,7 +56,7 @@
   line-height: 1.2;
 }
 
-/* Wordmark stays between the lockup and ostrich until those boxes would overlap. */
+/* Wordmark stays between the lockup and doodle until those boxes would overlap. */
 .quirk-brand-row--stacked {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -114,6 +114,8 @@
 .quirk-doodle:focus-visible img {
   transform: rotate(-3deg) scale(1.05);
 }
+/* The fuchsia bloom fills its box, so the corner picture is shorter than the others. */
+.quirk-doodle--compact img { height: 110px; }
 
 .quirk-doodle-tip {
   position: absolute;
@@ -142,6 +144,7 @@
 @media (max-width: 720px) {
   .quirk-brand-row { margin-bottom: 48px; }
   .quirk-doodle img { height: 120px; }
+  .quirk-doodle--compact img { height: 96px; }
   .quirk-doodle-tip {
     width: 7.5rem;
     font-size: 18px;
@@ -215,7 +218,7 @@
 }
 .quirk-figure {
   margin: 0;
-  background: #fafafa;
+  background: #fff;
   border-radius: 8px;
 }
 .quirk-figure img {
